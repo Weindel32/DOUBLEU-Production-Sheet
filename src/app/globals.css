@@ -1,0 +1,93 @@
+@import "tailwindcss";
+
+:root {
+  --sidebar-bg: #1a2236;
+  --sidebar-hover: #243047;
+  --sidebar-active: #2d3a50;
+  --accent: #1e40af;
+  --accent-hover: #1d3899;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: #f4f6f9;
+}
+
+.sidebar {
+  background-color: var(--sidebar-bg);
+  min-height: 100vh;
+  width: 200px;
+  flex-shrink: 0;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  color: #94a3b8;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: all 0.15s;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.sidebar-link:hover {
+  background-color: var(--sidebar-hover);
+  color: #e2e8f0;
+}
+
+.sidebar-link.active {
+  background-color: var(--sidebar-active);
+  color: #ffffff;
+}
+
+.card {
+  background: white;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  padding: 20px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.badge-bozza { background: #f1f5f9; color: #64748b; }
+.badge-revisione { background: #fef9c3; color: #a16207; }
+.badge-approvata { background: #dcfce7; color: #15803d; }
+.badge-produzione { background: #dbeafe; color: #1d4ed8; }
+.badge-consegnata { background: #f3e8ff; color: #7e22ce; }
+
+.tab-active {
+  border-bottom: 2px solid #1e40af;
+  color: #1e40af;
+  font-weight: 600;
+}
+
+.pipeline-step {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.pipeline-step.done { color: #15803d; }
+.pipeline-step.current { color: #1d4ed8; font-weight: 600; }
+.pipeline-step.pending { color: #94a3b8; }
+
+input, textarea, select {
+  outline: none;
+}
+
+input:focus, textarea:focus, select:focus {
+  ring: 2px solid #1e40af;
+}

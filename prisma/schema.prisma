@@ -1,0 +1,124 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Cliente {
+  id        String   @id @default(cuid())
+  nome      String
+  email     String?
+  telefono  String?
+  indirizzo String?
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  schede    Scheda[]
+}
+
+model Logo {
+  id        String       @id @default(cuid())
+  nome      String
+  file      String
+  tipo      String
+  createdAt DateTime     @default(now())
+  loghi     LogoScheda[]
+}
+
+model Materiale {
+  id           String            @id @default(cuid())
+  nome         String
+  tipo         String
+  composizione String?
+  peso         String?
+  fornitore    String?
+  costoMetro   Float?
+  note         String?
+  createdAt    DateTime          @default(now())
+  schede       MaterialeScheda[]
+}
+
+model Scheda {
+  id           String   @id @default(cuid())
+  codice       String   @unique
+  nomeArticolo String
+  stato        String   @default("bozza")
+  versione     String   @default("1.0")
+  collezione   String?
+  clienteId    String?
+  cliente      Cliente? @relation(fields: [clienteId], references: [id])
+
+  // Tab 1 - Articolo
+  categoria   String?
+  vestibilita String?
+  genere      String?
+  stagione    String?
+  utilizzo    String?
+  immagini    String?
+
+  // Specifiche prodotto
+  tessutoPrincipale String?
+  pesoTessuto       String?
+  coloreBase        String?
+  coloriSecondari   String?
+  collo             String?
+  maniche           String?
+  noteSpecifiche    String?
+
+  // Tab 2 - Personalizzazione
+  notePersonalizzazione String?
+  colorePrincipale      String?
+  coloreSecondario      String?
+
+  // Tab 3 - Misure e quantità (JSON)
+  tabellaMisure  String?
+  quantitaTaglia String?
+
+  // Tab 4 - Produzione
+  noteProduzione     String?
+  tolleranzaTaglio   String?
+  tolleranzaCucitura String?
+  tolleranzaColore   String?
+  tolleranzaStampa   String?
+  controlloQualita   String?
+  packaging          String?
+  allegati           String?
+
+  // Costi interni
+  consumoMateriale String?
+  costoLavorazione Float?
+  prezzoVendita    Float?
+
+  noteRapide String?
+  createdBy  String   @default("Admin")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  loghi     LogoScheda[]
+  materiali MaterialeScheda[]
+}
+
+model LogoScheda {
+  id         String @id @default(cuid())
+  schedaId   String
+  logoId     String
+  posizione  String
+  tecnica    String
+  dimensione String?
+  note       String?
+  scheda     Scheda @relation(fields: [schedaId], references: [id], onDelete: Cascade)
+  logo       Logo   @relation(fields: [logoId], references: [id])
+}
+
+model MaterialeScheda {
+  id             String    @id @default(cuid())
+  schedaId       String
+  materialeId    String
+  consumoPerCapo Float?
+  unita          String?
+  note           String?
+  scheda         Scheda    @relation(fields: [schedaId], references: [id], onDelete: Cascade)
+  materiale      Materiale @relation(fields: [materialeId], references: [id])
+}
