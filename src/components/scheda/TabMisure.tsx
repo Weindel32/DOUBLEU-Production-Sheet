@@ -139,14 +139,7 @@ export default function TabMisure({ scheda, onSave }: Props) {
               </tbody>
             </table>
           </div>
-          <div className="px-4 py-2">
-            <button
-              onClick={salva}
-              className="text-xs text-blue-600 hover:text-blue-700 font-medium"
-            >
-              + Modifica misure
-            </button>
-          </div>
+          <div className="px-4 py-2 text-xs text-gray-400 italic">Clicca sui valori per modificarli</div>
         </div>
 
         {/* Quantità per taglia */}
@@ -184,14 +177,7 @@ export default function TabMisure({ scheda, onSave }: Props) {
               </tr>
             </tbody>
           </table>
-          <div className="px-4 py-2">
-            <button
-              onClick={salva}
-              className="text-xs text-blue-600 hover:text-blue-700 font-medium"
-            >
-              + Modifica quantità
-            </button>
-          </div>
+          <div className="px-4 py-2 text-xs text-gray-400 italic">Clicca sui valori per modificarli</div>
         </div>
       </div>
     </div>

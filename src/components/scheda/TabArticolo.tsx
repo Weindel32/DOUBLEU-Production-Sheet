@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Edit3, Upload } from "lucide-react";
 import { CATEGORIE } from "@/lib/utils";
 import type { SchedaCompleta } from "@/types";
@@ -13,6 +13,8 @@ interface Props {
 
 export default function TabArticolo({ scheda, onSave, clienti }: Props) {
   const [editing, setEditing] = useState<string | null>(null);
+  const infoGeneraliFirstField = "nomeArticolo";
+  const specificheProdottoFirstField = "tessutoPrincipale";
   const [values, setValues] = useState({
     nomeArticolo: scheda.nomeArticolo,
     categoria: scheda.categoria || "",
@@ -81,7 +83,9 @@ export default function TabArticolo({ scheda, onSave, clienti }: Props) {
       <div className="card">
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-semibold text-gray-700 text-sm uppercase tracking-wide">Informazioni generali</h3>
-          <Edit3 size={14} className="text-gray-400" />
+          <button onClick={() => setEditing(infoGeneraliFirstField)} title="Modifica">
+            <Edit3 size={14} className="text-gray-400 hover:text-blue-600 transition-colors" />
+          </button>
         </div>
         <Field label="Nome articolo" field="nomeArticolo" />
         <Field label="Categoria" field="categoria" options={CATEGORIE} />
@@ -133,7 +137,9 @@ export default function TabArticolo({ scheda, onSave, clienti }: Props) {
       <div className="card">
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-semibold text-gray-700 text-sm uppercase tracking-wide">Specifiche prodotto</h3>
-          <Edit3 size={14} className="text-gray-400" />
+          <button onClick={() => setEditing(specificheProdottoFirstField)} title="Modifica">
+            <Edit3 size={14} className="text-gray-400 hover:text-blue-600 transition-colors" />
+          </button>
         </div>
         <Field label="Tessuto principale" field="tessutoPrincipale" />
         <Field label="Peso tessuto" field="pesoTessuto" />

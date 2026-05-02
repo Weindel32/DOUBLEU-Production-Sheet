@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, FileDown, Copy, CheckCircle, Edit3, ChevronDown } from "lucide-react";
+import { ArrowLeft, FileDown, Copy, CheckCircle, ChevronDown, Trash2 } from "lucide-react";
 import { STATI_SCHEDA, StatoScheda, formatData, formatOra, calcolaTotaleQuantita } from "@/lib/utils";
 import TabArticolo from "./TabArticolo";
 import TabPersonalizzazione from "./TabPersonalizzazione";
@@ -25,6 +26,7 @@ const TABS = [
 ];
 
 export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponibili, materialiDisponibili }: Props) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("articolo");
   const [statoCorrente, setStatoCorrente] = useState<StatoScheda>(scheda.stato as StatoScheda);
   const [savedAt, setSavedAt] = useState(formatOra(scheda.updatedAt));
@@ -46,6 +48,12 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
     setStatoCorrente(nuovoStato);
     setShowStatoMenu(false);
     await handleSave({ stato: nuovoStato });
+  };
+
+  const handleElimina = async () => {
+    if (!confirm(`Eliminare definitivamente la scheda "${scheda.nomeArticolo}"? L'operazione non è reversibile.`)) return;
+    await fetch(`/api/schede/${scheda.id}`, { method: "DELETE" });
+    router.push("/schede");
   };
 
   const handleDuplica = async () => {
@@ -276,13 +284,19 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
             />
           </div>
 
-          {/* Duplica */}
           <button
             onClick={handleDuplica}
             className="w-full flex items-center justify-center gap-2 bg-blue-700 hover:bg-blue-800 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors"
           >
             <Copy size={14} />
             Duplica scheda
+          </button>
+          <button
+            onClick={handleElimina}
+            className="w-full flex items-center justify-center gap-2 border border-red-200 text-red-500 hover:bg-red-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors mt-2"
+          >
+            <Trash2 size={14} />
+            Elimina scheda
           </button>
         </div>
       </div>
