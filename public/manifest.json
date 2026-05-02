@@ -1,0 +1,22 @@
+{
+  "name": "Double U – Production Sheet",
+  "short_name": "DUSP",
+  "description": "Gestionale schede di produzione Double U",
+  "start_url": "/m/schede",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1d4ed8",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
