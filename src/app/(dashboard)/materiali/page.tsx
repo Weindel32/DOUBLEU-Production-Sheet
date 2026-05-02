@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { Package, PlusCircle } from "lucide-react";
+import MaterialiActions from "./MaterialiActions";
 
 export default async function MaterialiPage() {
   const materiali = await prisma.materiale.findMany({ orderBy: { nome: "asc" } });
@@ -46,6 +47,7 @@ export default async function MaterialiPage() {
                 <th className="text-left px-4 py-3 text-gray-500 font-medium">Peso</th>
                 <th className="text-left px-4 py-3 text-gray-500 font-medium">Fornitore</th>
                 <th className="text-right px-4 py-3 text-gray-500 font-medium">Costo/metro</th>
+                <th className="px-4 py-3"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -58,6 +60,9 @@ export default async function MaterialiPage() {
                   <td className="px-4 py-3 text-gray-600">{m.fornitore || "—"}</td>
                   <td className="px-4 py-3 text-right text-gray-600">
                     {m.costoMetro ? `€ ${m.costoMetro.toFixed(2)}` : "—"}
+                  </td>
+                  <td className="px-4 py-3 w-20">
+                    <MaterialiActions id={m.id} />
                   </td>
                 </tr>
               ))}
