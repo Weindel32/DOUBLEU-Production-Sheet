@@ -1,0 +1,3 @@
+ALTER TABLE "Scheda" ADD COLUMN IF NOT EXISTS "modellista" TEXT;
+ALTER TABLE "Scheda" ADD COLUMN IF NOT EXISTS "fornitoreTessuto" TEXT;
+ALTER TABLE "Scheda" ADD COLUMN IF NOT EXISTS "produttore" TEXT;

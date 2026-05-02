@@ -68,6 +68,11 @@ model Scheda {
   maniche           String?
   noteSpecifiche    String?
 
+  // Fornitori
+  modellista       String?
+  fornitoreTessuto String?
+  produttore       String?
+
   // Tab 2 - Personalizzazione
   notePersonalizzazione String?
   colorePrincipale      String?

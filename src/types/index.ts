@@ -39,6 +39,9 @@ export interface SchedaCompleta {
   tessutoPrincipale?: string | null;
   pesoTessuto?: string | null;
   altezzaTessuto?: string | null;
+  modellista?: string | null;
+  fornitoreTessuto?: string | null;
+  produttore?: string | null;
   coloreBase?: string | null;
   coloriSecondari?: string | null;
   collo?: string | null;

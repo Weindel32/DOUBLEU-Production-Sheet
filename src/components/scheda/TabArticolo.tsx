@@ -25,6 +25,9 @@ export default function TabArticolo({ scheda, onSave, clienti }: Props) {
     tessutoPrincipale: scheda.tessutoPrincipale || "",
     pesoTessuto: scheda.pesoTessuto || "",
     altezzaTessuto: scheda.altezzaTessuto || "",
+    modellista: scheda.modellista || "",
+    fornitoreTessuto: scheda.fornitoreTessuto || "",
+    produttore: scheda.produttore || "",
     coloreBase: scheda.coloreBase || "",
     coloriSecondari: scheda.coloriSecondari || "",
     collo: scheda.collo || "",
@@ -79,7 +82,8 @@ export default function TabArticolo({ scheda, onSave, clienti }: Props) {
   );
 
   return (
-    <div className="grid grid-cols-3 gap-5">
+    <div className="space-y-5">
+      <div className="grid grid-cols-3 gap-5">
       {/* Informazioni generali */}
       <div className="card">
         <div className="flex items-center justify-between mb-3">
@@ -188,6 +192,49 @@ export default function TabArticolo({ scheda, onSave, clienti }: Props) {
             rows={2}
             className="flex-1 text-sm text-gray-700 border-0 bg-transparent resize-none outline-none"
           />
+        </div>
+      </div>
+      </div>
+
+      {/* Fornitori & Referenti */}
+      <div className="card">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-semibold text-gray-700 text-sm uppercase tracking-wide">Fornitori & Referenti</h3>
+        </div>
+        <div className="grid grid-cols-3 gap-6">
+          <div>
+            <div className="text-xs text-gray-400 uppercase tracking-wide mb-2">Modellista</div>
+            <input
+              type="text"
+              value={values.modellista}
+              onChange={(e) => setValues((v) => ({ ...v, modellista: e.target.value }))}
+              onBlur={() => handleBlur("modellista")}
+              placeholder="Nome modellista..."
+              className="w-full text-sm text-gray-700 border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-400 outline-none"
+            />
+          </div>
+          <div>
+            <div className="text-xs text-gray-400 uppercase tracking-wide mb-2">Fornitore tessuto</div>
+            <input
+              type="text"
+              value={values.fornitoreTessuto}
+              onChange={(e) => setValues((v) => ({ ...v, fornitoreTessuto: e.target.value }))}
+              onBlur={() => handleBlur("fornitoreTessuto")}
+              placeholder="Nome fornitore..."
+              className="w-full text-sm text-gray-700 border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-400 outline-none"
+            />
+          </div>
+          <div>
+            <div className="text-xs text-gray-400 uppercase tracking-wide mb-2">Produttore / Fasonista</div>
+            <input
+              type="text"
+              value={values.produttore}
+              onChange={(e) => setValues((v) => ({ ...v, produttore: e.target.value }))}
+              onBlur={() => handleBlur("produttore")}
+              placeholder="Nome produttore..."
+              className="w-full text-sm text-gray-700 border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-400 outline-none"
+            />
+          </div>
         </div>
       </div>
     </div>
