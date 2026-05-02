@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Edit3, Upload } from "lucide-react";
+import { Edit3, Upload, X, Loader2 } from "lucide-react";
 import { CATEGORIE } from "@/lib/utils";
 import type { SchedaCompleta } from "@/types";
 
@@ -14,6 +14,9 @@ interface Props {
 
 export default function TabArticolo({ scheda, onSave, clienti, materiali }: Props) {
   const [editing, setEditing] = useState<string | null>(null);
+  const [immagini, setImmagini] = useState<string[]>(scheda.immagini || []);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const infoGeneraliFirstField = "nomeArticolo";
   const specificheProdottoFirstField = "tessutoPrincipale";
   const [values, setValues] = useState({
@@ -37,6 +40,33 @@ export default function TabArticolo({ scheda, onSave, clienti, materiali }: Prop
     clienteId: scheda.clienteId || "",
     collezione: scheda.collezione || "",
   });
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setUploading(true);
+    const nuove: string[] = [];
+    for (const file of files) {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      if (res.ok) {
+        const { url } = await res.json();
+        nuove.push(url);
+      }
+    }
+    const aggiornate = [...immagini, ...nuove];
+    setImmagini(aggiornate);
+    await onSave({ immagini: aggiornate });
+    setUploading(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const rimuoviImmagine = async (idx: number) => {
+    const aggiornate = immagini.filter((_, i) => i !== idx);
+    setImmagini(aggiornate);
+    await onSave({ immagini: aggiornate });
+  };
 
   const handleBlur = async (field: string) => {
     setEditing(null);
@@ -122,20 +152,40 @@ export default function TabArticolo({ scheda, onSave, clienti, materiali }: Prop
           <h3 className="font-semibold text-gray-700 text-sm uppercase tracking-wide">Immagini prodotto</h3>
         </div>
         <div className="grid grid-cols-2 gap-3 mb-3">
-          {(scheda.immagini || []).length === 0 ? (
+          {immagini.length === 0 ? (
             <div className="col-span-2 h-32 bg-gray-50 rounded-lg flex items-center justify-center text-gray-300 text-sm">
               Nessuna immagine
             </div>
           ) : (
-            (scheda.immagini || []).map((img, i) => (
-              <img key={i} src={img} alt={`Immagine ${i + 1}`} className="w-full h-32 object-contain rounded-lg bg-gray-50" />
+            immagini.map((img, i) => (
+              <div key={i} className="relative group">
+                <img src={img} alt={`Immagine ${i + 1}`} className="w-full h-32 object-contain rounded-lg bg-gray-50" />
+                <button
+                  onClick={() => rimuoviImmagine(i)}
+                  className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X size={12} />
+                </button>
+              </div>
             ))
           )}
         </div>
-        <button className="w-full border-2 border-dashed border-gray-200 rounded-lg py-3 flex items-center justify-center gap-2 text-sm text-gray-400 hover:border-blue-300 hover:text-blue-500 transition-colors">
-          <Upload size={15} />
-          Carica immagini
-          <span className="text-xs">PNG, JPG fino a 10MB</span>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          multiple
+          className="hidden"
+          onChange={handleUpload}
+        />
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+          className="w-full border-2 border-dashed border-gray-200 rounded-lg py-3 flex items-center justify-center gap-2 text-sm text-gray-400 hover:border-blue-300 hover:text-blue-500 transition-colors disabled:opacity-50"
+        >
+          {uploading ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} />}
+          {uploading ? "Caricamento..." : "Carica immagini"}
+          {!uploading && <span className="text-xs">PNG, JPG fino a 10MB</span>}
         </button>
       </div>
 
