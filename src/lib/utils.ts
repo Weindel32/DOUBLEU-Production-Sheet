@@ -15,7 +15,9 @@ export const STATI_SCHEDA = [
 
 export type StatoScheda = typeof STATI_SCHEDA[number]["value"];
 
-export const TAGLIE = ["XS", "S", "M", "L", "XL", "XXL", "XXXL"] as const;
+export const TAGLIE_ADULTO = ["XS", "S", "M", "L", "XL", "XXL", "XXXL"] as const;
+export const TAGLIE_KIDS = ["4A", "6A", "8A", "10A", "12A", "14A", "16A"] as const;
+export const TAGLIE = [...TAGLIE_ADULTO, ...TAGLIE_KIDS] as const;
 
 export const CATEGORIE = [
   "T-Shirt", "Felpa", "Pantaloncino", "Pantaloni", "Giacca",

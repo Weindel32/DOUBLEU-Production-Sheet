@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { TAGLIE, calcolaTotaleQuantita } from "@/lib/utils";
+import { TAGLIE_ADULTO, TAGLIE_KIDS, calcolaTotaleQuantita } from "@/lib/utils";
 import type { SchedaCompleta, TabellaTaglie, QuantitaTaglia } from "@/types";
 
 interface Props {
@@ -25,8 +25,9 @@ export default function TabMisure({ scheda, onSave }: Props) {
   const [quantitaTaglia, setQuantitaTaglia] = useState<QuantitaTaglia>(
     (scheda.quantitaTaglia as QuantitaTaglia) || {}
   );
+  const tutteLeTaglie = [...TAGLIE_ADULTO, ...TAGLIE_KIDS];
   const [tagliAttive, setTagliAttive] = useState<string[]>(
-    TAGLIE.filter((t) => tabellaMisure[t] || quantitaTaglia[t])
+    tutteLeTaglie.filter((t) => tabellaMisure[t] || quantitaTaglia[t])
   );
 
   const totale = calcolaTotaleQuantita(quantitaTaglia as Record<string, number>);
@@ -59,20 +60,43 @@ export default function TabMisure({ scheda, onSave }: Props) {
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-semibold text-gray-700 text-sm uppercase tracking-wide">Taglie attive</h3>
         </div>
-        <div className="flex gap-2 flex-wrap">
-          {TAGLIE.map((t) => (
-            <button
-              key={t}
-              onClick={() => toggleTaglia(t)}
-              className={`px-3 py-1 rounded-full text-sm font-medium border transition-colors ${
-                tagliAttive.includes(t)
-                  ? "bg-blue-700 text-white border-blue-700"
-                  : "bg-white text-gray-500 border-gray-300 hover:border-blue-400"
-              }`}
-            >
-              {t}
-            </button>
-          ))}
+        <div className="space-y-2">
+          <div>
+            <p className="text-xs text-gray-400 mb-1.5 font-medium">ADULTO</p>
+            <div className="flex gap-2 flex-wrap">
+              {TAGLIE_ADULTO.map((t) => (
+                <button
+                  key={t}
+                  onClick={() => toggleTaglia(t)}
+                  className={`px-3 py-1 rounded-full text-sm font-medium border transition-colors ${
+                    tagliAttive.includes(t)
+                      ? "bg-blue-700 text-white border-blue-700"
+                      : "bg-white text-gray-500 border-gray-300 hover:border-blue-400"
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="text-xs text-gray-400 mb-1.5 font-medium">KIDS</p>
+            <div className="flex gap-2 flex-wrap">
+              {TAGLIE_KIDS.map((t) => (
+                <button
+                  key={t}
+                  onClick={() => toggleTaglia(t)}
+                  className={`px-3 py-1 rounded-full text-sm font-medium border transition-colors ${
+                    tagliAttive.includes(t)
+                      ? "bg-orange-500 text-white border-orange-500"
+                      : "bg-white text-gray-500 border-gray-300 hover:border-orange-300"
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
