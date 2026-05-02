@@ -57,6 +57,7 @@ export default async function SchedaPage({ params }: { params: Promise<{ id: str
     quantitaTaglia: scheda.quantitaTaglia ? JSON.parse(scheda.quantitaTaglia) : {},
     allegati: scheda.allegati ? JSON.parse(scheda.allegati) : [],
     consumoMateriale: scheda.consumoMateriale ? JSON.parse(scheda.consumoMateriale) : [],
+    elasticoVita: scheda.elasticoVita ? JSON.parse(scheda.elasticoVita) : null,
     createdAt: scheda.createdAt.toISOString(),
     updatedAt: scheda.updatedAt.toISOString(),
   };

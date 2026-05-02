@@ -94,6 +94,9 @@ model Scheda {
   packaging          String?
   allegati           String?
 
+  // Elastico vita (Pantaloncino / Pantaloni / Tuta) — JSON: ElasticoVita
+  elasticoVita String?
+
   // Costi interni
   consumoMateriale String?
   costoLavorazione Float?

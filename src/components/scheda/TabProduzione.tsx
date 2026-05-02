@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { PlusCircle, Trash2, Upload, Info } from "lucide-react";
-import type { SchedaCompleta, ConsumoMateriale } from "@/types";
+import { PlusCircle, Trash2, Upload, Info, Ruler } from "lucide-react";
+import type { SchedaCompleta, ConsumoMateriale, ElasticoVita } from "@/types";
 import { calcolaTotaleQuantita } from "@/lib/utils";
+
+const CATEGORIE_ELASTICO = ["Pantaloncino", "Pantaloni", "Tuta"];
 
 interface MaterialeDisp {
   id: string;
@@ -65,6 +67,28 @@ export default function TabProduzione({ scheda, onSave, materialiDisponibili }: 
 
   const quantitaTaglia = (scheda.quantitaTaglia as Record<string, number>) || {};
   const totalePezzi = calcolaTotaleQuantita(quantitaTaglia);
+  const taglieOrdinate = Object.keys(quantitaTaglia);
+
+  const [elasticoVita, setElasticoVita] = useState<ElasticoVita>(
+    scheda.elasticoVita ?? { materialeId: "", altezza: 4, misure: {} }
+  );
+
+  const mostraElastico = CATEGORIE_ELASTICO.includes(scheda.categoria ?? "");
+
+  function calcolaCostoElasticoPerCapo(): number {
+    if (!elasticoVita.materialeId) return 0;
+    const mat = materialiDisponibili.find((m) => m.id === elasticoVita.materialeId);
+    if (!mat?.costoMetro) return 0;
+    let totCm = 0;
+    let totPz = 0;
+    for (const [taglia, lunghezza] of Object.entries(elasticoVita.misure)) {
+      const qty = quantitaTaglia[taglia] ?? 0;
+      totCm += lunghezza * qty;
+      totPz += qty;
+    }
+    if (totPz === 0) return 0;
+    return (totCm / totPz / 100) * mat.costoMetro;
+  }
 
   const aggiungiConsumo = () => {
     if (materialiDisponibili.length === 0) return;
@@ -98,6 +122,7 @@ export default function TabProduzione({ scheda, onSave, materialiDisponibili }: 
       noteProduzione, tolleranzaTaglio, tolleranzaCucitura, tolleranzaColore,
       tolleranzaStampa, controlloQualita, packaging,
       consumoMateriale: consumi,
+      elasticoVita: mostraElastico && elasticoVita.materialeId ? elasticoVita : null,
       costoTaglio: costoTaglio ? parseFloat(costoTaglio) : null,
       costoCucitura: costoCucitura ? parseFloat(costoCucitura) : null,
       costoStampa: costoStampa ? parseFloat(costoStampa) : null,
@@ -109,10 +134,14 @@ export default function TabProduzione({ scheda, onSave, materialiDisponibili }: 
   };
 
   // Cost calculations
-  const costoMaterialePerCapo = consumi.reduce((sum, c) => {
+  const costoElasticoPerCapo = mostraElastico ? calcolaCostoElasticoPerCapo() : 0;
+
+  const costoSoloMaterialiPerCapo = consumi.reduce((sum, c) => {
     const mat = materialiDisponibili.find((m) => m.id === c.materialeId);
     return sum + calcolaCostoMateriale(c, mat);
   }, 0);
+
+  const costoMaterialePerCapo = costoSoloMaterialiPerCapo + costoElasticoPerCapo;
 
   const lavorazionePerCapo =
     (parseFloat(costoTaglio || "0") || 0) +
@@ -194,6 +223,103 @@ export default function TabProduzione({ scheda, onSave, materialiDisponibili }: 
             <span className="text-xs">PDF, JPG, PNG</span>
           </button>
         </div>
+
+        {/* Elastico vita — card separata, visibile anche nel PDF tecnico */}
+        {mostraElastico && (
+          <div className="card border-2 border-blue-100">
+            <div className="flex items-center gap-2 mb-3">
+              <Ruler size={14} className="text-blue-500" />
+              <h3 className="font-semibold text-gray-700 text-sm uppercase tracking-wide">Elastico vita</h3>
+            </div>
+
+            {/* Materiale */}
+            <div className="flex items-center gap-2 mb-2">
+              <label className="text-xs text-gray-400 w-24 flex-shrink-0">Materiale</label>
+              <select
+                value={elasticoVita.materialeId}
+                onChange={(e) => setElasticoVita((ev) => ({ ...ev, materialeId: e.target.value }))}
+                onBlur={() => salva()}
+                className="flex-1 text-xs border border-gray-200 rounded px-2 py-1"
+              >
+                <option value="">— Seleziona —</option>
+                {materialiDisponibili.filter((m) => m.tipo === "Elastico").map((m) => (
+                  <option key={m.id} value={m.id}>{m.nome}</option>
+                ))}
+                {materialiDisponibili.filter((m) => m.tipo !== "Elastico").length > 0 && (
+                  <>
+                    <option disabled>──────────</option>
+                    {materialiDisponibili.filter((m) => m.tipo !== "Elastico").map((m) => (
+                      <option key={m.id} value={m.id}>{m.nome}</option>
+                    ))}
+                  </>
+                )}
+              </select>
+            </div>
+
+            {/* Altezza nastro */}
+            <div className="flex items-center gap-2 mb-3">
+              <label className="text-xs text-gray-400 w-24 flex-shrink-0">Altezza nastro</label>
+              <div className="flex items-center border border-gray-200 rounded px-2 py-1 w-28">
+                <input
+                  type="number"
+                  min="1"
+                  step="0.5"
+                  value={elasticoVita.altezza}
+                  onChange={(e) => setElasticoVita((ev) => ({ ...ev, altezza: parseFloat(e.target.value) || 4 }))}
+                  onBlur={() => salva()}
+                  className="w-12 text-xs text-right outline-none"
+                />
+                <span className="text-xs text-gray-400 ml-1">cm</span>
+              </div>
+            </div>
+
+            {/* Tabella per taglia */}
+            {taglieOrdinate.length === 0 ? (
+              <p className="text-xs text-gray-400 italic">Inserisci le taglie nella tab Misure per compilare questa tabella.</p>
+            ) : (
+              <div className="rounded overflow-hidden border border-blue-100">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="bg-blue-50">
+                      <th className="text-left px-3 py-2 text-blue-700 font-medium">Taglia</th>
+                      <th className="text-right px-3 py-2 text-blue-700 font-medium">Qtà ord.</th>
+                      <th className="text-right px-3 py-2 text-blue-700 font-medium">Lunghezza (cm)</th>
+                      <th className="text-right px-3 py-2 text-blue-700 font-medium">Altezza (cm)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-blue-50">
+                    {taglieOrdinate.map((taglia) => (
+                      <tr key={taglia} className="hover:bg-blue-50/30">
+                        <td className="px-3 py-1.5 font-medium text-gray-700">{taglia}</td>
+                        <td className="px-3 py-1.5 text-right text-gray-400">{quantitaTaglia[taglia] ?? 0}</td>
+                        <td className="px-3 py-1.5">
+                          <div className="flex items-center justify-end gap-1">
+                            <input
+                              type="number"
+                              min="0"
+                              step="1"
+                              value={elasticoVita.misure[taglia] ?? ""}
+                              placeholder="—"
+                              onChange={(e) =>
+                                setElasticoVita((ev) => ({
+                                  ...ev,
+                                  misure: { ...ev.misure, [taglia]: parseFloat(e.target.value) || 0 },
+                                }))
+                              }
+                              onBlur={() => salva()}
+                              className="w-16 text-xs text-right border border-gray-200 rounded px-1 py-0.5 outline-none focus:border-blue-400"
+                            />
+                          </div>
+                        </td>
+                        <td className="px-3 py-1.5 text-right text-gray-500">{elasticoVita.altezza}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Costi interni */}
         <div className="card border-2 border-orange-100">
@@ -327,10 +453,16 @@ export default function TabProduzione({ scheda, onSave, materialiDisponibili }: 
           {/* Riepilogo costi */}
           {costoTotalePerCapo > 0 && (
             <div className="bg-gray-50 rounded-lg p-3 space-y-1 text-xs">
-              {costoMaterialePerCapo > 0 && (
+              {costoSoloMaterialiPerCapo > 0 && (
                 <div className="flex justify-between text-gray-500">
                   <span>Materiali/capo</span>
-                  <span>€ {costoMaterialePerCapo.toFixed(2)}</span>
+                  <span>€ {costoSoloMaterialiPerCapo.toFixed(2)}</span>
+                </div>
+              )}
+              {costoElasticoPerCapo > 0 && (
+                <div className="flex justify-between text-gray-400">
+                  <span className="pl-2">— Elastico vita</span>
+                  <span>€ {costoElasticoPerCapo.toFixed(3)}</span>
                 </div>
               )}
               {parseFloat(costoTaglio || "0") > 0 && (

@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-import type { ConsumoMateriale } from "@/types";
+import type { ConsumoMateriale, ElasticoVita } from "@/types";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -17,6 +17,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const quantitaTaglia = scheda.quantitaTaglia ? JSON.parse(scheda.quantitaTaglia) : {};
   const allegati = scheda.allegati ? JSON.parse(scheda.allegati) : [];
   const consumi = scheda.consumoMateriale ? JSON.parse(scheda.consumoMateriale) : [];
+  const elasticoVita: ElasticoVita | null = scheda.elasticoVita ? JSON.parse(scheda.elasticoVita) : null;
   const totalePezzi = Object.values(quantitaTaglia as Record<string, number>).reduce((s, q) => s + q, 0);
 
   const isInterno = tipo === "interno";
@@ -195,6 +196,30 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     </div>
     ` : ""}
   </div>
+
+  ${elasticoVita && Object.keys(elasticoVita.misure).length > 0 ? `
+  <div class="section">
+    <div class="section-title">Elastico vita</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Taglia</th>
+          <th style="text-align:right">Lunghezza (cm)</th>
+          <th style="text-align:right">Altezza (cm)</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${Object.entries(elasticoVita.misure).map(([taglia, lunghezza]) => `
+          <tr>
+            <td><strong>${taglia}</strong></td>
+            <td style="text-align:right">${lunghezza}</td>
+            <td style="text-align:right">${elasticoVita.altezza}</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+  </div>
+  ` : ""}
 
   ${scheda.noteProduzione || scheda.tolleranzaTaglio ? `
   <div class="section">

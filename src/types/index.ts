@@ -13,6 +13,12 @@ export interface QuantitaTaglia {
   [taglia: string]: number;
 }
 
+export interface ElasticoVita {
+  materialeId: string;
+  altezza: number;
+  misure: Record<string, number>;
+}
+
 export interface ConsumoMateriale {
   materialeId: string;
   nomeM: string;
@@ -61,6 +67,7 @@ export interface SchedaCompleta {
   packaging?: string | null;
   allegati?: string[] | null;
   consumoMateriale?: ConsumoMateriale[] | null;
+  elasticoVita?: ElasticoVita | null;
   costoLavorazione?: number | null;
   costoTaglio?: number | null;
   costoCucitura?: number | null;
