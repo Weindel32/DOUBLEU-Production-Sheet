@@ -32,6 +32,7 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
   const [savedAt, setSavedAt] = useState(formatOra(scheda.updatedAt));
   const [showStatoMenu, setShowStatoMenu] = useState(false);
   const [noteRapide, setNoteRapide] = useState(scheda.noteRapide || "");
+  const [schedaState, setSchedaState] = useState<SchedaCompleta>(scheda);
 
   const statoInfo = STATI_SCHEDA.find((s) => s.value === statoCorrente);
 
@@ -41,6 +42,7 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
+    setSchedaState((prev) => ({ ...prev, ...data }));
     setSavedAt(formatOra(new Date()));
   }, [scheda.id]);
 
@@ -61,9 +63,9 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        ...scheda,
-        codice: `${scheda.codice}-COPIA`,
-        nomeArticolo: `${scheda.nomeArticolo} (Copia)`,
+        ...schedaState,
+        codice: `${schedaState.codice}-COPIA`,
+        nomeArticolo: `${schedaState.nomeArticolo} (Copia)`,
         stato: "bozza",
         versione: "1.0",
       }),
@@ -72,7 +74,7 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
     window.location.href = `/schede/${nuova.id}`;
   };
 
-  const quantita = scheda.quantitaTaglia || {};
+  const quantita = schedaState.quantitaTaglia || {};
   const totale = calcolaTotaleQuantita(quantita as Record<string, number>);
 
   const prossimeAzioni: Record<StatoScheda, string> = {
@@ -189,16 +191,16 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
           {/* Tab content */}
           <div className="p-6">
             {activeTab === "articolo" && (
-              <TabArticolo scheda={scheda} onSave={handleSave} clienti={clientiDisponibili} materiali={materialiDisponibili} />
+              <TabArticolo scheda={schedaState} onSave={handleSave} clienti={clientiDisponibili} materiali={materialiDisponibili} />
             )}
             {activeTab === "personalizzazione" && (
-              <TabPersonalizzazione scheda={scheda} onSave={handleSave} loghiDisponibili={loghiDisponibili} />
+              <TabPersonalizzazione scheda={schedaState} onSave={handleSave} loghiDisponibili={loghiDisponibili} />
             )}
             {activeTab === "misure" && (
-              <TabMisure scheda={scheda} onSave={handleSave} />
+              <TabMisure scheda={schedaState} onSave={handleSave} />
             )}
             {activeTab === "produzione" && (
-              <TabProduzione scheda={scheda} onSave={handleSave} materialiDisponibili={materialiDisponibili} />
+              <TabProduzione scheda={schedaState} onSave={handleSave} materialiDisponibili={materialiDisponibili} />
             )}
           </div>
         </div>

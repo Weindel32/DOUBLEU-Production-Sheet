@@ -5,7 +5,7 @@ import { PlusCircle, Trash2, Upload, Info, Ruler } from "lucide-react";
 import type { SchedaCompleta, ConsumoMateriale, ElasticoVita } from "@/types";
 import { calcolaTotaleQuantita } from "@/lib/utils";
 
-const CATEGORIE_ELASTICO = ["Pantaloncino", "Pantaloni", "Tuta"];
+const CATEGORIE_ELASTICO = ["Pantaloncino", "Pantaloni", "Tuta", "Gonna"];
 
 interface MaterialeDisp {
   id: string;
