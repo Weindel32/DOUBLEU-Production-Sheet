@@ -9,11 +9,31 @@ export async function GET() {
   return NextResponse.json(schede);
 }
 
+const CATEGORIA_PREFISSO: Record<string, string> = {
+  "T-Shirt": "TS", "Felpa": "FE", "Hoodie": "HO", "Zip Hoodie": "ZH",
+  "Sweatshirt": "SW", "Sweatpants": "SP", "Pantaloncino": "PN",
+  "Pantaloni": "PT", "Polo": "PO", "Short": "SH", "Skirt": "SK",
+  "Dress": "DR", "Canotta": "CA", "Tuta": "TU", "Giacca": "GI",
+  "Gilet": "GL", "Cappello": "CP", "Calze": "CZ", "Altro": "AL",
+};
+
+async function generaCodice(categoria: string): Promise<string> {
+  const now = new Date();
+  const anno = String(now.getFullYear()).slice(-2);
+  const mese = String(now.getMonth() + 1).padStart(2, "0");
+  const prefisso = CATEGORIA_PREFISSO[categoria] || categoria.substring(0, 2).toUpperCase();
+  const base = `${prefisso}-${anno}${mese}`;
+  const count = await prisma.scheda.count({ where: { codice: { startsWith: base } } });
+  const progressivo = String(count + 1).padStart(3, "0");
+  return `${base}-${progressivo}`;
+}
+
 export async function POST(req: NextRequest) {
   const body = await req.json();
+  const codice = await generaCodice(body.categoria || "Altro");
   const scheda = await prisma.scheda.create({
     data: {
-      codice: body.codice,
+      codice,
       nomeArticolo: body.nomeArticolo,
       stato: body.stato || "bozza",
       versione: body.versione || "1.0",

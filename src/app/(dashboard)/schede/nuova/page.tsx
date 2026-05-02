@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { CATEGORIE, generaCodiceScheda } from "@/lib/utils";
+import { CATEGORIE } from "@/lib/utils";
 
 function NuovaSchedaForm() {
   const router = useRouter();
@@ -37,11 +37,10 @@ function NuovaSchedaForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const codice = generaCodiceScheda(form.categoria || "ART");
     const res = await fetch("/api/schede", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, codice, stato: "bozza", versione: "1.0" }),
+      body: JSON.stringify({ ...form, stato: "bozza", versione: "1.0" }),
     });
     const scheda = await res.json();
     router.push(`/schede/${scheda.id}`);
