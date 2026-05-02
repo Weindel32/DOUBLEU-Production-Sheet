@@ -189,7 +189,7 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
           {/* Tab content */}
           <div className="p-6">
             {activeTab === "articolo" && (
-              <TabArticolo scheda={scheda} onSave={handleSave} clienti={clientiDisponibili} />
+              <TabArticolo scheda={scheda} onSave={handleSave} clienti={clientiDisponibili} materiali={materialiDisponibili} />
             )}
             {activeTab === "personalizzazione" && (
               <TabPersonalizzazione scheda={scheda} onSave={handleSave} loghiDisponibili={loghiDisponibili} />

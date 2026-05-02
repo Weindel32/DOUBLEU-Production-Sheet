@@ -9,9 +9,10 @@ interface Props {
   scheda: SchedaCompleta;
   onSave: (data: Partial<SchedaCompleta>) => Promise<void>;
   clienti: { id: string; nome: string }[];
+  materiali: { id: string; nome: string; tipo: string; costoMetro: number | null }[];
 }
 
-export default function TabArticolo({ scheda, onSave, clienti }: Props) {
+export default function TabArticolo({ scheda, onSave, clienti, materiali }: Props) {
   const [editing, setEditing] = useState<string | null>(null);
   const infoGeneraliFirstField = "nomeArticolo";
   const specificheProdottoFirstField = "tessutoPrincipale";
@@ -146,12 +147,11 @@ export default function TabArticolo({ scheda, onSave, clienti }: Props) {
             <Edit3 size={14} className="text-gray-400 hover:text-blue-600 transition-colors" />
           </button>
         </div>
-        <Field label="Tessuto principale" field="tessutoPrincipale" options={[
-          "Poliammide + Elastane",
-          "100% Poliestere",
-          "100% Cotone",
-          "60% Cotone + 40% Poliestere",
-        ]} />
+        <Field label="Tessuto principale" field="tessutoPrincipale" options={
+          materiali.length > 0
+            ? materiali.map((m) => m.nome)
+            : ["Poliammide + Elastane", "100% Poliestere", "100% Cotone", "60% Cotone + 40% Poliestere"]
+        } />
         <Field label="Peso tessuto" field="pesoTessuto" />
         <Field label="Altezza tessuto" field="altezzaTessuto" />
         <div className="flex items-center py-2 border-b border-gray-100 gap-4">
