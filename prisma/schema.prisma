@@ -61,6 +61,7 @@ model Scheda {
   // Specifiche prodotto
   tessutoPrincipale String?
   pesoTessuto       String?
+  altezzaTessuto    String?
   coloreBase        String?
   coloriSecondari   String?
   collo             String?

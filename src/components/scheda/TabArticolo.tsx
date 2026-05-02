@@ -24,6 +24,7 @@ export default function TabArticolo({ scheda, onSave, clienti }: Props) {
     utilizzo: scheda.utilizzo || "",
     tessutoPrincipale: scheda.tessutoPrincipale || "",
     pesoTessuto: scheda.pesoTessuto || "",
+    altezzaTessuto: scheda.altezzaTessuto || "",
     coloreBase: scheda.coloreBase || "",
     coloriSecondari: scheda.coloriSecondari || "",
     collo: scheda.collo || "",
@@ -141,8 +142,14 @@ export default function TabArticolo({ scheda, onSave, clienti }: Props) {
             <Edit3 size={14} className="text-gray-400 hover:text-blue-600 transition-colors" />
           </button>
         </div>
-        <Field label="Tessuto principale" field="tessutoPrincipale" />
+        <Field label="Tessuto principale" field="tessutoPrincipale" options={[
+          "Poliammide + Elastane",
+          "100% Poliestere",
+          "100% Cotone",
+          "60% Cotone + 40% Poliestere",
+        ]} />
         <Field label="Peso tessuto" field="pesoTessuto" />
+        <Field label="Altezza tessuto" field="altezzaTessuto" />
         <div className="flex items-center py-2 border-b border-gray-100 gap-4">
           <span className="text-sm text-gray-400 w-32 flex-shrink-0">Colore base</span>
           <div className="flex items-center gap-2">
@@ -171,7 +178,7 @@ export default function TabArticolo({ scheda, onSave, clienti }: Props) {
           />
         </div>
         <Field label="Collo" field="collo" options={["Girocollo", "V-neck", "Polo", "Zip", "Cappuccio"]} />
-        <Field label="Maniche" field="maniche" options={["Corte", "Lunghe", "Senza maniche", "3/4"]} />
+        <Field label="Maniche" field="maniche" options={["Corte", "Lunghe", "Senza maniche", "3/4", "Raglan", "Giro Manica"]} />
         <div className="flex items-start py-2 gap-4">
           <span className="text-sm text-gray-400 w-32 flex-shrink-0 mt-0.5">Note</span>
           <textarea

@@ -38,6 +38,7 @@ export interface SchedaCompleta {
   immagini?: string[] | null;
   tessutoPrincipale?: string | null;
   pesoTessuto?: string | null;
+  altezzaTessuto?: string | null;
   coloreBase?: string | null;
   coloriSecondari?: string | null;
   collo?: string | null;

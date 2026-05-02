@@ -1,0 +1,1 @@
+ALTER TABLE "Scheda" ADD COLUMN IF NOT EXISTS "altezzaTessuto" TEXT;
