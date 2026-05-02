@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { CATEGORIE, generaCodiceScheda } from "@/lib/utils";
 
-export default function NuovaSchedaPage() {
+function NuovaSchedaForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     nomeArticolo: "",
@@ -17,6 +18,21 @@ export default function NuovaSchedaPage() {
     vestibilita: "Regular Fit",
     genere: "Unisex",
   });
+
+  useEffect(() => {
+    const codice = searchParams.get("codice");
+    const nome = searchParams.get("nome");
+    const categoria = searchParams.get("categoria");
+    const fascia = searchParams.get("fascia");
+    if (nome) {
+      setForm((f) => ({
+        ...f,
+        nomeArticolo: codice ? `${codice} – ${nome}` : nome,
+        categoria: categoria || f.categoria,
+        genere: fascia === "Kids" ? "Junior" : fascia === "Donna" ? "Donna" : fascia === "Uomo" ? "Uomo" : "Unisex",
+      }));
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,5 +136,13 @@ export default function NuovaSchedaPage() {
         </div>
       </form>
     </div>
+  );
+}
+
+export default function NuovaSchedaPage() {
+  return (
+    <Suspense>
+      <NuovaSchedaForm />
+    </Suspense>
   );
 }

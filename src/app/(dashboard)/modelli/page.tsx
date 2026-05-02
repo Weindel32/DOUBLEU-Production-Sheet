@@ -1,42 +1,199 @@
-import { BookOpen } from "lucide-react";
+"use client";
+
+import { useRouter } from "next/navigation";
+
+type Modello = { codice: string; descrizione: string; fascia: string };
+type Categoria = { nome: string; articoli: Modello[] };
+
+const CATALOGO: Categoria[] = [
+  {
+    nome: "T-Shirt PRF",
+    articoli: [
+      { codice: "DUSP 09", descrizione: "T-Shirt PRF", fascia: "Uomo" },
+      { codice: "DUSP 19", descrizione: "T-Shirt PRF", fascia: "Kids" },
+      { codice: "DUSP 013", descrizione: "T-Shirt Raglan", fascia: "Adulto" },
+      { codice: "DUSP 207", descrizione: "T-Shirt 3 col.", fascia: "Adulto" },
+      { codice: "DUSP 014", descrizione: "T-Shirt 3 col.", fascia: "Kids" },
+      { codice: "DUSP 215", descrizione: "T-Shirt CLLG", fascia: "Adulto" },
+      { codice: "DUSP 216-V", descrizione: "T-Shirt collo V", fascia: "Adulto" },
+    ],
+  },
+  {
+    nome: "T-Shirt WS",
+    articoli: [
+      { codice: "DUSP 011", descrizione: "T-Shirt Ws micro", fascia: "Donna" },
+      { codice: "DUSP 38", descrizione: "T-Shirt Ws micro", fascia: "Kids" },
+      { codice: "DUSP 140", descrizione: "Canotta Ws", fascia: "Donna" },
+    ],
+  },
+  {
+    nome: "T-Shirt COT",
+    articoli: [
+      { codice: "DUSP 31", descrizione: "T-Shirt Cot", fascia: "Adulto" },
+      { codice: "DUSP 32", descrizione: "T-Shirt Cot", fascia: "Kids" },
+      { codice: "DUSP 27", descrizione: "T-Shirt Hoodie", fascia: "Adulto" },
+      { codice: "DUSP 27B", descrizione: "T-Shirt Hoodie", fascia: "Kids" },
+    ],
+  },
+  {
+    nome: "Polo",
+    articoli: [
+      { codice: "DUSP 139", descrizione: "Polo senza bottoni", fascia: "Adulto" },
+    ],
+  },
+  {
+    nome: "Hoodie",
+    articoli: [
+      { codice: "DUSP 01", descrizione: "Hoodie GM", fascia: "Adulto" },
+      { codice: "DUSP 04", descrizione: "Hoodie GM", fascia: "Kids" },
+      { codice: "DUSP 02", descrizione: "Hoodie Raglan", fascia: "Adulto" },
+      { codice: "DUSP 03", descrizione: "Hoodie Raglan", fascia: "Kids" },
+      { codice: "DUSP 136", descrizione: "Hoodie 2 col.", fascia: "Adulto" },
+      { codice: "DUSP 137", descrizione: "Hoodie 2 col.", fascia: "Kids" },
+      { codice: "DUSP M012", descrizione: "Hoodie 3 col.", fascia: "Adulto" },
+      { codice: "DUSP M013", descrizione: "Hoodie 3 col.", fascia: "Kids" },
+      { codice: "DUSP 206", descrizione: "Hoodie marsupio", fascia: "Adulto" },
+      { codice: "DUSP 214", descrizione: "Hoodie SLIT", fascia: "Adulto" },
+    ],
+  },
+  {
+    nome: "Zip Hoodie",
+    articoli: [
+      { codice: "DUSP 24", descrizione: "Zip Hoodie GM", fascia: "Adulto" },
+      { codice: "DUSP 216", descrizione: "Zip Hoodie GM", fascia: "Kids" },
+      { codice: "DUSP 25", descrizione: "Zip Hoodie Raglan", fascia: "Adulto" },
+      { codice: "DUSP 210", descrizione: "Zip Hoodie Raglan", fascia: "Kids" },
+      { codice: "DUSP 26", descrizione: "Zip Hoodie 3 col.", fascia: "Adulto" },
+      { codice: "DUSP 29", descrizione: "Zip Hoodie 3 col.", fascia: "Kids" },
+      { codice: "DUSP 22", descrizione: "Zip Hoodie RL", fascia: "Adulto" },
+      { codice: "DUSP 28", descrizione: "Zip Hoodie CLLG", fascia: "Adulto" },
+      { codice: "DUSP 30", descrizione: "Zip Hoodie", fascia: "Donna" },
+      { codice: "DUSP 209", descrizione: "Zip Hoodie Three", fascia: "Adulto" },
+    ],
+  },
+  {
+    nome: "Sweatshirt",
+    articoli: [
+      { codice: "DUSP 20", descrizione: "Sweatshirt Raglan", fascia: "Adulto" },
+      { codice: "DUSP 211", descrizione: "Sweatshirt Raglan", fascia: "Kids" },
+      { codice: "DUSP 202", descrizione: "Sweatshirt 2 col. R-arm", fascia: "Adulto" },
+      { codice: "DUSP 203", descrizione: "Sweatshirt 2 col. R-arm", fascia: "Kids" },
+      { codice: "DUSP 138", descrizione: "Sweatshirt Large Stripe", fascia: "Adulto" },
+      { codice: "DUSP 217", descrizione: "Sweatshirt", fascia: "Donna" },
+      { codice: "DUSP M15", descrizione: "Sweatshirt triangolino", fascia: "Adulto" },
+    ],
+  },
+  {
+    nome: "Sweatpants",
+    articoli: [
+      { codice: "DUSP 05", descrizione: "Sweatpants", fascia: "Adulto" },
+      { codice: "DUSP 07", descrizione: "Sweatpants", fascia: "Kids" },
+      { codice: "DUSP 201", descrizione: "Sweatpants 3 col.", fascia: "Adulto" },
+      { codice: "DUSP 204", descrizione: "Sweatpants 2 col.", fascia: "Kids" },
+    ],
+  },
+  {
+    nome: "Short",
+    articoli: [
+      { codice: "DUSP 33", descrizione: "Short cotone", fascia: "Uomo" },
+      { codice: "DUSP 39", descrizione: "Short cotone", fascia: "Kids" },
+      { codice: "DUSP 08", descrizione: "Short stripe", fascia: "Uomo" },
+      { codice: "DUSP 014-S", descrizione: "Short stripe", fascia: "Kids" },
+      { codice: "DUSP 18", descrizione: "Short cotone", fascia: "Donna" },
+      { codice: "DUSP 34", descrizione: "Short DDR", fascia: "Donna" },
+      { codice: "DUSP 212", descrizione: "Short WDL", fascia: "Adulto" },
+      { codice: "DUSP 213", descrizione: "Short SLIT", fascia: "Uomo" },
+      { codice: "DUSP 200", descrizione: "Short triangolo", fascia: "Uomo" },
+      { codice: "DUSP 205", descrizione: "Short triangolo", fascia: "Kids" },
+    ],
+  },
+  {
+    nome: "Skirt",
+    articoli: [
+      { codice: "DUSP 13", descrizione: "Skirt", fascia: "Adulto" },
+      { codice: "DUSP 17", descrizione: "Skirt", fascia: "Kids" },
+    ],
+  },
+  {
+    nome: "Dress",
+    articoli: [
+      { codice: "DUSP 010", descrizione: "Vestitino Ws", fascia: "Donna" },
+      { codice: "DUSP 014-D", descrizione: "Completino", fascia: "Kids" },
+      { codice: "DUSP 208", descrizione: "Vestitino", fascia: "Kids" },
+    ],
+  },
+];
+
+const FASCIA_STYLE: Record<string, string> = {
+  Adulto: "bg-blue-100 text-blue-700",
+  Uomo: "bg-indigo-100 text-indigo-700",
+  Donna: "bg-pink-100 text-pink-700",
+  Kids: "bg-orange-100 text-orange-700",
+};
 
 export default function ModelliPage() {
-  const modelli = [
-    { nome: "T-Shirt Base", categoria: "T-Shirt", vestibilita: "Regular Fit", tessuto: "100% Poliestere, 140 g/m²" },
-    { nome: "Felpa Allenamento", categoria: "Felpa", vestibilita: "Regular Fit", tessuto: "80% Cotone, 20% Poliestere" },
-    { nome: "Pantaloncino Gara", categoria: "Pantaloncino", vestibilita: "Athletic Fit", tessuto: "100% Poliestere, 120 g/m²" },
-    { nome: "Polo Club", categoria: "Polo", vestibilita: "Regular Fit", tessuto: "100% Poliestere, 160 g/m²" },
-  ];
+  const router = useRouter();
+
+  const creaScheda = (m: Modello, categoria: string) => {
+    const params = new URLSearchParams({
+      codice: m.codice,
+      nome: m.descrizione,
+      categoria,
+      fascia: m.fascia,
+    });
+    router.push(`/schede/nuova?${params.toString()}`);
+  };
+
+  const totale = CATALOGO.reduce((s, c) => s + c.articoli.length, 0);
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="p-6 space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-800">Modelli base</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Template predefiniti per avviare nuove schede rapidamente</p>
+        <p className="text-sm text-gray-500 mt-0.5">
+          Catalogo DUSP — {totale} articoli · Rev. Aprile 2026
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {modelli.map((m) => (
-          <div key={m.nome} className="card hover:shadow-md transition-shadow cursor-pointer group">
-            <div className="flex items-center justify-between mb-3">
-              <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
-                <BookOpen size={18} className="text-blue-600" />
-              </div>
-              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">{m.categoria}</span>
+      <div className="space-y-6">
+        {CATALOGO.map((cat) => (
+          <div key={cat.nome} className="card p-0 overflow-hidden">
+            <div className="px-4 py-3 bg-gray-800 text-white">
+              <h2 className="font-semibold text-sm uppercase tracking-wide">{cat.nome}</h2>
             </div>
-            <div className="font-semibold text-gray-800 mb-1 group-hover:text-blue-700 transition-colors">{m.nome}</div>
-            <div className="text-sm text-gray-500 mb-0.5">{m.vestibilita}</div>
-            <div className="text-xs text-gray-400">{m.tessuto}</div>
-            <div className="mt-3 pt-3 border-t border-gray-100">
-              <span className="text-xs text-blue-600 font-medium">Usa questo modello →</span>
-            </div>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-amber-700/10 border-b border-amber-200">
+                  <th className="text-left px-4 py-2 text-xs font-semibold text-amber-800 uppercase tracking-wide">Codice</th>
+                  <th className="text-left px-4 py-2 text-xs font-semibold text-amber-800 uppercase tracking-wide">Descrizione</th>
+                  <th className="text-left px-4 py-2 text-xs font-semibold text-amber-800 uppercase tracking-wide">Fascia</th>
+                  <th className="px-4 py-2" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {cat.articoli.map((m) => (
+                  <tr key={m.codice} className="hover:bg-gray-50 group">
+                    <td className="px-4 py-2.5 font-mono text-xs font-semibold text-gray-700">{m.codice}</td>
+                    <td className="px-4 py-2.5 text-gray-800">{m.descrizione}</td>
+                    <td className="px-4 py-2.5">
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${FASCIA_STYLE[m.fascia] ?? "bg-gray-100 text-gray-600"}`}>
+                        {m.fascia}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2.5 text-right">
+                      <button
+                        onClick={() => creaScheda(m, cat.nome)}
+                        className="text-xs text-blue-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity hover:underline"
+                      >
+                        Usa modello →
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         ))}
-      </div>
-
-      <div className="card border-2 border-dashed border-gray-200 text-center py-8">
-        <BookOpen size={32} className="mx-auto mb-2 text-gray-300" />
-        <p className="text-gray-400 text-sm">I modelli personalizzati saranno disponibili presto</p>
       </div>
     </div>
   );
