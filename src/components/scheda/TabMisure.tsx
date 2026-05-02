@@ -142,42 +142,42 @@ export default function TabMisure({ scheda, onSave }: Props) {
           <div className="px-4 py-2 text-xs text-gray-400 italic">Clicca sui valori per modificarli</div>
         </div>
 
-        {/* Quantità per taglia */}
+        {/* Quantità per taglia — size run orizzontale */}
         <div className="card p-0 overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-100">
+          <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
             <h3 className="font-semibold text-gray-700 text-sm uppercase tracking-wide">Quantità per taglia</h3>
+            <span className="text-xs text-blue-700 font-semibold">Totale: {totale} pz</span>
           </div>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-gray-50">
-                <th className="text-left px-4 py-2 text-gray-500 font-medium text-xs">Taglia</th>
-                <th className="text-right px-4 py-2 text-gray-500 font-medium text-xs">Quantità</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {tagliAttive.map((taglia) => (
-                <tr key={taglia}>
-                  <td className="px-4 py-1.5 font-medium text-gray-700 text-sm">{taglia}</td>
-                  <td className="px-4 py-1">
-                    <input
-                      type="number"
-                      min="0"
-                      value={quantitaTaglia[taglia] ?? ""}
-                      onChange={(e) => aggiornaQuantita(taglia, e.target.value)}
-                      onBlur={salva}
-                      className="w-20 text-right text-sm text-gray-700 border border-transparent focus:border-blue-300 rounded px-2 py-0.5 outline-none ml-auto block"
-                      placeholder="0"
-                    />
-                  </td>
+          <div className="overflow-x-auto px-4 py-4">
+            <table className="text-sm">
+              <thead>
+                <tr>
+                  {tagliAttive.map((t) => (
+                    <th key={t} className="text-center px-3 py-1 text-xs font-semibold text-gray-500 min-w-[52px]">{t}</th>
+                  ))}
+                  <th className="text-center px-3 py-1 text-xs font-semibold text-blue-700 min-w-[52px]">TOT</th>
                 </tr>
-              ))}
-              <tr className="bg-gray-50 font-semibold">
-                <td className="px-4 py-2 text-gray-700 text-sm">TOTALE</td>
-                <td className="px-4 py-2 text-right text-blue-700 text-sm">{totale} pz</td>
-              </tr>
-            </tbody>
-          </table>
-          <div className="px-4 py-2 text-xs text-gray-400 italic">Clicca sui valori per modificarli</div>
+              </thead>
+              <tbody>
+                <tr>
+                  {tagliAttive.map((taglia) => (
+                    <td key={taglia} className="text-center px-2 py-1">
+                      <input
+                        type="number"
+                        min="0"
+                        value={quantitaTaglia[taglia] ?? ""}
+                        onChange={(e) => aggiornaQuantita(taglia, e.target.value)}
+                        onBlur={salva}
+                        className="w-12 text-center text-sm font-medium text-gray-700 border border-gray-200 focus:border-blue-400 rounded-lg px-1 py-1 outline-none"
+                        placeholder="0"
+                      />
+                    </td>
+                  ))}
+                  <td className="text-center px-3 py-1 font-bold text-blue-700 text-sm">{totale}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

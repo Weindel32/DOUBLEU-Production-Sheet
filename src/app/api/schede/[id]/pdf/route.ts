@@ -181,11 +181,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
     ${taglie.length > 0 ? `
     <div class="section">
-      <div class="section-title">Quantità per taglia</div>
-      <table>
-        <tr><th>Taglia</th><th style="text-align:right">Quantità</th></tr>
-        ${taglie.map((t) => `<tr><td>${t}</td><td style="text-align:right">${quantitaTaglia[t] || 0}</td></tr>`).join("")}
-        <tr class="totale-row"><td>TOTALE</td><td style="text-align:right">${totalePezzi} pz</td></tr>
+      <div class="section-title">Quantità per taglia — totale: ${totalePezzi} pz</div>
+      <table style="border-collapse:collapse;">
+        <tr>
+          ${taglie.map((t) => `<th style="text-align:center;padding:5px 10px;background:#f4f6f9;font-size:10px;border:1px solid #e5e7eb;">${t}</th>`).join("")}
+          <th style="text-align:center;padding:5px 10px;background:#1a2236;color:white;font-size:10px;border:1px solid #1a2236;">TOT</th>
+        </tr>
+        <tr>
+          ${taglie.map((t) => `<td style="text-align:center;padding:6px 10px;font-weight:700;font-size:12px;border:1px solid #e5e7eb;">${quantitaTaglia[t] || 0}</td>`).join("")}
+          <td style="text-align:center;padding:6px 10px;font-weight:800;font-size:12px;background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe;">${totalePezzi}</td>
+        </tr>
       </table>
     </div>
     ` : ""}
