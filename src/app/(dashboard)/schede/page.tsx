@@ -1,8 +1,9 @@
 export const dynamic = "force-dynamic";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { PlusCircle, FileText, Search } from "lucide-react";
+import { PlusCircle, FileText } from "lucide-react";
 import { formatData, STATI_SCHEDA } from "@/lib/utils";
+import SchedaRowMenu from "@/components/scheda/SchedaRowMenu";
 
 export default async function SchedePage() {
   const schede = await prisma.scheda.findMany({
@@ -61,6 +62,7 @@ export default async function SchedePage() {
                 <th className="text-left px-4 py-3 text-gray-500 font-medium">Stato</th>
                 <th className="text-left px-4 py-3 text-gray-500 font-medium">Versione</th>
                 <th className="text-left px-4 py-3 text-gray-500 font-medium">Ultima modifica</th>
+                <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -81,6 +83,9 @@ export default async function SchedePage() {
                     </td>
                     <td className="px-4 py-3 text-gray-500">{s.versione}</td>
                     <td className="px-4 py-3 text-gray-400">{formatData(s.updatedAt)}</td>
+                    <td className="px-4 py-3 text-right">
+                      <SchedaRowMenu id={s.id} nome={s.nomeArticolo} />
+                    </td>
                   </tr>
                 );
               })}
