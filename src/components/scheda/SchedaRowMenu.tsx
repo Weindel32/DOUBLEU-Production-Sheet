@@ -11,16 +11,30 @@ interface Props {
 
 export default function SchedaRowMenu({ id, nome }: Props) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState({ top: 0, right: 0 });
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (
+        menuRef.current && !menuRef.current.contains(e.target as Node) &&
+        btnRef.current && !btnRef.current.contains(e.target as Node)
+      ) setOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  const toggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setPos({ top: rect.bottom + window.scrollY + 4, right: window.innerWidth - rect.right });
+    }
+    setOpen((o) => !o);
+  };
 
   const elimina = async () => {
     setOpen(false);
@@ -42,15 +56,20 @@ export default function SchedaRowMenu({ id, nome }: Props) {
   };
 
   return (
-    <div className="relative" ref={ref}>
+    <>
       <button
-        onClick={(e) => { e.stopPropagation(); setOpen((o) => !o); }}
+        ref={btnRef}
+        onClick={toggle}
         className="p-1.5 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
       >
         <MoreHorizontal size={16} />
       </button>
       {open && (
-        <div className="absolute right-0 top-8 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-20 overflow-hidden">
+        <div
+          ref={menuRef}
+          style={{ position: "fixed", top: pos.top, right: pos.right, zIndex: 50 }}
+          className="w-40 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden"
+        >
           <button
             onClick={() => router.push(`/schede/${id}`)}
             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
@@ -71,6 +90,6 @@ export default function SchedaRowMenu({ id, nome }: Props) {
           </button>
         </div>
       )}
-    </div>
+    </>
   );
 }
