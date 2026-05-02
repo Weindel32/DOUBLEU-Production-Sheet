@@ -62,6 +62,10 @@ export interface SchedaCompleta {
   allegati?: string[] | null;
   consumoMateriale?: ConsumoMateriale[] | null;
   costoLavorazione?: number | null;
+  costoTaglio?: number | null;
+  costoCucitura?: number | null;
+  costoStampa?: number | null;
+  costoRicamo?: number | null;
   prezzoVendita?: number | null;
   noteRapide?: string | null;
   createdBy: string;

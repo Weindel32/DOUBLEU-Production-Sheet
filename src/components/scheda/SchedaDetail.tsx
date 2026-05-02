@@ -15,7 +15,7 @@ interface Props {
   scheda: SchedaCompleta;
   clientiDisponibili: { id: string; nome: string }[];
   loghiDisponibili: { id: string; nome: string; file: string; tipo: string }[];
-  materialiDisponibili: { id: string; nome: string; tipo: string; costoMetro: number | null }[];
+  materialiDisponibili: { id: string; nome: string; tipo: string; costoMetro: number | null; unitaMisura: string | null; peso: string | null; larghezza: string | null }[];
 }
 
 const TABS = [

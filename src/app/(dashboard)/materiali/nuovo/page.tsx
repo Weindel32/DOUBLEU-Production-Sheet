@@ -21,6 +21,8 @@ export default function NuovoMaterialePage() {
     tipo: "",
     composizione: "",
     peso: "",
+    larghezza: "",
+    unitaMisura: "metro",
     fornitore: "",
     costoMetro: "",
     note: "",
@@ -93,17 +95,21 @@ export default function NuovoMaterialePage() {
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-sm text-gray-600 block mb-1">Peso (g/m²)</label>
-            <input
-              type="text"
-              value={form.peso}
-              onChange={(e) => set("peso", e.target.value)}
-              placeholder="es. 180 g/m²"
+            <label className="text-sm text-gray-600 block mb-1">Unità di misura costo</label>
+            <select
+              value={form.unitaMisura}
+              onChange={(e) => set("unitaMisura", e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-blue-400 outline-none"
-            />
+            >
+              <option value="metro">Al metro (€/m)</option>
+              <option value="kg">Al kg (€/kg)</option>
+              <option value="pz">Al pezzo (€/pz)</option>
+            </select>
           </div>
           <div>
-            <label className="text-sm text-gray-600 block mb-1">Costo al metro (€)</label>
+            <label className="text-sm text-gray-600 block mb-1">
+              {form.unitaMisura === "kg" ? "Costo al kg (€)" : form.unitaMisura === "pz" ? "Costo al pezzo (€)" : "Costo al metro (€)"}
+            </label>
             <input
               type="number"
               step="0.01"
@@ -111,6 +117,29 @@ export default function NuovoMaterialePage() {
               value={form.costoMetro}
               onChange={(e) => set("costoMetro", e.target.value)}
               placeholder="es. 4.50"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-blue-400 outline-none"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-sm text-gray-600 block mb-1">Peso (g/m²)</label>
+            <input
+              type="text"
+              value={form.peso}
+              onChange={(e) => set("peso", e.target.value)}
+              placeholder="es. 180"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-blue-400 outline-none"
+            />
+          </div>
+          <div>
+            <label className="text-sm text-gray-600 block mb-1">Larghezza tessuto (cm)</label>
+            <input
+              type="text"
+              value={form.larghezza}
+              onChange={(e) => set("larghezza", e.target.value)}
+              placeholder="es. 150"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-blue-400 outline-none"
             />
           </div>

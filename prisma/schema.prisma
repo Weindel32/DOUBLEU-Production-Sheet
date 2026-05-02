@@ -33,6 +33,8 @@ model Materiale {
   tipo         String
   composizione String?
   peso         String?
+  larghezza    String?
+  unitaMisura  String?
   fornitore    String?
   costoMetro   Float?
   note         String?
@@ -95,6 +97,10 @@ model Scheda {
   // Costi interni
   consumoMateriale String?
   costoLavorazione Float?
+  costoTaglio      Float?
+  costoCucitura    Float?
+  costoStampa      Float?
+  costoRicamo      Float?
   prezzoVendita    Float?
 
   noteRapide String?

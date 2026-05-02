@@ -11,7 +11,8 @@ export async function POST(req: NextRequest) {
   const materiale = await prisma.materiale.create({
     data: {
       nome: body.nome, tipo: body.tipo, composizione: body.composizione,
-      peso: body.peso, fornitore: body.fornitore, costoMetro: body.costoMetro, note: body.note,
+      peso: body.peso, larghezza: body.larghezza, unitaMisura: body.unitaMisura,
+      fornitore: body.fornitore, costoMetro: body.costoMetro, note: body.note,
     },
   });
   return NextResponse.json(materiale, { status: 201 });
