@@ -16,11 +16,11 @@ export default async function DashboardPage() {
   const approvate = await prisma.scheda.count({ where: { stato: "approvata" } });
 
   const stats = [
-    { label: "Schede totali", value: totaleSchede, icon: FileText, color: "text-blue-600 bg-blue-50" },
-    { label: "In produzione", value: inProduzione, icon: TrendingUp, color: "text-green-600 bg-green-50" },
-    { label: "Approvate", value: approvate, icon: FileText, color: "text-purple-600 bg-purple-50" },
-    { label: "Clienti / Club", value: clienti, icon: Users, color: "text-orange-600 bg-orange-50" },
-    { label: "Materiali", value: materiali, icon: Package, color: "text-gray-600 bg-gray-100" },
+    { label: "Schede totali", value: totaleSchede, icon: FileText, href: "/schede", bg: "bg-blue-700", text: "text-white", sub: "text-blue-200" },
+    { label: "In produzione", value: inProduzione, icon: TrendingUp, href: "/schede", bg: "bg-green-600", text: "text-white", sub: "text-green-200" },
+    { label: "Approvate", value: approvate, icon: FileText, href: "/schede", bg: "bg-purple-600", text: "text-white", sub: "text-purple-200" },
+    { label: "Clienti / Club", value: clienti, icon: Users, href: "/clienti", bg: "bg-orange-500", text: "text-white", sub: "text-orange-200" },
+    { label: "Materiali", value: materiali, icon: Package, href: "/materiali", bg: "bg-gray-700", text: "text-white", sub: "text-gray-400" },
   ];
 
   return (
@@ -33,15 +33,15 @@ export default async function DashboardPage() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         {stats.map((s) => (
-          <div key={s.label} className="card flex items-center gap-4">
-            <div className={`p-2 rounded-lg ${s.color}`}>
+          <Link key={s.label} href={s.href} className={`${s.bg} rounded-xl p-4 flex flex-col gap-3 hover:opacity-90 transition-opacity cursor-pointer`}>
+            <div className={`${s.text} opacity-80`}>
               <s.icon size={20} />
             </div>
             <div>
-              <div className="text-2xl font-bold text-gray-800">{s.value}</div>
-              <div className="text-xs text-gray-500">{s.label}</div>
+              <div className={`text-3xl font-bold ${s.text}`}>{s.value}</div>
+              <div className={`text-xs mt-0.5 ${s.sub}`}>{s.label}</div>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
 
