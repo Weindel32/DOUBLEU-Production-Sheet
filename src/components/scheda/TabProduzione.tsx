@@ -218,25 +218,26 @@ export default function TabProduzione({ scheda, onSave, materialiDisponibili }: 
                 const kgPerM = mat ? calcolaKgPerMetro(mat) : null;
                 const costoRiga = calcolaCostoMateriale(c, mat);
                 return (
-                  <div key={i} className="space-y-1">
+                  <div key={i} className="bg-gray-50 rounded-lg px-3 py-2 space-y-1.5">
+                    {/* Riga 1: materiale + consumo + elimina */}
                     <div className="flex items-center gap-2">
                       <select
                         value={c.materialeId}
                         onChange={(e) => aggiornaConsumo(i, "materialeId", e.target.value)}
                         onBlur={() => salva()}
-                        className="flex-1 text-xs border border-gray-200 rounded px-2 py-1"
+                        className="flex-1 text-xs border border-gray-200 rounded px-2 py-1 bg-white"
                       >
                         {materialiDisponibili.map((m) => (
                           <option key={m.id} value={m.id}>{m.nome}</option>
                         ))}
                       </select>
-                      <div className="flex items-center border border-gray-200 rounded px-2 py-1 w-20">
+                      <div className="flex items-center border border-gray-200 rounded px-2 py-1 w-20 bg-white">
                         <input
                           type="number"
                           value={c.consumoPerCapo}
                           onChange={(e) => aggiornaConsumo(i, "consumoPerCapo", parseFloat(e.target.value) || 0)}
                           onBlur={() => salva()}
-                          className="w-10 text-xs text-right outline-none"
+                          className="w-10 text-xs text-right outline-none bg-white"
                           placeholder="0"
                           min="0"
                           step="0.01"
@@ -247,40 +248,18 @@ export default function TabProduzione({ scheda, onSave, materialiDisponibili }: 
                         <Trash2 size={12} />
                       </button>
                     </div>
-                    {/* Breakdown kg conversion */}
-                    {isKg && (
-                      <div className="ml-2 pl-2 border-l-2 border-orange-100 space-y-0.5">
-                        {kgPerM !== null ? (
-                          <>
-                            <div className="text-xs text-gray-300">
-                              {mat?.unitaPeso === "g/m"
-                                ? <>{mat?.peso} g/m → {kgPerM.toFixed(4)} kg/m · {(1 / kgPerM).toFixed(2)} m/kg</>
-                                : <>{mat?.peso} g/m² × {mat?.larghezza} cm → {kgPerM.toFixed(4)} kg/m · {(1 / kgPerM).toFixed(2)} m/kg</>
-                              }
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-xs text-gray-400">{c.consumoPerCapo} m × {kgPerM.toFixed(4)} kg/m × {mat?.costoMetro?.toFixed(2)} €/kg</span>
-                              <span className="text-xs font-semibold text-orange-600">€ {costoRiga.toFixed(2)}/capo</span>
-                            </div>
-                            {totalePezzi > 0 && c.consumoPerCapo > 0 && (
-                              <div className="text-xs text-blue-400">
-                                Ordine {totalePezzi} pz → {(totalePezzi * c.consumoPerCapo * kgPerM).toFixed(1)} kg da ordinare
-                              </div>
-                            )}
-                          </>
-                        ) : (
-                          <div className="text-xs text-orange-400">
-                            {mat?.unitaPeso === "g/m"
-                              ? "Inserire peso nel materiale per il calcolo automatico"
-                              : "Inserire peso e larghezza nel materiale per il calcolo automatico"
-                            }
-                          </div>
+                    {/* Riga 2: risultati */}
+                    {c.consumoPerCapo > 0 && mat?.costoMetro && (
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold text-orange-600">€ {costoRiga.toFixed(2)}/capo</span>
+                          {isKg && kgPerM !== null && totalePezzi > 0 && (
+                            <span className="text-xs text-gray-400">· {(totalePezzi * c.consumoPerCapo * kgPerM).toFixed(1)} kg ordine</span>
+                          )}
+                        </div>
+                        {isKg && kgPerM === null && (
+                          <span className="text-xs text-orange-400">Inserire peso nel materiale</span>
                         )}
-                      </div>
-                    )}
-                    {!isKg && mat && c.consumoPerCapo > 0 && mat.costoMetro && (
-                      <div className="ml-2 text-xs text-gray-400">
-                        {c.consumoPerCapo} m × {mat.costoMetro.toFixed(2)} €/m = <span className="font-semibold text-gray-600">€ {costoRiga.toFixed(2)}/capo</span>
                       </div>
                     )}
                   </div>
