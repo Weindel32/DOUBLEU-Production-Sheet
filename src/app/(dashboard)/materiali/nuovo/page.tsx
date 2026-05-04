@@ -144,9 +144,13 @@ export default function NuovoMaterialePage() {
               placeholder={form.unitaPeso === "g/m" ? "es. 635" : "es. 180"}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-blue-400 outline-none"
             />
+            {form.unitaPeso === "g/m" && (() => {
+              const p = parseFloat(form.peso.replace(",", "."));
+              return p > 0 ? <p className="text-xs text-blue-500 mt-1">→ {(1000 / p).toFixed(3)} m/kg</p> : null;
+            })()}
           </div>
           <div>
-            <label className="text-sm text-gray-600 block mb-1">Larghezza tessuto (cm)</label>
+            <label className="text-sm text-gray-600 block mb-1">Altezza tessuto - Alt. (cm)</label>
             <input
               type="text"
               value={form.larghezza}

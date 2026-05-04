@@ -254,11 +254,16 @@ export default function TabProduzione({ scheda, onSave, materialiDisponibili }: 
                           <>
                             <div>
                               {mat?.unitaPeso === "g/m"
-                                ? <>{mat?.peso ?? "—"} g/m = <span className="text-gray-600">{kgPerM.toFixed(4)} kg/m</span></>
-                                : <>{mat?.peso ?? "—"} g/m² × {mat?.larghezza ?? "—"} cm = <span className="text-gray-600">{kgPerM.toFixed(4)} kg/m</span></>
+                                ? <>{mat?.peso ?? "—"} g/m = <span className="text-gray-600">{kgPerM.toFixed(4)} kg/m</span> <span className="text-blue-400">({(1 / kgPerM).toFixed(3)} m/kg)</span></>
+                                : <>{mat?.peso ?? "—"} g/m² × {mat?.larghezza ?? "—"} cm Alt. = <span className="text-gray-600">{kgPerM.toFixed(4)} kg/m</span> <span className="text-blue-400">({(1 / kgPerM).toFixed(3)} m/kg)</span></>
                               }
                             </div>
                             <div>{c.consumoPerCapo} m × {kgPerM.toFixed(4)} kg/m × {mat?.costoMetro?.toFixed(2) ?? "—"} €/kg = <span className="font-semibold text-orange-600">€ {costoRiga.toFixed(2)}/capo</span></div>
+                            {totalePezzi > 0 && c.consumoPerCapo > 0 && (
+                              <div className="text-blue-400">
+                                Ordine ({totalePezzi} pz): {(totalePezzi * c.consumoPerCapo * kgPerM).toFixed(2)} kg totali
+                              </div>
+                            )}
                           </>
                         ) : (
                           <div className="text-orange-400">
