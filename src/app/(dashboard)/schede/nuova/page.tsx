@@ -10,6 +10,7 @@ function NuovaSchedaForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
     nomeArticolo: "",
     categoria: "",
@@ -37,13 +38,24 @@ function NuovaSchedaForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const res = await fetch("/api/schede", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, stato: "bozza", versione: "1.0" }),
-    });
-    const scheda = await res.json();
-    router.push(`/schede/${scheda.id}`);
+    setError(null);
+    try {
+      const res = await fetch("/api/schede", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...form, stato: "bozza", versione: "1.0" }),
+      });
+      const scheda = await res.json();
+      if (!res.ok || !scheda.id) {
+        setError(scheda.error || "Errore nella creazione della scheda. Riprova.");
+        setLoading(false);
+        return;
+      }
+      router.push(`/schede/${scheda.id}`);
+    } catch {
+      setError("Errore di rete. Controlla la connessione e riprova.");
+      setLoading(false);
+    }
   };
 
   return (
@@ -117,6 +129,12 @@ function NuovaSchedaForm() {
             </select>
           </div>
         </div>
+
+        {error && (
+          <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+            {error}
+          </div>
+        )}
 
         <div className="flex gap-3 pt-2">
           <Link
