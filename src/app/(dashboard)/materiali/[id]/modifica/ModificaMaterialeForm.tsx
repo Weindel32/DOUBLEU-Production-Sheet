@@ -161,7 +161,7 @@ export default function ModificaMaterialeForm({ materiale }: { materiale: Materi
             />
           </div>
           <div>
-            <label className="text-sm text-gray-600 block mb-1">Larghezza tessuto (cm)</label>
+            <label className="text-sm text-gray-600 block mb-1">Altezza tessuto - Alt. (cm)</label>
             <input
               type="text"
               value={form.larghezza}

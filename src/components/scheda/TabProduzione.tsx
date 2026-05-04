@@ -255,7 +255,7 @@ export default function TabProduzione({ scheda, onSave, materialiDisponibili }: 
                             <div>
                               {mat?.unitaPeso === "g/m"
                                 ? <>{mat?.peso ?? "—"} g/m = <span className="text-gray-600">{kgPerM.toFixed(4)} kg/m</span></>
-                                : <>{mat?.peso ?? "—"} g/m² × {mat?.larghezza ?? "—"} cm = <span className="text-gray-600">{kgPerM.toFixed(4)} kg/m</span></>
+                                : <>{mat?.peso ?? "—"} g/m² × {mat?.larghezza ?? "—"} cm Alt. = <span className="text-gray-600">{kgPerM.toFixed(4)} kg/m</span></>
                               }
                             </div>
                             <div>{c.consumoPerCapo} m × {kgPerM.toFixed(4)} kg/m × {mat?.costoMetro?.toFixed(2) ?? "—"} €/kg = <span className="font-semibold text-orange-600">€ {costoRiga.toFixed(2)}/capo</span></div>
