@@ -12,6 +12,7 @@ interface MaterialeDisp {
   costoMetro: number | null;
   unitaMisura: string | null;
   peso: string | null;
+  unitaPeso: string | null;
   larghezza: string | null;
 }
 
@@ -29,8 +30,10 @@ function parseNum(s: string | null | undefined): number | null {
 
 function calcolaKgPerMetro(mat: MaterialeDisp): number | null {
   const peso = parseNum(mat.peso);
+  if (!peso) return null;
+  if (mat.unitaPeso === "g/m") return peso / 1000;
   const larghezza = parseNum(mat.larghezza);
-  if (!peso || !larghezza) return null;
+  if (!larghezza) return null;
   return (peso * larghezza) / 100000;
 }
 
@@ -249,11 +252,21 @@ export default function TabProduzione({ scheda, onSave, materialiDisponibili }: 
                       <div className="ml-2 pl-2 border-l-2 border-orange-100 text-xs text-gray-400 space-y-0.5">
                         {kgPerM !== null ? (
                           <>
-                            <div>{mat?.peso ?? "—"} g/m² × {mat?.larghezza ?? "—"} cm = <span className="text-gray-600">{kgPerM.toFixed(4)} kg/m</span></div>
+                            <div>
+                              {mat?.unitaPeso === "g/m"
+                                ? <>{mat?.peso ?? "—"} g/m = <span className="text-gray-600">{kgPerM.toFixed(4)} kg/m</span></>
+                                : <>{mat?.peso ?? "—"} g/m² × {mat?.larghezza ?? "—"} cm = <span className="text-gray-600">{kgPerM.toFixed(4)} kg/m</span></>
+                              }
+                            </div>
                             <div>{c.consumoPerCapo} m × {kgPerM.toFixed(4)} kg/m × {mat?.costoMetro?.toFixed(2) ?? "—"} €/kg = <span className="font-semibold text-orange-600">€ {costoRiga.toFixed(2)}/capo</span></div>
                           </>
                         ) : (
-                          <div className="text-orange-400">Inserire peso e larghezza nel materiale per il calcolo automatico</div>
+                          <div className="text-orange-400">
+                            {mat?.unitaPeso === "g/m"
+                              ? "Inserire peso nel materiale per il calcolo automatico"
+                              : "Inserire peso e larghezza nel materiale per il calcolo automatico"
+                            }
+                          </div>
                         )}
                       </div>
                     )}

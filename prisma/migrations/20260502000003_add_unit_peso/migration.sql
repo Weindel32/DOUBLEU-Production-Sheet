@@ -1,0 +1,1 @@
+ALTER TABLE "Materiale" ADD COLUMN IF NOT EXISTS "unitaPeso" TEXT;

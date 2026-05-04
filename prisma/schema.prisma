@@ -33,6 +33,7 @@ model Materiale {
   tipo         String
   composizione String?
   peso         String?
+  unitaPeso    String?
   larghezza    String?
   unitaMisura  String?
   fornitore    String?

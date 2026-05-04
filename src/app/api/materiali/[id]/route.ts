@@ -18,6 +18,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       tipo: body.tipo,
       composizione: body.composizione,
       peso: body.peso,
+      unitaPeso: body.unitaPeso,
       larghezza: body.larghezza,
       unitaMisura: body.unitaMisura,
       fornitore: body.fornitore,
