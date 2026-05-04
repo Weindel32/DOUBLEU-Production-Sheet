@@ -21,6 +21,7 @@ export default function NuovoMaterialePage() {
     tipo: "",
     composizione: "",
     peso: "",
+    unitaPeso: "g/m²",
     larghezza: "",
     unitaMisura: "metro",
     fornitore: "",
@@ -122,14 +123,25 @@ export default function NuovoMaterialePage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           <div>
-            <label className="text-sm text-gray-600 block mb-1">Peso (g/m²)</label>
+            <label className="text-sm text-gray-600 block mb-1">Unità peso</label>
+            <select
+              value={form.unitaPeso}
+              onChange={(e) => set("unitaPeso", e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-blue-400 outline-none"
+            >
+              <option value="g/m²">g/m² (al mq)</option>
+              <option value="g/m">g/m (GR MTL)</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-sm text-gray-600 block mb-1">Peso ({form.unitaPeso})</label>
             <input
               type="text"
               value={form.peso}
               onChange={(e) => set("peso", e.target.value)}
-              placeholder="es. 180"
+              placeholder={form.unitaPeso === "g/m" ? "es. 635" : "es. 180"}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-blue-400 outline-none"
             />
           </div>

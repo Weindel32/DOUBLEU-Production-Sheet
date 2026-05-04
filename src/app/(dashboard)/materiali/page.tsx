@@ -56,7 +56,7 @@ export default async function MaterialiPage() {
                   <td className="px-4 py-3 font-medium text-gray-800">{m.nome}</td>
                   <td className="px-4 py-3 text-gray-600">{m.tipo}</td>
                   <td className="px-4 py-3 text-gray-600">{m.composizione || "—"}</td>
-                  <td className="px-4 py-3 text-gray-600">{m.peso || "—"}</td>
+                  <td className="px-4 py-3 text-gray-600">{m.peso ? `${m.peso} ${m.unitaPeso ?? "g/m²"}` : "—"}</td>
                   <td className="px-4 py-3 text-gray-600">{m.fornitore || "—"}</td>
                   <td className="px-4 py-3 text-right text-gray-600">
                     {m.costoMetro ? `€ ${m.costoMetro.toFixed(2)}` : "—"}
