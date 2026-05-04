@@ -249,24 +249,27 @@ export default function TabProduzione({ scheda, onSave, materialiDisponibili }: 
                     </div>
                     {/* Breakdown kg conversion */}
                     {isKg && (
-                      <div className="ml-2 pl-2 border-l-2 border-orange-100 text-xs text-gray-400 space-y-0.5">
+                      <div className="ml-2 pl-2 border-l-2 border-orange-100 space-y-0.5">
                         {kgPerM !== null ? (
                           <>
-                            <div>
+                            <div className="text-xs text-gray-300">
                               {mat?.unitaPeso === "g/m"
-                                ? <>{mat?.peso ?? "—"} g/m = <span className="text-gray-600">{kgPerM.toFixed(4)} kg/m</span> <span className="text-blue-400">({(1 / kgPerM).toFixed(3)} m/kg)</span></>
-                                : <>{mat?.peso ?? "—"} g/m² × {mat?.larghezza ?? "—"} cm Alt. = <span className="text-gray-600">{kgPerM.toFixed(4)} kg/m</span> <span className="text-blue-400">({(1 / kgPerM).toFixed(3)} m/kg)</span></>
+                                ? <>{mat?.peso} g/m → {kgPerM.toFixed(4)} kg/m · {(1 / kgPerM).toFixed(2)} m/kg</>
+                                : <>{mat?.peso} g/m² × {mat?.larghezza} cm → {kgPerM.toFixed(4)} kg/m · {(1 / kgPerM).toFixed(2)} m/kg</>
                               }
                             </div>
-                            <div>{c.consumoPerCapo} m × {kgPerM.toFixed(4)} kg/m × {mat?.costoMetro?.toFixed(2) ?? "—"} €/kg = <span className="font-semibold text-orange-600">€ {costoRiga.toFixed(2)}/capo</span></div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-gray-400">{c.consumoPerCapo} m × {kgPerM.toFixed(4)} kg/m × {mat?.costoMetro?.toFixed(2)} €/kg</span>
+                              <span className="text-xs font-semibold text-orange-600">€ {costoRiga.toFixed(2)}/capo</span>
+                            </div>
                             {totalePezzi > 0 && c.consumoPerCapo > 0 && (
-                              <div className="text-blue-400">
-                                Ordine ({totalePezzi} pz): {(totalePezzi * c.consumoPerCapo * kgPerM).toFixed(2)} kg totali
+                              <div className="text-xs text-blue-400">
+                                Ordine {totalePezzi} pz → {(totalePezzi * c.consumoPerCapo * kgPerM).toFixed(1)} kg da ordinare
                               </div>
                             )}
                           </>
                         ) : (
-                          <div className="text-orange-400">
+                          <div className="text-xs text-orange-400">
                             {mat?.unitaPeso === "g/m"
                               ? "Inserire peso nel materiale per il calcolo automatico"
                               : "Inserire peso e larghezza nel materiale per il calcolo automatico"
