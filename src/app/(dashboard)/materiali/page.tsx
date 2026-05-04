@@ -4,6 +4,12 @@ import Link from "next/link";
 import { Package, PlusCircle } from "lucide-react";
 import MaterialiActions from "./MaterialiActions";
 
+function mPerKg(peso: string): string | null {
+  const p = parseFloat(peso.replace(",", "."));
+  if (!p || p <= 0) return null;
+  return (1000 / p).toFixed(2);
+}
+
 export default async function MaterialiPage() {
   const materiali = await prisma.materiale.findMany({ orderBy: { nome: "asc" } });
 
@@ -60,10 +66,9 @@ export default async function MaterialiPage() {
                     {m.peso ? (
                       <span>
                         {m.peso} {m.unitaPeso ?? "g/m²"}
-                        {m.unitaPeso === "g/m" && (() => {
-                          const p = parseFloat(m.peso.replace(",", "."));
-                          return p > 0 ? <span className="text-xs text-blue-400 ml-1">({(1000 / p).toFixed(2)} m/kg)</span> : null;
-                        })()}
+                        {m.unitaPeso === "g/m" && mPerKg(m.peso) && (
+                          <span className="text-xs text-blue-400 ml-1">({mPerKg(m.peso)} m/kg)</span>
+                        )}
                       </span>
                     ) : "—"}
                   </td>

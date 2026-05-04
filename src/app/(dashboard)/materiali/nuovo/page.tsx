@@ -7,10 +7,17 @@ import Link from "next/link";
 
 const TIPI = ["Tessuto", "Fodera", "Elastico", "Cerniera", "Bottoni", "Ricamo", "Stampa", "Altro"];
 const COMPOSIZIONI = [
-  "Poliammide + Elastane",
-  "100% Poliestere",
   "100% Cotone",
-  "60% Cotone + 40% Poliestere",
+  "100% Poliestere",
+  "100% Poliammide",
+  "60% CO 40% PL",
+  "60% Cotone 40% Poliestere",
+  "50% CO 50% PL",
+  "80% CO 20% PL",
+  "90% Poliammide 10% Elastane",
+  "80% Poliammide 20% Elastane",
+  "85% Poliestere 15% Elastane",
+  "95% CO 5% Elastane",
 ];
 
 export default function NuovoMaterialePage() {
@@ -83,14 +90,17 @@ export default function NuovoMaterialePage() {
           </div>
           <div>
             <label className="text-sm text-gray-600 block mb-1">Composizione</label>
-            <select
+            <input
+              type="text"
+              list="composizioni-suggerimenti"
               value={form.composizione}
               onChange={(e) => set("composizione", e.target.value)}
+              placeholder="es. 60% CO 40% PL"
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-blue-400 outline-none"
-            >
-              <option value="">Seleziona</option>
-              {COMPOSIZIONI.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
+            />
+            <datalist id="composizioni-suggerimenti">
+              {COMPOSIZIONI.map((c) => <option key={c} value={c} />)}
+            </datalist>
           </div>
         </div>
 
@@ -144,10 +154,9 @@ export default function NuovoMaterialePage() {
               placeholder={form.unitaPeso === "g/m" ? "es. 635" : "es. 180"}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-blue-400 outline-none"
             />
-            {form.unitaPeso === "g/m" && (() => {
-              const p = parseFloat(form.peso.replace(",", "."));
-              return p > 0 ? <p className="text-xs text-blue-500 mt-1">→ {(1000 / p).toFixed(3)} m/kg</p> : null;
-            })()}
+            {form.unitaPeso === "g/m" && parseFloat(form.peso.replace(",", ".")) > 0 && (
+              <p className="text-xs text-blue-500 mt-1">→ {(1000 / parseFloat(form.peso.replace(",", "."))).toFixed(3)} m/kg</p>
+            )}
           </div>
           <div>
             <label className="text-sm text-gray-600 block mb-1">Altezza tessuto - Alt. (cm)</label>
