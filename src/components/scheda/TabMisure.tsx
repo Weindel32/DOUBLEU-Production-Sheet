@@ -247,13 +247,13 @@ export default function TabMisure({ scheda, onSave }: Props) {
                   <tr key={taglia} className="hover:bg-gray-50">
                     <td className="px-3 py-1.5 font-semibold text-gray-700 text-xs">{taglia}</td>
                     {colonne.map((c) => (
-                      <td key={c.key} className="px-2 py-1">
+                      <td key={c.key} className="px-2 py-1 text-right">
                         <input
                           type="number"
                           value={(tabellaMisure[taglia] as MisureTaglia)?.[c.key as keyof MisureTaglia] ?? ""}
                           onChange={(e) => aggiornaMisura(taglia, c.key, e.target.value)}
                           onBlur={salva}
-                          className="w-16 text-right text-xs text-gray-700 border border-transparent focus:border-blue-300 rounded px-1 py-0.5 outline-none"
+                          className="w-full text-right text-xs text-gray-700 border border-transparent focus:border-blue-300 rounded px-1 py-0.5 outline-none"
                           placeholder="—"
                         />
                       </td>

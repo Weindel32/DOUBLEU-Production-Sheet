@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const BUILD = 2;
+const BUILD = 3;
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -47,12 +47,12 @@ export default function Sidebar() {
   return (
     <aside className="sidebar flex flex-col">
       {/* Logo */}
-      <div className="p-5 border-b border-slate-700">
-        <div className="text-white font-bold text-lg tracking-wider">DOUBLE U</div>
-        <div className="text-slate-400 text-xs mt-0.5">HANDCRAFTED IN ITALY</div>
-        <div className="flex gap-1 mt-2">
+      <div className="px-5 py-4 border-b border-white/5">
+        <div className="text-white font-black text-base tracking-[0.15em] uppercase">Double U</div>
+        <div className="text-slate-500 text-[10px] tracking-widest uppercase mt-0.5">Production Sheet</div>
+        <div className="flex gap-0.5 mt-3">
           {["#009246", "#ffffff", "#ce2b37"].map((c, i) => (
-            <div key={i} className="h-1 flex-1 rounded-full" style={{ backgroundColor: c }} />
+            <div key={i} className="h-[3px] flex-1 rounded-full opacity-80" style={{ backgroundColor: c }} />
           ))}
         </div>
       </div>
