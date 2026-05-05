@@ -51,12 +51,12 @@ function calcolaCostoMateriale(c: ConsumoMateriale, mat: MaterialeDisp | undefin
 
 export default function TabProduzione({ scheda, onSave, materialiDisponibili }: Props) {
   const [noteProduzione, setNoteProduzione] = useState(scheda.noteProduzione || "");
-  const [tolleranzaTaglio, setTolleranzaTaglio] = useState(scheda.tolleranzaTaglio || "± 1 cm");
-  const [tolleranzaCucitura, setTolleranzaCucitura] = useState(scheda.tolleranzaCucitura || "Punto 4 aghi per le spalle.");
-  const [tolleranzaColore, setTolleranzaColore] = useState(scheda.tolleranzaColore || "Variazione ammessa tra lotti.");
-  const [tolleranzaStampa, setTolleranzaStampa] = useState(scheda.tolleranzaStampa || "Verificare centratura loghi prima della stampa.");
-  const [controlloQualita, setControlloQualita] = useState(scheda.controlloQualita || "Controllare cuciture e bordi maniche.");
-  const [packaging, setPackaging] = useState(scheda.packaging || "Busta singola con etichetta taglia.");
+  const [tolleranzaTaglio, setTolleranzaTaglio] = useState(scheda.tolleranzaTaglio || "");
+  const [tolleranzaCucitura, setTolleranzaCucitura] = useState(scheda.tolleranzaCucitura || "");
+  const [tolleranzaColore, setTolleranzaColore] = useState(scheda.tolleranzaColore || "");
+  const [tolleranzaStampa, setTolleranzaStampa] = useState(scheda.tolleranzaStampa || "");
+  const [controlloQualita, setControlloQualita] = useState(scheda.controlloQualita || "");
+  const [packaging, setPackaging] = useState(scheda.packaging || "");
   const [consumi, setConsumi] = useState<ConsumoMateriale[]>(
     (scheda.consumoMateriale as ConsumoMateriale[]) || []
   );
