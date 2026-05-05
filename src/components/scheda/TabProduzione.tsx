@@ -92,12 +92,6 @@ export default function TabProduzione({ scheda, onSave, materialiDisponibili }: 
 
   const [saving, setSaving] = useState(false);
 
-  const salvaAll = async () => {
-    setSaving(true);
-    await salva();
-    setSaving(false);
-  };
-
   const salva = async (extra?: Partial<SchedaCompleta>) => {
     const costoLavorazione =
       (parseFloat(costoTaglio || "0") || 0) +
@@ -117,6 +111,12 @@ export default function TabProduzione({ scheda, onSave, materialiDisponibili }: 
       prezzoVendita: prezzoVendita ? parseFloat(prezzoVendita) : null,
       ...extra,
     });
+  };
+
+  const salvaAll = async () => {
+    setSaving(true);
+    await salva();
+    setSaving(false);
   };
 
   // Cost calculations
