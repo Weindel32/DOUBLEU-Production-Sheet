@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, FileDown, Copy, CheckCircle, ChevronDown, Trash2 } from "lucide-react";
+import { ArrowLeft, FileDown, Copy, CheckCircle, ChevronDown, Trash2, Loader2 } from "lucide-react";
 import { STATI_SCHEDA, StatoScheda, formatData, formatOra, calcolaTotaleQuantita } from "@/lib/utils";
 import TabArticolo from "./TabArticolo";
 import TabPersonalizzazione from "./TabPersonalizzazione";
@@ -30,17 +30,20 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
   const [activeTab, setActiveTab] = useState("articolo");
   const [statoCorrente, setStatoCorrente] = useState<StatoScheda>(scheda.stato as StatoScheda);
   const [savedAt, setSavedAt] = useState(formatOra(scheda.updatedAt));
+  const [saving, setSaving] = useState(false);
   const [showStatoMenu, setShowStatoMenu] = useState(false);
   const [noteRapide, setNoteRapide] = useState(scheda.noteRapide || "");
 
   const statoInfo = STATI_SCHEDA.find((s) => s.value === statoCorrente);
 
   const handleSave = useCallback(async (data: Partial<SchedaCompleta>) => {
+    setSaving(true);
     await fetch(`/api/schede/${scheda.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
+    setSaving(false);
     setSavedAt(formatOra(new Date()));
   }, [scheda.id]);
 
@@ -93,8 +96,10 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
         </Link>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1.5 text-sm text-gray-500">
-            <CheckCircle size={15} className="text-green-500" />
-            Salvato {savedAt}
+            {saving
+              ? <><Loader2 size={15} className="animate-spin text-blue-500" /><span className="text-blue-600">Salvataggio...</span></>
+              : <><CheckCircle size={15} className="text-green-500" /><span>Salvato {savedAt}</span></>
+            }
           </div>
           <a
             href={`/api/schede/${scheda.id}/pdf?tipo=tecnico`}

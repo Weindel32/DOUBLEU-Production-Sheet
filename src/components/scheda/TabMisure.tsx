@@ -2,11 +2,36 @@
 
 import { useState } from "react";
 import { TAGLIE_ADULTO, TAGLIE_KIDS, calcolaTotaleQuantita, CATEGORIE_ELASTICO } from "@/lib/utils";
+import { Loader2, Save } from "lucide-react";
 import type { SchedaCompleta, TabellaTaglie, QuantitaTaglia, ElasticoSpecs, MisureTaglia } from "@/types";
 
 interface Props {
   scheda: SchedaCompleta;
   onSave: (data: Partial<SchedaCompleta>) => Promise<void>;
+}
+
+const CATEGORIE_SKIRT = ["Skirt"];
+
+const ELASTICO_ADULTO: Record<string, { pantaloncino: number; skirt: number }> = {
+  "XS":   { pantaloncino: 70, skirt: 64 },
+  "S":    { pantaloncino: 72, skirt: 66 },
+  "M":    { pantaloncino: 74, skirt: 68 },
+  "L":    { pantaloncino: 76, skirt: 70 },
+  "XL":   { pantaloncino: 78, skirt: 72 },
+  "XXL":  { pantaloncino: 80, skirt: 74 },
+  "XXXL": { pantaloncino: 82, skirt: 76 },
+};
+
+const ELASTICO_KIDS: Record<string, number> = {
+  "4A": 54, "6A": 56, "8A": 58, "10A": 60, "12A": 62, "14A": 64, "16A": 66,
+};
+
+function getElasticoDefault(categoria: string | null | undefined, taglia: string): { lunghezzaElastico: number; altezzaElastico: number } | null {
+  const isSkirt = CATEGORIE_SKIRT.includes(categoria || "");
+  const altezzaElastico = isSkirt ? 1 : 4;
+  if (ELASTICO_KIDS[taglia] !== undefined) return { lunghezzaElastico: ELASTICO_KIDS[taglia], altezzaElastico };
+  if (ELASTICO_ADULTO[taglia]) return { lunghezzaElastico: isSkirt ? ELASTICO_ADULTO[taglia].skirt : ELASTICO_ADULTO[taglia].pantaloncino, altezzaElastico };
+  return null;
 }
 
 const COLONNE_STANDARD = [
@@ -32,9 +57,14 @@ export default function TabMisure({ scheda, onSave }: Props) {
   const [quantitaTaglia, setQuantitaTaglia] = useState<QuantitaTaglia>(
     (scheda.quantitaTaglia as QuantitaTaglia) || {}
   );
-  const [specsElastico, setSpecsElastico] = useState<ElasticoSpecs>(
-    (rawTabella.__specs as ElasticoSpecs) || {}
-  );
+  const [specsElastico, setSpecsElastico] = useState<ElasticoSpecs>(() => {
+    const existing = (rawTabella.__specs as ElasticoSpecs) || {};
+    if (isElastico && !existing.altezza) {
+      const defaultAltezza = CATEGORIE_SKIRT.includes(scheda.categoria || "") ? "1" : "4";
+      return { ...existing, altezza: defaultAltezza };
+    }
+    return existing;
+  });
 
   const tutteLeTaglie = [...TAGLIE_ADULTO, ...TAGLIE_KIDS];
   const [tagliAttive, setTagliAttive] = useState<string[]>(
@@ -58,20 +88,39 @@ export default function TabMisure({ scheda, onSave }: Props) {
     setQuantitaTaglia((prev) => ({ ...prev, [taglia]: valore ? Number(valore) : 0 }));
   };
 
+  const [saving, setSaving] = useState(false);
+
   const salva = async () => {
+    setSaving(true);
     const tabellaDaSalvare = isElastico
       ? { ...tabellaMisure, __specs: specsElastico }
       : tabellaMisure;
     await onSave({ tabellaMisure: tabellaDaSalvare, quantitaTaglia });
+    setSaving(false);
   };
 
-  const toggleTaglia = (taglia: string) => {
-    setTagliAttive((prev) =>
-      prev.includes(taglia) ? prev.filter((t) => t !== taglia) : [...prev, taglia]
-    );
+  const toggleTaglia = async (taglia: string) => {
+    if (tagliAttive.includes(taglia)) {
+      setTagliAttive((prev) => prev.filter((t) => t !== taglia));
+    } else {
+      setTagliAttive((prev) => [...prev, taglia]);
+      if (isElastico && !(tabellaMisure[taglia] as MisureTaglia)?.lunghezzaElastico) {
+        const defaults = getElasticoDefault(scheda.categoria, taglia);
+        if (defaults) {
+          const nuovaTabella: TabellaTaglie = {
+            ...tabellaMisure,
+            [taglia]: { ...(tabellaMisure[taglia] as MisureTaglia || {}), ...defaults },
+            __specs: specsElastico,
+          };
+          setTabellaMisure(nuovaTabella);
+          await onSave({ tabellaMisure: nuovaTabella, quantitaTaglia });
+        }
+      }
+    }
   };
 
   return (
+    <>
     <div className="space-y-5">
       {/* Selezione taglie */}
       <div className="card">
@@ -256,5 +305,17 @@ export default function TabMisure({ scheda, onSave }: Props) {
         </div>
       </div>
     </div>
+
+    <div className="flex justify-end pt-2">
+      <button
+        onClick={salva}
+        disabled={saving}
+        className="flex items-center gap-2 bg-blue-700 hover:bg-blue-800 disabled:opacity-50 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors"
+      >
+        {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
+        {saving ? "Salvataggio..." : "Salva"}
+      </button>
+    </div>
+    </>
   );
 }

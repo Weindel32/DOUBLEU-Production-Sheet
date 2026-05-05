@@ -10,11 +10,10 @@ export async function GET() {
 }
 
 const CATEGORIA_PREFISSO: Record<string, string> = {
-  "T-Shirt": "TS", "Felpa": "FE", "Hoodie": "HO", "Zip Hoodie": "ZH",
-  "Sweatshirt": "SW", "Sweatpants": "SP", "Pantaloncino": "PN",
-  "Pantaloni": "PT", "Polo": "PO", "Short": "SH", "Skirt": "SK",
-  "Dress": "DR", "Canotta": "CA", "Tuta": "TU", "Giacca": "GI",
-  "Gilet": "GL", "Cappello": "CP", "Calze": "CZ", "Altro": "AL",
+  "T-Shirt PRF": "TP", "T-Shirt WS": "TW", "T-Shirt COT": "TC",
+  "Polo": "PO", "Hoodie": "HO", "Zip Hoodie": "ZH",
+  "Sweatshirt": "SW", "Sweatpants": "SP",
+  "Short": "SH", "Skirt": "SK", "Dress": "DR", "Altro": "AL",
 };
 
 async function generaCodice(categoria: string): Promise<string> {

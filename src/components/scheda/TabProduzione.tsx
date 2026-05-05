@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { PlusCircle, Trash2, Upload, Info } from "lucide-react";
+import { PlusCircle, Trash2, Upload, Info, Loader2, Save } from "lucide-react";
 import type { SchedaCompleta, ConsumoMateriale } from "@/types";
 import { calcolaTotaleQuantita } from "@/lib/utils";
 
@@ -51,12 +51,12 @@ function calcolaCostoMateriale(c: ConsumoMateriale, mat: MaterialeDisp | undefin
 
 export default function TabProduzione({ scheda, onSave, materialiDisponibili }: Props) {
   const [noteProduzione, setNoteProduzione] = useState(scheda.noteProduzione || "");
-  const [tolleranzaTaglio, setTolleranzaTaglio] = useState(scheda.tolleranzaTaglio || "± 1 cm");
-  const [tolleranzaCucitura, setTolleranzaCucitura] = useState(scheda.tolleranzaCucitura || "Punto 4 aghi per le spalle.");
-  const [tolleranzaColore, setTolleranzaColore] = useState(scheda.tolleranzaColore || "Variazione ammessa tra lotti.");
-  const [tolleranzaStampa, setTolleranzaStampa] = useState(scheda.tolleranzaStampa || "Verificare centratura loghi prima della stampa.");
-  const [controlloQualita, setControlloQualita] = useState(scheda.controlloQualita || "Controllare cuciture e bordi maniche.");
-  const [packaging, setPackaging] = useState(scheda.packaging || "Busta singola con etichetta taglia.");
+  const [tolleranzaTaglio, setTolleranzaTaglio] = useState(scheda.tolleranzaTaglio || "");
+  const [tolleranzaCucitura, setTolleranzaCucitura] = useState(scheda.tolleranzaCucitura || "");
+  const [tolleranzaColore, setTolleranzaColore] = useState(scheda.tolleranzaColore || "");
+  const [tolleranzaStampa, setTolleranzaStampa] = useState(scheda.tolleranzaStampa || "");
+  const [controlloQualita, setControlloQualita] = useState(scheda.controlloQualita || "");
+  const [packaging, setPackaging] = useState(scheda.packaging || "");
   const [consumi, setConsumi] = useState<ConsumoMateriale[]>(
     (scheda.consumoMateriale as ConsumoMateriale[]) || []
   );
@@ -90,6 +90,8 @@ export default function TabProduzione({ scheda, onSave, materialiDisponibili }: 
     }));
   };
 
+  const [saving, setSaving] = useState(false);
+
   const salva = async (extra?: Partial<SchedaCompleta>) => {
     const costoLavorazione =
       (parseFloat(costoTaglio || "0") || 0) +
@@ -109,6 +111,12 @@ export default function TabProduzione({ scheda, onSave, materialiDisponibili }: 
       prezzoVendita: prezzoVendita ? parseFloat(prezzoVendita) : null,
       ...extra,
     });
+  };
+
+  const salvaAll = async () => {
+    setSaving(true);
+    await salva();
+    setSaving(false);
   };
 
   // Cost calculations
@@ -131,6 +139,7 @@ export default function TabProduzione({ scheda, onSave, materialiDisponibili }: 
     : null;
 
   return (
+    <>
     <div className="grid grid-cols-3 gap-5">
       {/* Note di produzione */}
       <div className="card">
@@ -384,5 +393,17 @@ export default function TabProduzione({ scheda, onSave, materialiDisponibili }: 
         </div>
       </div>
     </div>
+
+    <div className="flex justify-end pt-2">
+      <button
+        onClick={salvaAll}
+        disabled={saving}
+        className="flex items-center gap-2 bg-blue-700 hover:bg-blue-800 disabled:opacity-50 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors"
+      >
+        {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
+        {saving ? "Salvataggio..." : "Salva"}
+      </button>
+    </div>
+    </>
   );
 }

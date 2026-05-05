@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { PlusCircle, Trash2 } from "lucide-react";
+import { PlusCircle, Trash2, Loader2, Save } from "lucide-react";
 import { TECNICHE_LOGO, POSIZIONI_LOGO } from "@/lib/utils";
 import type { SchedaCompleta, LogoSchedaCompleto } from "@/types";
 
@@ -16,6 +16,13 @@ export default function TabPersonalizzazione({ scheda, onSave, loghiDisponibili 
   const [colorePrincipale, setColorePrincipale] = useState(scheda.colorePrincipale || "");
   const [coloreSecondario, setColoreSecondario] = useState(scheda.coloreSecondario || "");
   const [notePersonalizzazione, setNotePersonalizzazione] = useState(scheda.notePersonalizzazione || "");
+  const [saving, setSaving] = useState(false);
+
+  const salvaAll = async () => {
+    setSaving(true);
+    await onSave({ colorePrincipale, coloreSecondario, notePersonalizzazione });
+    setSaving(false);
+  };
 
   const aggiungiLogo = async () => {
     if (loghiDisponibili.length === 0) return;
@@ -44,6 +51,7 @@ export default function TabPersonalizzazione({ scheda, onSave, loghiDisponibili 
   };
 
   return (
+    <>
     <div className="grid grid-cols-3 gap-5">
       {/* Loghi applicati */}
       <div className="card col-span-1">
@@ -212,5 +220,17 @@ export default function TabPersonalizzazione({ scheda, onSave, loghiDisponibili 
         />
       </div>
     </div>
+
+    <div className="flex justify-end pt-2">
+      <button
+        onClick={salvaAll}
+        disabled={saving}
+        className="flex items-center gap-2 bg-blue-700 hover:bg-blue-800 disabled:opacity-50 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors"
+      >
+        {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
+        {saving ? "Salvataggio..." : "Salva"}
+      </button>
+    </div>
+    </>
   );
 }

@@ -20,16 +20,12 @@ export const TAGLIE_KIDS = ["4A", "6A", "8A", "10A", "12A", "14A", "16A"] as con
 export const TAGLIE = [...TAGLIE_ADULTO, ...TAGLIE_KIDS] as const;
 
 export const CATEGORIE = [
-  "T-Shirt", "Felpa", "Pantaloncino", "Pantaloni", "Giacca",
-  "Gilet", "Polo", "Canotta", "Tuta", "Cappello", "Calze",
-  "Short", "Gonnellino", "Sweatpants", "Altro",
+  "T-Shirt PRF", "T-Shirt WS", "T-Shirt COT",
+  "Polo", "Hoodie", "Zip Hoodie", "Sweatshirt",
+  "Sweatpants", "Short", "Skirt", "Dress", "Altro",
 ];
 
-export const CATEGORIE_ELASTICO = [
-  "Pantaloncino", "Short",       // pantaloncino / short
-  "Gonnellino", "Skirt",         // gonnellino / skirt
-  "Pantaloni", "Sweatpants",     // pantalone sportivo
-];
+export const CATEGORIE_ELASTICO = ["Short", "Skirt", "Sweatpants"];
 
 export const TECNICHE_LOGO = ["Ricamo", "Stampa", "Transfer", "Sublimazione", "Patch"];
 
