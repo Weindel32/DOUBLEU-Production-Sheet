@@ -10,7 +10,7 @@ interface Props {
   onSave: (data: Partial<SchedaCompleta>) => Promise<void>;
 }
 
-const CATEGORIE_SKIRT = ["Skirt", "Gonnellino"];
+const CATEGORIE_SKIRT = ["Skirt"];
 
 const ELASTICO_ADULTO: Record<string, { pantaloncino: number; skirt: number }> = {
   "XS":   { pantaloncino: 70, skirt: 64 },
