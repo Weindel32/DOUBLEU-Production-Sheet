@@ -18,6 +18,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const quantitaTaglia = scheda.quantitaTaglia ? JSON.parse(scheda.quantitaTaglia) : {};
   const allegati = scheda.allegati ? JSON.parse(scheda.allegati) : [];
   const consumi = scheda.consumoMateriale ? JSON.parse(scheda.consumoMateriale) : [];
+  const immagini: string[] = scheda.immagini ? JSON.parse(scheda.immagini) : [];
   const totalePezzi = Object.values(quantitaTaglia as Record<string, number>).reduce((s, q) => s + q, 0);
 
   const isInterno = tipo === "interno";
@@ -75,6 +76,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   .cost-row { display: flex; justify-content: space-between; padding: 3px 0; }
   .cost-total { font-weight: 700; border-top: 1px solid #fde68a; padding-top: 4px; margin-top: 4px; }
   .footer { margin-top: 20px; padding-top: 10px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; color: #999; font-size: 9px; }
+  .img-grid { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+  .img-grid img { max-height: 220px; max-width: 220px; object-fit: contain; border: 1px solid #e5e7eb; border-radius: 6px; background: #f9fafb; }
 </style>
 </head>
 <body>
@@ -112,6 +115,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       <div class="meta-item"><div class="meta-label">Versione</div><div class="meta-value">${scheda.versione}</div></div>
     </div>
   </div>
+
+  ${immagini.length > 0 ? `
+  <div class="section">
+    <div class="section-title">Immagini prodotto</div>
+    <div class="img-grid">
+      ${immagini.map((url) => `<img src="${url}" alt="Prodotto" />`).join("")}
+    </div>
+  </div>
+  ` : ""}
 
   <div class="grid2">
     <div class="section">
