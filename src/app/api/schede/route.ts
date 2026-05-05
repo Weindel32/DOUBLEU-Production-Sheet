@@ -29,51 +29,56 @@ async function generaCodice(categoria: string): Promise<string> {
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
-  const codice = await generaCodice(body.categoria || "Altro");
-  const scheda = await prisma.scheda.create({
-    data: {
-      codice,
-      nomeArticolo: body.nomeArticolo,
-      stato: body.stato || "bozza",
-      versione: body.versione || "1.0",
-      collezione: body.collezione,
-      clienteId: body.clienteId || null,
-      categoria: body.categoria,
-      vestibilita: body.vestibilita,
-      genere: body.genere,
-      stagione: body.stagione,
-      utilizzo: body.utilizzo,
-      tessutoPrincipale: body.tessutoPrincipale,
-      pesoTessuto: body.pesoTessuto,
-      altezzaTessuto: body.altezzaTessuto,
-      modellista: body.modellista,
-      fornitoreTessuto: body.fornitoreTessuto,
-      produttore: body.produttore,
-      coloreBase: body.coloreBase,
-      coloriSecondari: body.coloriSecondari,
-      collo: body.collo,
-      maniche: body.maniche,
-      noteSpecifiche: body.noteSpecifiche,
-      notePersonalizzazione: body.notePersonalizzazione,
-      colorePrincipale: body.colorePrincipale,
-      coloreSecondario: body.coloreSecondario,
-      tabellaMisure: body.tabellaMisure ? JSON.stringify(body.tabellaMisure) : null,
-      quantitaTaglia: body.quantitaTaglia ? JSON.stringify(body.quantitaTaglia) : null,
-      noteProduzione: body.noteProduzione,
-      tolleranzaTaglio: body.tolleranzaTaglio,
-      tolleranzaCucitura: body.tolleranzaCucitura,
-      tolleranzaColore: body.tolleranzaColore,
-      tolleranzaStampa: body.tolleranzaStampa,
-      controlloQualita: body.controlloQualita,
-      packaging: body.packaging,
-      allegati: body.allegati ? JSON.stringify(body.allegati) : null,
-      consumoMateriale: body.consumoMateriale ? JSON.stringify(body.consumoMateriale) : null,
-      costoLavorazione: body.costoLavorazione,
-      prezzoVendita: body.prezzoVendita,
-      noteRapide: body.noteRapide,
-    },
-    include: { cliente: true },
-  });
-  return NextResponse.json(scheda, { status: 201 });
+  try {
+    const body = await req.json();
+    const codice = await generaCodice(body.categoria || "Altro");
+    const scheda = await prisma.scheda.create({
+      data: {
+        codice,
+        nomeArticolo: body.nomeArticolo,
+        stato: body.stato || "bozza",
+        versione: body.versione || "1.0",
+        collezione: body.collezione,
+        clienteId: body.clienteId || null,
+        categoria: body.categoria,
+        vestibilita: body.vestibilita,
+        genere: body.genere,
+        stagione: body.stagione,
+        utilizzo: body.utilizzo,
+        tessutoPrincipale: body.tessutoPrincipale,
+        pesoTessuto: body.pesoTessuto,
+        altezzaTessuto: body.altezzaTessuto,
+        modellista: body.modellista,
+        fornitoreTessuto: body.fornitoreTessuto,
+        produttore: body.produttore,
+        coloreBase: body.coloreBase,
+        coloriSecondari: body.coloriSecondari,
+        collo: body.collo,
+        maniche: body.maniche,
+        noteSpecifiche: body.noteSpecifiche,
+        notePersonalizzazione: body.notePersonalizzazione,
+        colorePrincipale: body.colorePrincipale,
+        coloreSecondario: body.coloreSecondario,
+        tabellaMisure: body.tabellaMisure ? JSON.stringify(body.tabellaMisure) : null,
+        quantitaTaglia: body.quantitaTaglia ? JSON.stringify(body.quantitaTaglia) : null,
+        noteProduzione: body.noteProduzione,
+        tolleranzaTaglio: body.tolleranzaTaglio,
+        tolleranzaCucitura: body.tolleranzaCucitura,
+        tolleranzaColore: body.tolleranzaColore,
+        tolleranzaStampa: body.tolleranzaStampa,
+        controlloQualita: body.controlloQualita,
+        packaging: body.packaging,
+        allegati: body.allegati ? JSON.stringify(body.allegati) : null,
+        consumoMateriale: body.consumoMateriale ? JSON.stringify(body.consumoMateriale) : null,
+        costoLavorazione: body.costoLavorazione,
+        prezzoVendita: body.prezzoVendita,
+        noteRapide: body.noteRapide,
+      },
+      include: { cliente: true },
+    });
+    return NextResponse.json(scheda, { status: 201 });
+  } catch (error) {
+    console.error("Errore creazione scheda:", error);
+    return NextResponse.json({ error: "Errore nella creazione della scheda." }, { status: 500 });
+  }
 }
