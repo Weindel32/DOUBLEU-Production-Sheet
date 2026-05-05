@@ -10,6 +10,30 @@ interface Props {
   onSave: (data: Partial<SchedaCompleta>) => Promise<void>;
 }
 
+const CATEGORIE_SKIRT = ["Skirt", "Gonnellino"];
+
+const ELASTICO_ADULTO: Record<string, { pantaloncino: number; skirt: number }> = {
+  "XS":   { pantaloncino: 70, skirt: 64 },
+  "S":    { pantaloncino: 72, skirt: 66 },
+  "M":    { pantaloncino: 74, skirt: 68 },
+  "L":    { pantaloncino: 76, skirt: 70 },
+  "XL":   { pantaloncino: 78, skirt: 72 },
+  "XXL":  { pantaloncino: 80, skirt: 74 },
+  "XXXL": { pantaloncino: 82, skirt: 76 },
+};
+
+const ELASTICO_KIDS: Record<string, number> = {
+  "4A": 54, "6A": 56, "8A": 58, "10A": 60, "12A": 62, "14A": 64, "16A": 66,
+};
+
+function getElasticoDefault(categoria: string | null | undefined, taglia: string): { lunghezzaElastico: number; altezzaElastico: number } | null {
+  const isSkirt = CATEGORIE_SKIRT.includes(categoria || "");
+  const altezzaElastico = isSkirt ? 1 : 4;
+  if (ELASTICO_KIDS[taglia] !== undefined) return { lunghezzaElastico: ELASTICO_KIDS[taglia], altezzaElastico };
+  if (ELASTICO_ADULTO[taglia]) return { lunghezzaElastico: isSkirt ? ELASTICO_ADULTO[taglia].skirt : ELASTICO_ADULTO[taglia].pantaloncino, altezzaElastico };
+  return null;
+}
+
 const COLONNE_STANDARD = [
   { key: "torace", label: "X. Torace" },
   { key: "lunghezza", label: "Lunghezza" },
@@ -33,9 +57,14 @@ export default function TabMisure({ scheda, onSave }: Props) {
   const [quantitaTaglia, setQuantitaTaglia] = useState<QuantitaTaglia>(
     (scheda.quantitaTaglia as QuantitaTaglia) || {}
   );
-  const [specsElastico, setSpecsElastico] = useState<ElasticoSpecs>(
-    (rawTabella.__specs as ElasticoSpecs) || {}
-  );
+  const [specsElastico, setSpecsElastico] = useState<ElasticoSpecs>(() => {
+    const existing = (rawTabella.__specs as ElasticoSpecs) || {};
+    if (isElastico && !existing.altezza) {
+      const defaultAltezza = CATEGORIE_SKIRT.includes(scheda.categoria || "") ? "1" : "4";
+      return { ...existing, altezza: defaultAltezza };
+    }
+    return existing;
+  });
 
   const tutteLeTaglie = [...TAGLIE_ADULTO, ...TAGLIE_KIDS];
   const [tagliAttive, setTagliAttive] = useState<string[]>(
@@ -71,9 +100,20 @@ export default function TabMisure({ scheda, onSave }: Props) {
   };
 
   const toggleTaglia = (taglia: string) => {
-    setTagliAttive((prev) =>
-      prev.includes(taglia) ? prev.filter((t) => t !== taglia) : [...prev, taglia]
-    );
+    if (tagliAttive.includes(taglia)) {
+      setTagliAttive((prev) => prev.filter((t) => t !== taglia));
+    } else {
+      setTagliAttive((prev) => [...prev, taglia]);
+      if (isElastico && !(tabellaMisure[taglia] as MisureTaglia)?.lunghezzaElastico) {
+        const defaults = getElasticoDefault(scheda.categoria, taglia);
+        if (defaults) {
+          setTabellaMisure((prev) => ({
+            ...prev,
+            [taglia]: { ...(prev[taglia] as MisureTaglia || {}), ...defaults },
+          }));
+        }
+      }
+    }
   };
 
   return (
