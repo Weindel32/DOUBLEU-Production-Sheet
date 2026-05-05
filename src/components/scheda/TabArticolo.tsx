@@ -126,7 +126,7 @@ export default function TabArticolo({ scheda, onSave, clienti, materiali }: Prop
       {/* Informazioni generali */}
       <div className="card">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold text-gray-700 text-sm uppercase tracking-wide">Informazioni generali</h3>
+          <h3 className="section-title">Informazioni generali</h3>
           <button onClick={() => setEditing(infoGeneraliFirstField)} title="Modifica">
             <Edit3 size={14} className="text-gray-400 hover:text-blue-600 transition-colors" />
           </button>
@@ -157,7 +157,7 @@ export default function TabArticolo({ scheda, onSave, clienti, materiali }: Prop
       {/* Immagini prodotto */}
       <div className="card">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold text-gray-700 text-sm uppercase tracking-wide">Immagini prodotto</h3>
+          <h3 className="section-title">Immagini prodotto</h3>
         </div>
         <div className="grid grid-cols-2 gap-3 mb-3">
           {immagini.length === 0 ? (
@@ -200,7 +200,7 @@ export default function TabArticolo({ scheda, onSave, clienti, materiali }: Prop
       {/* Specifiche prodotto */}
       <div className="card">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold text-gray-700 text-sm uppercase tracking-wide">Specifiche prodotto</h3>
+          <h3 className="section-title">Specifiche prodotto</h3>
           <button onClick={() => setEditing(specificheProdottoFirstField)} title="Modifica">
             <Edit3 size={14} className="text-gray-400 hover:text-blue-600 transition-colors" />
           </button>
@@ -257,7 +257,7 @@ export default function TabArticolo({ scheda, onSave, clienti, materiali }: Prop
       {/* Fornitori & Referenti */}
       <div className="card">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold text-gray-700 text-sm uppercase tracking-wide">Fornitori & Referenti</h3>
+          <h3 className="section-title">Fornitori & Referenti</h3>
         </div>
         <div className="grid grid-cols-3 gap-6">
           <div>

@@ -143,7 +143,7 @@ export default function TabProduzione({ scheda, onSave, materialiDisponibili }: 
     <div className="grid grid-cols-3 gap-5">
       {/* Note di produzione */}
       <div className="card">
-        <h3 className="font-semibold text-gray-700 text-sm uppercase tracking-wide mb-3">Note di produzione</h3>
+        <h3 className="section-title">Note di produzione</h3>
         <div className="space-y-3">
           <div>
             <label className="text-xs text-gray-400 block mb-1">Note generali</label>
@@ -161,7 +161,7 @@ export default function TabProduzione({ scheda, onSave, materialiDisponibili }: 
 
       {/* Tolleranze */}
       <div className="card">
-        <h3 className="font-semibold text-gray-700 text-sm uppercase tracking-wide mb-3">Tolleranze</h3>
+        <h3 className="section-title">Tolleranze</h3>
         <div className="space-y-2.5">
           {[
             { label: "Taglio", value: tolleranzaTaglio, set: setTolleranzaTaglio },
@@ -189,7 +189,7 @@ export default function TabProduzione({ scheda, onSave, materialiDisponibili }: 
       <div className="space-y-4">
         {/* Allegati */}
         <div className="card">
-          <h3 className="font-semibold text-gray-700 text-sm uppercase tracking-wide mb-3">Allegati</h3>
+          <h3 className="section-title">Allegati</h3>
           <div className="space-y-2 mb-3">
             {(scheda.allegati || []).map((a, i) => (
               <div key={i} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg text-xs text-gray-600">
@@ -210,7 +210,7 @@ export default function TabProduzione({ scheda, onSave, materialiDisponibili }: 
         {/* Costi interni */}
         <div className="card border-2 border-orange-100">
           <div className="flex items-center gap-2 mb-3">
-            <h3 className="font-semibold text-gray-700 text-sm uppercase tracking-wide">Costi interni</h3>
+            <h3 className="section-title">Costi interni</h3>
             <div className="flex items-center gap-1 text-xs text-orange-500 bg-orange-50 px-2 py-0.5 rounded-full">
               <Info size={11} />
               Solo PDF interno
