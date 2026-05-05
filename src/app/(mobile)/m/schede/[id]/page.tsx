@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { formatData, calcolaTotaleQuantita, TAGLIE_ADULTO, TAGLIE_KIDS } from "@/lib/utils";
+import { formatData, calcolaTotaleQuantita, TAGLIE_ADULTO, TAGLIE_KIDS, CATEGORIE_ELASTICO } from "@/lib/utils";
 
 const STATO_BADGE: Record<string, string> = {
   bozza: "bg-gray-100 text-gray-600",
@@ -123,7 +123,7 @@ export default async function MobileSchedaDetailPage({ params }: { params: Promi
 
         {/* Tabella misure */}
         {taglieAttive.length > 0 && Object.keys(tabellaMisure).length > 0 && (() => {
-          const isElastico = ["Pantaloncino", "Short", "Skirt"].includes(scheda.categoria || "");
+          const isElastico = CATEGORIE_ELASTICO.includes(scheda.categoria || "");
           const specs = tabellaMisure.__specs as { altezza?: string; tipo?: string; costruzione?: string; applicazione?: string } | undefined;
           return (
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">

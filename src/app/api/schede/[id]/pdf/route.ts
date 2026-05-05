@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { CATEGORIE_ELASTICO } from "@/lib/utils";
 import type { ConsumoMateriale } from "@/types";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -22,7 +23,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const isInterno = tipo === "interno";
 
   const taglie = Object.keys(quantitaTaglia);
-  const isElastico = ["Pantaloncino", "Short", "Skirt"].includes(scheda.categoria || "");
+  const isElastico = CATEGORIE_ELASTICO.includes(scheda.categoria || "");
   const specsElastico = tabellaMisure.__specs as { altezza?: string; tipo?: string; costruzione?: string; applicazione?: string } | undefined;
 
   const costoMaterialePerCapo = consumi.reduce(

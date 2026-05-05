@@ -1,15 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { TAGLIE_ADULTO, TAGLIE_KIDS, calcolaTotaleQuantita } from "@/lib/utils";
+import { TAGLIE_ADULTO, TAGLIE_KIDS, calcolaTotaleQuantita, CATEGORIE_ELASTICO } from "@/lib/utils";
 import type { SchedaCompleta, TabellaTaglie, QuantitaTaglia, ElasticoSpecs, MisureTaglia } from "@/types";
 
 interface Props {
   scheda: SchedaCompleta;
   onSave: (data: Partial<SchedaCompleta>) => Promise<void>;
 }
-
-const CATEGORIE_ELASTICO = ["Pantaloncino", "Short", "Skirt"];
 
 const COLONNE_STANDARD = [
   { key: "torace", label: "X. Torace" },
