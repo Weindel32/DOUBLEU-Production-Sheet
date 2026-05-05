@@ -99,7 +99,7 @@ export default function TabMisure({ scheda, onSave }: Props) {
     setSaving(false);
   };
 
-  const toggleTaglia = (taglia: string) => {
+  const toggleTaglia = async (taglia: string) => {
     if (tagliAttive.includes(taglia)) {
       setTagliAttive((prev) => prev.filter((t) => t !== taglia));
     } else {
@@ -107,10 +107,13 @@ export default function TabMisure({ scheda, onSave }: Props) {
       if (isElastico && !(tabellaMisure[taglia] as MisureTaglia)?.lunghezzaElastico) {
         const defaults = getElasticoDefault(scheda.categoria, taglia);
         if (defaults) {
-          setTabellaMisure((prev) => ({
-            ...prev,
-            [taglia]: { ...(prev[taglia] as MisureTaglia || {}), ...defaults },
-          }));
+          const nuovaTabella: TabellaTaglie = {
+            ...tabellaMisure,
+            [taglia]: { ...(tabellaMisure[taglia] as MisureTaglia || {}), ...defaults },
+            __specs: specsElastico,
+          };
+          setTabellaMisure(nuovaTabella);
+          await onSave({ tabellaMisure: nuovaTabella, quantitaTaglia });
         }
       }
     }
