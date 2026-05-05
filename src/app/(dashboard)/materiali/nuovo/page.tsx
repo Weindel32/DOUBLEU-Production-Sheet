@@ -75,7 +75,7 @@ export default function NuovoMaterialePage() {
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 items-end">
           <div>
             <label className="text-sm text-gray-600 block mb-1">Tipo *</label>
             <select
@@ -104,7 +104,7 @@ export default function NuovoMaterialePage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 items-end">
           <div>
             <label className="text-sm text-gray-600 block mb-1">Unità di misura costo</label>
             <select
@@ -133,7 +133,7 @@ export default function NuovoMaterialePage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-3 items-end">
           <div>
             <label className="text-sm text-gray-600 block mb-1">Unità peso</label>
             <select
