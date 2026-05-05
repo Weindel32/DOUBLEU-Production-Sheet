@@ -173,51 +173,25 @@ export default function TabMisure({ scheda, onSave }: Props) {
           <h3 className="section-title">
             Specifiche Elastico Vita
           </h3>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs text-gray-500 block mb-1">Altezza elastico (cm)</label>
-              <input
-                type="text"
-                value={specsElastico.altezza ?? ""}
-                onChange={(e) => aggiornaSpec("altezza", e.target.value)}
-                onBlur={salva}
-                placeholder="es. 4"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-blue-400 outline-none"
-              />
-            </div>
-            <div>
-              <label className="text-xs text-gray-500 block mb-1">Tipo</label>
-              <input
-                type="text"
-                value={specsElastico.tipo ?? ""}
-                onChange={(e) => aggiornaSpec("tipo", e.target.value)}
-                onBlur={salva}
-                placeholder="es. elastico interno con tunnel"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-blue-400 outline-none"
-              />
-            </div>
-            <div>
-              <label className="text-xs text-gray-500 block mb-1">Costruzione</label>
-              <input
-                type="text"
-                value={specsElastico.costruzione ?? ""}
-                onChange={(e) => aggiornaSpec("costruzione", e.target.value)}
-                onBlur={salva}
-                placeholder="es. ribattitura superiore e inferiore"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-blue-400 outline-none"
-              />
-            </div>
-            <div>
-              <label className="text-xs text-gray-500 block mb-1">Applicazione</label>
-              <input
-                type="text"
-                value={specsElastico.applicazione ?? ""}
-                onChange={(e) => aggiornaSpec("applicazione", e.target.value)}
-                onBlur={salva}
-                placeholder="es. con leggera tensione per stabilità"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-blue-400 outline-none"
-              />
-            </div>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+            {[
+              { key: "altezza",     label: "Altezza elastico (cm)", placeholder: "es. 4" },
+              { key: "tipo",        label: "Tipo",                  placeholder: "es. elastico interno con tunnel" },
+              { key: "costruzione", label: "Costruzione",           placeholder: "es. ribattitura superiore e inferiore" },
+              { key: "applicazione",label: "Applicazione",          placeholder: "es. con leggera tensione per stabilità" },
+            ].map(({ key, label, placeholder }) => (
+              <div key={key} className="flex flex-col">
+                <label className="text-xs text-gray-500 mb-1 whitespace-nowrap">{label}</label>
+                <input
+                  type="text"
+                  value={specsElastico[key as keyof ElasticoSpecs] ?? ""}
+                  onChange={(e) => aggiornaSpec(key as keyof ElasticoSpecs, e.target.value)}
+                  onBlur={salva}
+                  placeholder={placeholder}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-blue-400 outline-none bg-white"
+                />
+              </div>
+            ))}
           </div>
         </div>
       )}
