@@ -139,6 +139,7 @@ export default function TabProduzione({ scheda, onSave, materialiDisponibili }: 
     : null;
 
   return (
+    <>
     <div className="grid grid-cols-3 gap-5">
       {/* Note di produzione */}
       <div className="card">
@@ -403,5 +404,6 @@ export default function TabProduzione({ scheda, onSave, materialiDisponibili }: 
         {saving ? "Salvataggio..." : "Salva"}
       </button>
     </div>
+    </>
   );
 }

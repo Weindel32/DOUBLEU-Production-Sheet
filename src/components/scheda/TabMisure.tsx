@@ -117,6 +117,7 @@ export default function TabMisure({ scheda, onSave }: Props) {
   };
 
   return (
+    <>
     <div className="space-y-5">
       {/* Selezione taglie */}
       <div className="card">
@@ -300,6 +301,7 @@ export default function TabMisure({ scheda, onSave }: Props) {
           </div>
         </div>
       </div>
+    </div>
 
     <div className="flex justify-end pt-2">
       <button
@@ -311,5 +313,6 @@ export default function TabMisure({ scheda, onSave }: Props) {
         {saving ? "Salvataggio..." : "Salva"}
       </button>
     </div>
+    </>
   );
 }

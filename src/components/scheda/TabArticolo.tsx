@@ -120,6 +120,7 @@ export default function TabArticolo({ scheda, onSave, clienti, materiali }: Prop
   );
 
   return (
+    <>
     <div className="space-y-5">
       <div className="grid grid-cols-3 gap-5">
       {/* Informazioni generali */}
@@ -306,5 +307,6 @@ export default function TabArticolo({ scheda, onSave, clienti, materiali }: Prop
         {saving ? "Salvataggio..." : "Salva"}
       </button>
     </div>
+    </>
   );
 }

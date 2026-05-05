@@ -51,6 +51,7 @@ export default function TabPersonalizzazione({ scheda, onSave, loghiDisponibili 
   };
 
   return (
+    <>
     <div className="grid grid-cols-3 gap-5">
       {/* Loghi applicati */}
       <div className="card col-span-1">
@@ -230,5 +231,6 @@ export default function TabPersonalizzazione({ scheda, onSave, loghiDisponibili 
         {saving ? "Salvataggio..." : "Salva"}
       </button>
     </div>
+    </>
   );
 }
