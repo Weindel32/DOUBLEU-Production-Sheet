@@ -125,7 +125,7 @@ export default function TabMisure({ scheda, onSave }: Props) {
       {/* Selezione taglie */}
       <div className="card">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold text-gray-700 text-sm uppercase tracking-wide">Taglie attive</h3>
+          <h3 className="section-title">Taglie attive</h3>
         </div>
         <div className="space-y-2">
           <div>
@@ -170,7 +170,7 @@ export default function TabMisure({ scheda, onSave }: Props) {
       {/* Specifiche Elastico Vita — solo per Pantaloncino / Short / Skirt */}
       {isElastico && (
         <div className="card">
-          <h3 className="font-semibold text-gray-700 text-sm uppercase tracking-wide mb-3">
+          <h3 className="section-title">
             Specifiche Elastico Vita
           </h3>
           <div className="grid grid-cols-2 gap-3">
@@ -226,7 +226,7 @@ export default function TabMisure({ scheda, onSave }: Props) {
         {/* Tabella misure */}
         <div className="card p-0 overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-100">
-            <h3 className="font-semibold text-gray-700 text-sm uppercase tracking-wide">
+            <h3 className="section-title">
               {isElastico ? "Tabella elastico per taglia" : "Tabella misure (cm)"}
             </h3>
           </div>
@@ -269,7 +269,7 @@ export default function TabMisure({ scheda, onSave }: Props) {
         {/* Quantità per taglia */}
         <div className="card p-0 overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-            <h3 className="font-semibold text-gray-700 text-sm uppercase tracking-wide">Quantità per taglia</h3>
+            <h3 className="section-title">Quantità per taglia</h3>
             <span className="text-xs text-blue-700 font-semibold">Totale: {totale} pz</span>
           </div>
           <div className="overflow-x-auto px-4 py-4">

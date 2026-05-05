@@ -56,7 +56,7 @@ export default function TabPersonalizzazione({ scheda, onSave, loghiDisponibili 
       {/* Loghi applicati */}
       <div className="card col-span-1">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold text-gray-700 text-sm uppercase tracking-wide">Loghi applicati</h3>
+          <h3 className="section-title">Loghi applicati</h3>
         </div>
 
         <div className="space-y-3 mb-4">
@@ -137,7 +137,7 @@ export default function TabPersonalizzazione({ scheda, onSave, loghiDisponibili 
 
       {/* Posizionamento visivo */}
       <div className="card">
-        <h3 className="font-semibold text-gray-700 text-sm uppercase tracking-wide mb-3">Posizionamento</h3>
+        <h3 className="section-title">Posizionamento</h3>
         <div className="flex justify-center gap-6">
           {/* Fronte */}
           <div className="text-center">
@@ -176,7 +176,7 @@ export default function TabPersonalizzazione({ scheda, onSave, loghiDisponibili 
 
       {/* Colori e note */}
       <div className="card">
-        <h3 className="font-semibold text-gray-700 text-sm uppercase tracking-wide mb-3">Colori</h3>
+        <h3 className="section-title">Colori</h3>
 
         <div className="space-y-3 mb-4">
           <div>
