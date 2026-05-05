@@ -1,12 +1,24 @@
+export interface ElasticoSpecs {
+  altezza?: string;
+  tipo?: string;
+  costruzione?: string;
+  applicazione?: string;
+}
+
+export interface MisureTaglia {
+  torace?: number;
+  lunghezza?: number;
+  spalla?: number;
+  lungManica?: number;
+  fianchi?: number;
+  vita?: number;
+  lunghezzaElastico?: number;
+  altezzaElastico?: number;
+}
+
 export interface TabellaTaglie {
-  [taglia: string]: {
-    torace?: number;
-    lunghezza?: number;
-    spalla?: number;
-    lungManica?: number;
-    fianchi?: number;
-    vita?: number;
-  };
+  __specs?: ElasticoSpecs;
+  [taglia: string]: MisureTaglia | ElasticoSpecs | undefined;
 }
 
 export interface QuantitaTaglia {

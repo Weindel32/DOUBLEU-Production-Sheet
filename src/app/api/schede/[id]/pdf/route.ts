@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { CATEGORIE_ELASTICO } from "@/lib/utils";
 import type { ConsumoMateriale } from "@/types";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -17,11 +18,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const quantitaTaglia = scheda.quantitaTaglia ? JSON.parse(scheda.quantitaTaglia) : {};
   const allegati = scheda.allegati ? JSON.parse(scheda.allegati) : [];
   const consumi = scheda.consumoMateriale ? JSON.parse(scheda.consumoMateriale) : [];
+  const immagini: string[] = scheda.immagini ? JSON.parse(scheda.immagini) : [];
   const totalePezzi = Object.values(quantitaTaglia as Record<string, number>).reduce((s, q) => s + q, 0);
 
   const isInterno = tipo === "interno";
 
   const taglie = Object.keys(quantitaTaglia);
+  const isElastico = CATEGORIE_ELASTICO.includes(scheda.categoria || "");
+  const specsElastico = tabellaMisure.__specs as { altezza?: string; tipo?: string; costruzione?: string; applicazione?: string } | undefined;
 
   const costoMaterialePerCapo = consumi.reduce(
     (sum: number, c: { consumoPerCapo: number; costoUnitario?: number }) =>
@@ -72,6 +76,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   .cost-row { display: flex; justify-content: space-between; padding: 3px 0; }
   .cost-total { font-weight: 700; border-top: 1px solid #fde68a; padding-top: 4px; margin-top: 4px; }
   .footer { margin-top: 20px; padding-top: 10px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; color: #999; font-size: 9px; }
+  .img-grid { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+  .img-grid img { max-height: 220px; max-width: 220px; object-fit: contain; border: 1px solid #e5e7eb; border-radius: 6px; background: #f9fafb; }
 </style>
 </head>
 <body>
@@ -109,6 +115,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       <div class="meta-item"><div class="meta-label">Versione</div><div class="meta-value">${scheda.versione}</div></div>
     </div>
   </div>
+
+  ${immagini.length > 0 ? `
+  <div class="section">
+    <div class="section-title">Immagini prodotto</div>
+    <div class="img-grid">
+      ${immagini.map((url) => `<img src="${url}" alt="Prodotto" />`).join("")}
+    </div>
+  </div>
+  ` : ""}
 
   <div class="grid2">
     <div class="section">
@@ -157,25 +172,48 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   <div class="grid2">
     ${taglie.length > 0 ? `
     <div class="section">
-      <div class="section-title">Tabella misure (cm)</div>
-      <table>
-        <tr>
-          <th>Taglia</th>
-          <th>Torace</th>
-          <th>Lunghezza</th>
-          <th>Spalla</th>
-          <th>Lung. manica</th>
-        </tr>
-        ${taglie.map((t) => `
+      ${isElastico ? `
+        <div class="section-title">Specifiche Elastico Vita</div>
+        ${specsElastico?.altezza ? `<div class="field"><div class="field-label">Altezza elastico</div><div class="field-value">${specsElastico.altezza} cm</div></div>` : ""}
+        ${specsElastico?.tipo ? `<div class="field"><div class="field-label">Tipo</div><div class="field-value">${specsElastico.tipo}</div></div>` : ""}
+        ${specsElastico?.costruzione ? `<div class="field"><div class="field-label">Costruzione</div><div class="field-value">${specsElastico.costruzione}</div></div>` : ""}
+        ${specsElastico?.applicazione ? `<div class="field"><div class="field-label">Applicazione</div><div class="field-value">${specsElastico.applicazione}</div></div>` : ""}
+        <div style="margin-top:10px"><div class="section-title">Lunghezza Elastico per Taglia</div></div>
+        <table>
           <tr>
-            <td><strong>${t}</strong></td>
-            <td>${tabellaMisure[t]?.torace || "—"}</td>
-            <td>${tabellaMisure[t]?.lunghezza || "—"}</td>
-            <td>${tabellaMisure[t]?.spalla || "—"}</td>
-            <td>${tabellaMisure[t]?.lungManica || "—"}</td>
+            <th>Taglia</th>
+            <th>Lunghezza Elastico (cm)</th>
+            <th>Altezza (cm)</th>
           </tr>
-        `).join("")}
-      </table>
+          ${taglie.map((t) => `
+            <tr>
+              <td><strong>${t}</strong></td>
+              <td>${(tabellaMisure[t] as { lunghezzaElastico?: number })?.lunghezzaElastico || "—"}</td>
+              <td>${(tabellaMisure[t] as { altezzaElastico?: number })?.altezzaElastico || "—"}</td>
+            </tr>
+          `).join("")}
+        </table>
+      ` : `
+        <div class="section-title">Tabella misure (cm)</div>
+        <table>
+          <tr>
+            <th>Taglia</th>
+            <th>Torace</th>
+            <th>Lunghezza</th>
+            <th>Spalla</th>
+            <th>Lung. manica</th>
+          </tr>
+          ${taglie.map((t) => `
+            <tr>
+              <td><strong>${t}</strong></td>
+              <td>${(tabellaMisure[t] as { torace?: number })?.torace || "—"}</td>
+              <td>${(tabellaMisure[t] as { lunghezza?: number })?.lunghezza || "—"}</td>
+              <td>${(tabellaMisure[t] as { spalla?: number })?.spalla || "—"}</td>
+              <td>${(tabellaMisure[t] as { lungManica?: number })?.lungManica || "—"}</td>
+            </tr>
+          `).join("")}
+        </table>
+      `}
     </div>
     ` : ""}
 

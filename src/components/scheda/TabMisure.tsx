@@ -1,15 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { TAGLIE_ADULTO, TAGLIE_KIDS, calcolaTotaleQuantita } from "@/lib/utils";
-import type { SchedaCompleta, TabellaTaglie, QuantitaTaglia } from "@/types";
+import { TAGLIE_ADULTO, TAGLIE_KIDS, calcolaTotaleQuantita, CATEGORIE_ELASTICO } from "@/lib/utils";
+import type { SchedaCompleta, TabellaTaglie, QuantitaTaglia, ElasticoSpecs, MisureTaglia } from "@/types";
 
 interface Props {
   scheda: SchedaCompleta;
   onSave: (data: Partial<SchedaCompleta>) => Promise<void>;
 }
 
-const COLONNE_MISURE = [
+const COLONNE_STANDARD = [
   { key: "torace", label: "X. Torace" },
   { key: "lunghezza", label: "Lunghezza" },
   { key: "spalla", label: "Spalla" },
@@ -18,13 +18,24 @@ const COLONNE_MISURE = [
   { key: "vita", label: "Vita" },
 ];
 
+const COLONNE_ELASTICO = [
+  { key: "lunghezzaElastico", label: "Lung. Elastico (cm)" },
+  { key: "altezzaElastico", label: "Altezza (cm)" },
+];
+
 export default function TabMisure({ scheda, onSave }: Props) {
-  const [tabellaMisure, setTabellaMisure] = useState<TabellaTaglie>(
-    (scheda.tabellaMisure as TabellaTaglie) || {}
-  );
+  const isElastico = CATEGORIE_ELASTICO.includes(scheda.categoria || "");
+  const colonne = isElastico ? COLONNE_ELASTICO : COLONNE_STANDARD;
+
+  const rawTabella = (scheda.tabellaMisure as TabellaTaglie) || {};
+  const [tabellaMisure, setTabellaMisure] = useState<TabellaTaglie>(rawTabella);
   const [quantitaTaglia, setQuantitaTaglia] = useState<QuantitaTaglia>(
     (scheda.quantitaTaglia as QuantitaTaglia) || {}
   );
+  const [specsElastico, setSpecsElastico] = useState<ElasticoSpecs>(
+    (rawTabella.__specs as ElasticoSpecs) || {}
+  );
+
   const tutteLeTaglie = [...TAGLIE_ADULTO, ...TAGLIE_KIDS];
   const [tagliAttive, setTagliAttive] = useState<string[]>(
     tutteLeTaglie.filter((t) => tabellaMisure[t] || quantitaTaglia[t])
@@ -35,8 +46,12 @@ export default function TabMisure({ scheda, onSave }: Props) {
   const aggiornaMisura = (taglia: string, campo: string, valore: string) => {
     setTabellaMisure((prev) => ({
       ...prev,
-      [taglia]: { ...prev[taglia], [campo]: valore ? Number(valore) : undefined },
+      [taglia]: { ...(prev[taglia] as MisureTaglia), [campo]: valore ? Number(valore) : undefined },
     }));
+  };
+
+  const aggiornaSpec = (campo: keyof ElasticoSpecs, valore: string) => {
+    setSpecsElastico((prev) => ({ ...prev, [campo]: valore }));
   };
 
   const aggiornaQuantita = (taglia: string, valore: string) => {
@@ -44,7 +59,10 @@ export default function TabMisure({ scheda, onSave }: Props) {
   };
 
   const salva = async () => {
-    await onSave({ tabellaMisure, quantitaTaglia });
+    const tabellaDaSalvare = isElastico
+      ? { ...tabellaMisure, __specs: specsElastico }
+      : tabellaMisure;
+    await onSave({ tabellaMisure: tabellaDaSalvare, quantitaTaglia });
   };
 
   const toggleTaglia = (taglia: string) => {
@@ -100,18 +118,75 @@ export default function TabMisure({ scheda, onSave }: Props) {
         </div>
       </div>
 
+      {/* Specifiche Elastico Vita — solo per Pantaloncino / Short / Skirt */}
+      {isElastico && (
+        <div className="card">
+          <h3 className="font-semibold text-gray-700 text-sm uppercase tracking-wide mb-3">
+            Specifiche Elastico Vita
+          </h3>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-gray-500 block mb-1">Altezza elastico (cm)</label>
+              <input
+                type="text"
+                value={specsElastico.altezza ?? ""}
+                onChange={(e) => aggiornaSpec("altezza", e.target.value)}
+                onBlur={salva}
+                placeholder="es. 4"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-blue-400 outline-none"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 block mb-1">Tipo</label>
+              <input
+                type="text"
+                value={specsElastico.tipo ?? ""}
+                onChange={(e) => aggiornaSpec("tipo", e.target.value)}
+                onBlur={salva}
+                placeholder="es. elastico interno con tunnel"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-blue-400 outline-none"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 block mb-1">Costruzione</label>
+              <input
+                type="text"
+                value={specsElastico.costruzione ?? ""}
+                onChange={(e) => aggiornaSpec("costruzione", e.target.value)}
+                onBlur={salva}
+                placeholder="es. ribattitura superiore e inferiore"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-blue-400 outline-none"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 block mb-1">Applicazione</label>
+              <input
+                type="text"
+                value={specsElastico.applicazione ?? ""}
+                onChange={(e) => aggiornaSpec("applicazione", e.target.value)}
+                onBlur={salva}
+                placeholder="es. con leggera tensione per stabilità"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-blue-400 outline-none"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-5">
         {/* Tabella misure */}
         <div className="card p-0 overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-100">
-            <h3 className="font-semibold text-gray-700 text-sm uppercase tracking-wide">Tabella misure (cm)</h3>
+            <h3 className="font-semibold text-gray-700 text-sm uppercase tracking-wide">
+              {isElastico ? "Tabella elastico per taglia" : "Tabella misure (cm)"}
+            </h3>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-gray-50">
                   <th className="text-left px-3 py-2 text-gray-500 font-medium text-xs">Taglia</th>
-                  {COLONNE_MISURE.map((c) => (
+                  {colonne.map((c) => (
                     <th key={c.key} className="text-right px-2 py-2 text-gray-500 font-medium text-xs whitespace-nowrap">
                       {c.label}
                     </th>
@@ -122,14 +197,14 @@ export default function TabMisure({ scheda, onSave }: Props) {
                 {tagliAttive.map((taglia) => (
                   <tr key={taglia} className="hover:bg-gray-50">
                     <td className="px-3 py-1.5 font-semibold text-gray-700 text-xs">{taglia}</td>
-                    {COLONNE_MISURE.map((c) => (
+                    {colonne.map((c) => (
                       <td key={c.key} className="px-2 py-1">
                         <input
                           type="number"
-                          value={tabellaMisure[taglia]?.[c.key as keyof typeof tabellaMisure[string]] ?? ""}
+                          value={(tabellaMisure[taglia] as MisureTaglia)?.[c.key as keyof MisureTaglia] ?? ""}
                           onChange={(e) => aggiornaMisura(taglia, c.key, e.target.value)}
                           onBlur={salva}
-                          className="w-14 text-right text-xs text-gray-700 border border-transparent focus:border-blue-300 rounded px-1 py-0.5 outline-none"
+                          className="w-16 text-right text-xs text-gray-700 border border-transparent focus:border-blue-300 rounded px-1 py-0.5 outline-none"
                           placeholder="—"
                         />
                       </td>
@@ -142,7 +217,7 @@ export default function TabMisure({ scheda, onSave }: Props) {
           <div className="px-4 py-2 text-xs text-gray-400 italic">Clicca sui valori per modificarli</div>
         </div>
 
-        {/* Quantità per taglia — size run orizzontale */}
+        {/* Quantità per taglia */}
         <div className="card p-0 overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
             <h3 className="font-semibold text-gray-700 text-sm uppercase tracking-wide">Quantità per taglia</h3>

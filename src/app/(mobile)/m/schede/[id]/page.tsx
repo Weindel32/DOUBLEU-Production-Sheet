@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { formatData, calcolaTotaleQuantita, TAGLIE_ADULTO, TAGLIE_KIDS } from "@/lib/utils";
+import { formatData, calcolaTotaleQuantita, TAGLIE_ADULTO, TAGLIE_KIDS, CATEGORIE_ELASTICO } from "@/lib/utils";
 
 const STATO_BADGE: Record<string, string> = {
   bozza: "bg-gray-100 text-gray-600",
@@ -122,36 +122,64 @@ export default async function MobileSchedaDetailPage({ params }: { params: Promi
         )}
 
         {/* Tabella misure */}
-        {taglieAttive.length > 0 && Object.keys(tabellaMisure).length > 0 && (
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-            <div className="px-4 py-2.5 bg-gray-50">
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Misure (cm)</span>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="text-xs w-full">
-                <thead>
-                  <tr className="bg-gray-50">
-                    <th className="text-left px-3 py-2 text-gray-400 font-medium">Taglia</th>
-                    {["Torace", "Lung.", "Spalla", "Manica"].map((h) => (
-                      <th key={h} className="text-right px-2 py-2 text-gray-400 font-medium">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {taglieAttive.filter((t) => tabellaMisure[t]).map((t) => (
-                    <tr key={t}>
-                      <td className="px-3 py-2 font-semibold text-gray-700">{t}</td>
-                      <td className="px-2 py-2 text-right text-gray-600">{tabellaMisure[t]?.torace ?? "—"}</td>
-                      <td className="px-2 py-2 text-right text-gray-600">{tabellaMisure[t]?.lunghezza ?? "—"}</td>
-                      <td className="px-2 py-2 text-right text-gray-600">{tabellaMisure[t]?.spalla ?? "—"}</td>
-                      <td className="px-2 py-2 text-right text-gray-600">{tabellaMisure[t]?.lungManica ?? "—"}</td>
+        {taglieAttive.length > 0 && Object.keys(tabellaMisure).length > 0 && (() => {
+          const isElastico = CATEGORIE_ELASTICO.includes(scheda.categoria || "");
+          const specs = tabellaMisure.__specs as { altezza?: string; tipo?: string; costruzione?: string; applicazione?: string } | undefined;
+          return (
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="px-4 py-2.5 bg-gray-50">
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  {isElastico ? "Elastico Vita" : "Misure (cm)"}
+                </span>
+              </div>
+              {isElastico && (specs?.tipo || specs?.costruzione || specs?.applicazione) && (
+                <div className="px-4 py-3 border-b border-gray-50 space-y-1">
+                  {specs?.altezza && <p className="text-xs text-gray-600">- Altezza elastico: <strong>{specs.altezza} cm</strong></p>}
+                  {specs?.tipo && <p className="text-xs text-gray-600">- Tipo: {specs.tipo}</p>}
+                  {specs?.costruzione && <p className="text-xs text-gray-600">- Costruzione: {specs.costruzione}</p>}
+                  {specs?.applicazione && <p className="text-xs text-gray-600">- Applicazione: {specs.applicazione}</p>}
+                </div>
+              )}
+              <div className="overflow-x-auto">
+                <table className="text-xs w-full">
+                  <thead>
+                    <tr className="bg-gray-50">
+                      <th className="text-left px-3 py-2 text-gray-400 font-medium">Taglia</th>
+                      {isElastico
+                        ? [["Lung. Elastico", "lunghezzaElastico"], ["Altezza", "altezzaElastico"]].map(([h]) => (
+                            <th key={h} className="text-right px-2 py-2 text-gray-400 font-medium">{h}</th>
+                          ))
+                        : ["Torace", "Lung.", "Spalla", "Manica"].map((h) => (
+                            <th key={h} className="text-right px-2 py-2 text-gray-400 font-medium">{h}</th>
+                          ))
+                      }
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {taglieAttive.filter((t) => tabellaMisure[t]).map((t) => (
+                      <tr key={t}>
+                        <td className="px-3 py-2 font-semibold text-gray-700">{t}</td>
+                        {isElastico ? (
+                          <>
+                            <td className="px-2 py-2 text-right text-gray-600">{(tabellaMisure[t] as { lunghezzaElastico?: number })?.lunghezzaElastico ?? "—"}</td>
+                            <td className="px-2 py-2 text-right text-gray-600">{(tabellaMisure[t] as { altezzaElastico?: number })?.altezzaElastico ?? "—"}</td>
+                          </>
+                        ) : (
+                          <>
+                            <td className="px-2 py-2 text-right text-gray-600">{(tabellaMisure[t] as { torace?: number })?.torace ?? "—"}</td>
+                            <td className="px-2 py-2 text-right text-gray-600">{(tabellaMisure[t] as { lunghezza?: number })?.lunghezza ?? "—"}</td>
+                            <td className="px-2 py-2 text-right text-gray-600">{(tabellaMisure[t] as { spalla?: number })?.spalla ?? "—"}</td>
+                            <td className="px-2 py-2 text-right text-gray-600">{(tabellaMisure[t] as { lungManica?: number })?.lungManica ?? "—"}</td>
+                          </>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Fornitori */}
         {(scheda.modellista || scheda.fornitoreTessuto || scheda.produttore) && (
