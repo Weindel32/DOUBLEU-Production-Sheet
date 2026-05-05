@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Edit3, Upload, X, Loader2 } from "lucide-react";
+import { Upload, X, Loader2, Save } from "lucide-react";
 import { CATEGORIE } from "@/lib/utils";
 import type { SchedaCompleta } from "@/types";
 
@@ -16,6 +16,13 @@ export default function TabArticolo({ scheda, onSave, clienti, materiali }: Prop
   const [editing, setEditing] = useState<string | null>(null);
   const [immagini, setImmagini] = useState<string[]>(scheda.immagini || []);
   const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const salvaAll = async () => {
+    setSaving(true);
+    await onSave(values);
+    setSaving(false);
+  };
   const fileInputRef = useRef<HTMLInputElement>(null);
   const infoGeneraliFirstField = "nomeArticolo";
   const specificheProdottoFirstField = "tessutoPrincipale";
@@ -287,6 +294,17 @@ export default function TabArticolo({ scheda, onSave, clienti, materiali }: Prop
           </div>
         </div>
       </div>
+    </div>
+
+    <div className="flex justify-end pt-2">
+      <button
+        onClick={salvaAll}
+        disabled={saving}
+        className="flex items-center gap-2 bg-blue-700 hover:bg-blue-800 disabled:opacity-50 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors"
+      >
+        {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
+        {saving ? "Salvataggio..." : "Salva"}
+      </button>
     </div>
   );
 }

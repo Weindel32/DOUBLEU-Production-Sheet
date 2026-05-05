@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { TAGLIE_ADULTO, TAGLIE_KIDS, calcolaTotaleQuantita, CATEGORIE_ELASTICO } from "@/lib/utils";
+import { Loader2, Save } from "lucide-react";
 import type { SchedaCompleta, TabellaTaglie, QuantitaTaglia, ElasticoSpecs, MisureTaglia } from "@/types";
 
 interface Props {
@@ -58,11 +59,15 @@ export default function TabMisure({ scheda, onSave }: Props) {
     setQuantitaTaglia((prev) => ({ ...prev, [taglia]: valore ? Number(valore) : 0 }));
   };
 
+  const [saving, setSaving] = useState(false);
+
   const salva = async () => {
+    setSaving(true);
     const tabellaDaSalvare = isElastico
       ? { ...tabellaMisure, __specs: specsElastico }
       : tabellaMisure;
     await onSave({ tabellaMisure: tabellaDaSalvare, quantitaTaglia });
+    setSaving(false);
   };
 
   const toggleTaglia = (taglia: string) => {
@@ -255,6 +260,16 @@ export default function TabMisure({ scheda, onSave }: Props) {
           </div>
         </div>
       </div>
+
+    <div className="flex justify-end pt-2">
+      <button
+        onClick={salva}
+        disabled={saving}
+        className="flex items-center gap-2 bg-blue-700 hover:bg-blue-800 disabled:opacity-50 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors"
+      >
+        {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
+        {saving ? "Salvataggio..." : "Salva"}
+      </button>
     </div>
   );
 }

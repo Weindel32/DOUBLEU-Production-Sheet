@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { PlusCircle, Trash2, Upload, Info } from "lucide-react";
+import { PlusCircle, Trash2, Upload, Info, Loader2, Save } from "lucide-react";
 import type { SchedaCompleta, ConsumoMateriale } from "@/types";
 import { calcolaTotaleQuantita } from "@/lib/utils";
 
@@ -88,6 +88,14 @@ export default function TabProduzione({ scheda, onSave, materialiDisponibili }: 
       }
       return { ...c, [field]: value };
     }));
+  };
+
+  const [saving, setSaving] = useState(false);
+
+  const salvaAll = async () => {
+    setSaving(true);
+    await salva();
+    setSaving(false);
   };
 
   const salva = async (extra?: Partial<SchedaCompleta>) => {
@@ -383,6 +391,17 @@ export default function TabProduzione({ scheda, onSave, materialiDisponibili }: 
           )}
         </div>
       </div>
+    </div>
+
+    <div className="flex justify-end pt-2">
+      <button
+        onClick={salvaAll}
+        disabled={saving}
+        className="flex items-center gap-2 bg-blue-700 hover:bg-blue-800 disabled:opacity-50 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors"
+      >
+        {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
+        {saving ? "Salvataggio..." : "Salva"}
+      </button>
     </div>
   );
 }
