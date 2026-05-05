@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Upload, X, Loader2, Save } from "lucide-react";
+import { Edit3, Upload, X, Loader2, Save } from "lucide-react";
 import { CATEGORIE } from "@/lib/utils";
 import type { SchedaCompleta } from "@/types";
 
