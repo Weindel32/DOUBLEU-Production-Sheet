@@ -51,6 +51,8 @@ export interface SchedaCompleta {
   tessutoPrincipale?: string | null;
   pesoTessuto?: string | null;
   altezzaTessuto?: string | null;
+  tessutoSecondario?: string | null;
+  pesoTessutoSecondario?: string | null;
   modellista?: string | null;
   fornitoreTessuto?: string | null;
   produttore?: string | null;

@@ -6,7 +6,7 @@ import { formatData, STATI_SCHEDA } from "@/lib/utils";
 
 export default async function ArchivioPage() {
   const schede = await prisma.scheda.findMany({
-    where: { stato: "consegnata" },
+    where: { stato: "esecutiva" },
     orderBy: { updatedAt: "desc" },
     include: { cliente: true },
   });
@@ -15,7 +15,7 @@ export default async function ArchivioPage() {
     <div className="p-6 space-y-5">
       <div>
         <h1 className="text-2xl font-bold text-gray-800">Archivio</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Schede consegnate e completate · {schede.length} elementi</p>
+        <p className="text-sm text-gray-500 mt-0.5">Schede esecutive · {schede.length} elementi</p>
       </div>
 
       {schede.length === 0 ? (

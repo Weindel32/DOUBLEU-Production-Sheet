@@ -41,16 +41,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 <title>${tipo === "interno" ? "Scheda Interna" : "Scheda Tecnica"} – ${scheda.nomeArticolo}</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: Arial, sans-serif; font-size: 11px; color: #1a1a1a; padding: 24px; }
+  body { font-family: Arial, sans-serif; font-size: 13px; color: #1a1a1a; padding: 24px; }
   .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 2px solid #1a2236; }
   .brand { font-size: 18px; font-weight: 800; letter-spacing: 2px; color: #1a2236; }
   .brand-sub { font-size: 9px; letter-spacing: 3px; color: #666; }
   .flag { display: flex; gap: 2px; margin-top: 4px; }
   .flag-stripe { height: 3px; width: 20px; }
   .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: 700; letter-spacing: 1px; }
-  .badge-approvata { background: #dcfce7; color: #15803d; }
-  .badge-bozza { background: #f1f5f9; color: #64748b; }
-  .badge-produzione { background: #dbeafe; color: #1d4ed8; }
+  .badge-bozza     { background: #f1f5f9; color: #64748b; }
+  .badge-esecutiva { background: #dcfce7; color: #15803d; }
   .tipo-badge { padding: 2px 8px; border-radius: 4px; font-size: 9px; font-weight: 700; }
   .tipo-tecnico { background: #dbeafe; color: #1d4ed8; }
   .tipo-interno { background: #fef3c7; color: #92400e; }
@@ -67,8 +66,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   .field-label { color: #999; font-size: 9px; }
   .field-value { font-weight: 600; color: #1a1a1a; }
   table { width: 100%; border-collapse: collapse; }
-  th { background: #f4f6f9; padding: 6px 8px; text-align: left; font-size: 9px; text-transform: uppercase; color: #666; letter-spacing: 0.5px; }
-  td { padding: 5px 8px; border-bottom: 1px solid #f0f0f0; }
+  th { background: #f4f6f9; padding: 6px 8px; text-align: left; font-size: 11px; text-transform: uppercase; color: #666; letter-spacing: 0.5px; }
+  td { padding: 5px 8px; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
   .totale-row { background: #f4f6f9; font-weight: 700; }
   .logo-item { background: #f9fafb; padding: 6px 8px; border-radius: 4px; margin-bottom: 4px; }
   .warning-box { background: #fef9c3; border: 1px solid #fde047; border-radius: 4px; padding: 6px 10px; font-size: 10px; color: #854d0e; margin-bottom: 12px; }
@@ -105,7 +104,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     <div style="font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 1px;">Scheda produzione</div>
     <div style="display: flex; align-items: center; gap: 10px; margin: 4px 0;">
       <h2>${scheda.nomeArticolo.toUpperCase()}</h2>
-      <span class="badge badge-${scheda.stato}">${scheda.stato.toUpperCase()}</span>
+      <span class="badge badge-${scheda.stato === "esecutiva" ? "esecutiva" : "bozza"}">${scheda.stato === "esecutiva" ? "ESECUTIVA" : "BOZZA"}</span>
     </div>
     <div class="meta">
       <div class="meta-item"><div class="meta-label">Codice scheda</div><div class="meta-value">${scheda.codice}</div></div>
@@ -142,10 +141,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       <div class="grid2">
         <div class="field"><div class="field-label">Tessuto principale</div><div class="field-value">${scheda.tessutoPrincipale || "—"}</div></div>
         <div class="field"><div class="field-label">Peso tessuto</div><div class="field-value">${scheda.pesoTessuto || "—"}</div></div>
+        ${(scheda as { tessutoSecondario?: string | null }).tessutoSecondario ? `<div class="field"><div class="field-label">Costina</div><div class="field-value">${(scheda as { tessutoSecondario?: string | null }).tessutoSecondario}</div></div>` : ""}
+        ${(scheda as { pesoTessutoSecondario?: string | null }).pesoTessutoSecondario ? `<div class="field"><div class="field-label">Peso costina</div><div class="field-value">${(scheda as { pesoTessutoSecondario?: string | null }).pesoTessutoSecondario}</div></div>` : ""}
         <div class="field"><div class="field-label">Colore base</div><div class="field-value">${scheda.coloreBase || "—"}</div></div>
         <div class="field"><div class="field-label">Colori secondari</div><div class="field-value">${scheda.coloriSecondari || "—"}</div></div>
-        <div class="field"><div class="field-label">Collo</div><div class="field-value">${scheda.collo || "—"}</div></div>
-        <div class="field"><div class="field-label">Maniche</div><div class="field-value">${scheda.maniche || "—"}</div></div>
+        ${scheda.collo ? `<div class="field"><div class="field-label">Collo</div><div class="field-value">${scheda.collo}</div></div>` : ""}
+        ${scheda.maniche ? `<div class="field"><div class="field-label">Maniche</div><div class="field-value">${scheda.maniche}</div></div>` : ""}
       </div>
       ${scheda.noteSpecifiche ? `<div class="field" style="margin-top:6px"><div class="field-label">Note</div><div class="field-value">${scheda.noteSpecifiche}</div></div>` : ""}
     </div>

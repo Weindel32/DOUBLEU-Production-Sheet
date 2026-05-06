@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { PlusCircle, Trash2, Loader2, Save } from "lucide-react";
+import { PlusCircle, Trash2, Loader2, Save, ExternalLink } from "lucide-react";
 import { TECNICHE_LOGO, POSIZIONI_LOGO } from "@/lib/utils";
 import type { SchedaCompleta, LogoSchedaCompleto } from "@/types";
 
@@ -50,26 +50,49 @@ export default function TabPersonalizzazione({ scheda, onSave, loghiDisponibili 
     });
   };
 
+  const isHex = (v: string) => /^#[0-9a-fA-F]{6}$/.test(v);
+
   return (
     <>
-    <div className="grid grid-cols-3 gap-5">
+    <div className="grid grid-cols-2 gap-5">
       {/* Loghi applicati */}
-      <div className="card col-span-1">
+      <div className="card">
         <div className="flex items-center justify-between mb-3">
           <h3 className="section-title">Loghi applicati</h3>
+          <a href="/loghi/nuovo" target="_blank" rel="noopener noreferrer"
+            className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800">
+            <ExternalLink size={12} /> Libreria loghi
+          </a>
         </div>
 
         <div className="space-y-3 mb-4">
           {loghi.length === 0 ? (
-            <div className="text-sm text-gray-400 italic text-center py-4">Nessun logo aggiunto</div>
+            <div className="text-center py-6">
+              <div className="text-sm text-gray-400 mb-2">Nessun logo aggiunto</div>
+              {loghiDisponibili.length === 0 ? (
+                <a href="/loghi/nuovo" target="_blank" rel="noopener noreferrer"
+                  className="text-xs text-blue-600 hover:underline">
+                  Aggiungi loghi alla libreria →
+                </a>
+              ) : (
+                <button onClick={aggiungiLogo}
+                  className="text-xs text-blue-600 hover:underline">
+                  Aggiungi il primo logo
+                </button>
+              )}
+            </div>
           ) : (
             loghi.map((l) => (
               <div key={l.id} className="border border-gray-100 rounded-lg p-3 space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center text-xs text-gray-400">
-                      {l.logo?.nome?.[0] || "L"}
-                    </div>
+                    {l.logo?.file ? (
+                      <img src={l.logo.file} alt={l.logo.nome} className="w-8 h-8 object-contain rounded bg-gray-50 border border-gray-100" />
+                    ) : (
+                      <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center text-xs text-gray-400">
+                        {l.logo?.nome?.[0] || "L"}
+                      </div>
+                    )}
                     <div>
                       <select
                         value={l.logoId}
@@ -122,73 +145,38 @@ export default function TabPersonalizzazione({ scheda, onSave, loghiDisponibili 
           )}
         </div>
 
-        <button
-          onClick={aggiungiLogo}
-          disabled={loghiDisponibili.length === 0}
-          className="w-full flex items-center justify-center gap-2 border border-dashed border-gray-300 rounded-lg py-2 text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors disabled:opacity-40"
-        >
-          <PlusCircle size={15} />
-          Aggiungi logo
-        </button>
-        {loghiDisponibili.length === 0 && (
-          <p className="text-xs text-orange-500 mt-1 text-center">Prima aggiungi loghi alla libreria</p>
+        {loghiDisponibili.length > 0 && (
+          <button
+            onClick={aggiungiLogo}
+            className="w-full flex items-center justify-center gap-2 border border-dashed border-gray-300 rounded-lg py-2 text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors"
+          >
+            <PlusCircle size={15} />
+            Aggiungi logo
+          </button>
         )}
       </div>
 
-      {/* Posizionamento visivo */}
-      <div className="card">
-        <h3 className="section-title">Posizionamento</h3>
-        <div className="flex justify-center gap-6">
-          {/* Fronte */}
-          <div className="text-center">
-            <div className="text-xs text-gray-400 mb-2">Fronte</div>
-            <svg width="80" height="100" viewBox="0 0 80 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M20 8 L10 20 L5 18 L2 35 L12 37 L12 90 L68 90 L68 37 L78 35 L75 18 L70 20 L60 8 L40 14 L20 8Z" fill="#1a2236" stroke="#374151" strokeWidth="1.5"/>
-              <circle cx="30" cy="32" r="3" fill="#3b82f6" opacity="0.8"/>
-              {loghi.find(l => l.posizione === "Lato cuore") && (
-                <text x="26" y="35" fill="white" fontSize="6">L</text>
-              )}
-            </svg>
-          </div>
-          {/* Retro */}
-          <div className="text-center">
-            <div className="text-xs text-gray-400 mb-2">Retro</div>
-            <svg width="80" height="100" viewBox="0 0 80 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M20 8 L10 20 L5 18 L2 35 L12 37 L12 90 L68 90 L68 37 L78 35 L75 18 L70 20 L60 8 L40 14 L20 8Z" fill="#1a2236" stroke="#374151" strokeWidth="1.5"/>
-              <circle cx="40" cy="45" r="5" fill="#3b82f6" opacity="0.5"/>
-              {loghi.find(l => l.posizione === "Retro centro") && (
-                <text x="36" y="48" fill="white" fontSize="6">R</text>
-              )}
-            </svg>
-          </div>
-        </div>
-        <div className="mt-3 space-y-1">
-          {loghi.map((l) => (
-            <div key={l.id} className="flex items-center gap-2 text-xs">
-              <div className="w-2 h-2 rounded-full bg-blue-500" />
-              <span className="text-gray-600">{l.logo?.nome}</span>
-              <span className="text-gray-400">→ {l.posizione}</span>
-              {l.dimensione && <span className="text-gray-400">({l.dimensione})</span>}
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* Colori e note */}
-      <div className="card">
+      <div className="card space-y-4">
         <h3 className="section-title">Colori</h3>
 
-        <div className="space-y-3 mb-4">
+        <div className="space-y-3">
           <div>
             <label className="text-xs text-gray-400 block mb-1">Colore principale</label>
             <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-2">
-              <div className="w-5 h-5 rounded-full border border-gray-300" style={{ backgroundColor: colorePrincipale || "#1e3a8a" }} />
+              <input
+                type="color"
+                value={isHex(colorePrincipale) ? colorePrincipale : "#1e3a8a"}
+                onChange={(e) => setColorePrincipale(e.target.value)}
+                onBlur={() => onSave({ colorePrincipale })}
+                className="w-6 h-6 rounded border border-gray-200 cursor-pointer p-0"
+              />
               <input
                 type="text"
                 value={colorePrincipale}
                 onChange={(e) => setColorePrincipale(e.target.value)}
                 onBlur={() => onSave({ colorePrincipale })}
-                placeholder="es. Blu royal"
+                placeholder="es. Blu royal o #1e3a8a"
                 className="text-sm text-gray-700 flex-1 outline-none"
               />
             </div>
@@ -196,28 +184,36 @@ export default function TabPersonalizzazione({ scheda, onSave, loghiDisponibili 
           <div>
             <label className="text-xs text-gray-400 block mb-1">Colore secondario</label>
             <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-2">
-              <div className="w-5 h-5 rounded-full border border-gray-300" style={{ backgroundColor: coloreSecondario || "#172554" }} />
+              <input
+                type="color"
+                value={isHex(coloreSecondario) ? coloreSecondario : "#172554"}
+                onChange={(e) => setColoreSecondario(e.target.value)}
+                onBlur={() => onSave({ coloreSecondario })}
+                className="w-6 h-6 rounded border border-gray-200 cursor-pointer p-0"
+              />
               <input
                 type="text"
                 value={coloreSecondario}
                 onChange={(e) => setColoreSecondario(e.target.value)}
                 onBlur={() => onSave({ coloreSecondario })}
-                placeholder="es. Blu navy"
+                placeholder="es. Bianco o #ffffff"
                 className="text-sm text-gray-700 flex-1 outline-none"
               />
             </div>
           </div>
         </div>
 
-        <h3 className="font-semibold text-gray-700 text-sm uppercase tracking-wide mb-2">Note personalizzazione</h3>
-        <textarea
-          value={notePersonalizzazione}
-          onChange={(e) => setNotePersonalizzazione(e.target.value)}
-          onBlur={() => onSave({ notePersonalizzazione })}
-          rows={4}
-          placeholder="es. Mantenere distanza minima 1 cm dalle cuciture..."
-          className="w-full text-sm text-gray-700 border border-gray-200 rounded-lg p-3 resize-none focus:border-blue-400 outline-none"
-        />
+        <div>
+          <h3 className="section-title mb-2">Note personalizzazione</h3>
+          <textarea
+            value={notePersonalizzazione}
+            onChange={(e) => setNotePersonalizzazione(e.target.value)}
+            onBlur={() => onSave({ notePersonalizzazione })}
+            rows={5}
+            placeholder="es. Mantenere distanza minima 1 cm dalle cuciture..."
+            className="w-full text-sm text-gray-700 border border-gray-200 rounded-lg p-3 resize-none focus:border-blue-400 outline-none"
+          />
+        </div>
       </div>
     </div>
 

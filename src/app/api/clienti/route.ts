@@ -9,7 +9,13 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const body = await req.json();
   const cliente = await prisma.cliente.create({
-    data: { nome: body.nome, email: body.email, telefono: body.telefono, indirizzo: body.indirizzo, note: body.note },
+    data: {
+      nome: body.nome,
+      email: body.email || null,
+      telefono: body.telefono || null,
+      indirizzo: body.indirizzo || null,
+      note: body.note || null,
+    },
   });
   return NextResponse.json(cliente, { status: 201 });
 }

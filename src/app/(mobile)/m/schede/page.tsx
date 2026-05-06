@@ -4,24 +4,18 @@ import Link from "next/link";
 import { formatData, calcolaTotaleQuantita } from "@/lib/utils";
 
 const STATO_BADGE: Record<string, string> = {
-  bozza: "bg-gray-100 text-gray-600",
-  revisione: "bg-yellow-100 text-yellow-700",
-  approvata: "bg-blue-100 text-blue-700",
-  produzione: "bg-purple-100 text-purple-700",
-  consegnata: "bg-green-100 text-green-700",
+  bozza:     "bg-gray-100 text-gray-600",
+  esecutiva: "bg-green-100 text-green-700",
 };
 
 const STATO_LABEL: Record<string, string> = {
-  bozza: "Bozza",
-  revisione: "Revisione",
-  approvata: "Approvata",
-  produzione: "In produzione",
-  consegnata: "Consegnata",
+  bozza:     "Bozza",
+  esecutiva: "Esecutiva",
 };
 
 export default async function MobileSchedePage() {
   const schede = await prisma.scheda.findMany({
-    where: { stato: { in: ["produzione", "approvata", "revisione"] } },
+    where: { stato: "esecutiva" },
     include: { cliente: true },
     orderBy: { updatedAt: "desc" },
   });
@@ -37,7 +31,7 @@ export default async function MobileSchedePage() {
 
       {/* Filtro stati */}
       <div className="bg-white border-b border-gray-200 px-4 py-2 flex gap-2 overflow-x-auto">
-        {["produzione", "approvata", "revisione"].map((s) => (
+        {["esecutiva"].map((s) => (
           <span key={s} className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${STATO_BADGE[s]}`}>
             {STATO_LABEL[s]}
           </span>

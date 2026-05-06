@@ -12,15 +12,15 @@ export default async function DashboardPage() {
   ]);
 
   const totaleSchede = await prisma.scheda.count();
-  const inProduzione = await prisma.scheda.count({ where: { stato: "produzione" } });
-  const approvate = await prisma.scheda.count({ where: { stato: "approvata" } });
+  const esecutive = await prisma.scheda.count({ where: { stato: "esecutiva" } });
+  const bozze = await prisma.scheda.count({ where: { stato: "bozza" } });
 
   const stats = [
-    { label: "Schede totali", value: totaleSchede, icon: FileText, href: "/schede", bg: "bg-blue-700", text: "text-white", sub: "text-blue-200" },
-    { label: "In produzione", value: inProduzione, icon: TrendingUp, href: "/schede", bg: "bg-green-600", text: "text-white", sub: "text-green-200" },
-    { label: "Approvate", value: approvate, icon: FileText, href: "/schede", bg: "bg-purple-600", text: "text-white", sub: "text-purple-200" },
-    { label: "Clienti / Club", value: clienti, icon: Users, href: "/clienti", bg: "bg-orange-500", text: "text-white", sub: "text-orange-200" },
-    { label: "Materiali", value: materiali, icon: Package, href: "/materiali", bg: "bg-gray-700", text: "text-white", sub: "text-gray-400" },
+    { label: "Schede totali",  value: totaleSchede, icon: FileText,   href: "/schede",    bg: "bg-blue-700",   text: "text-white", sub: "text-blue-200" },
+    { label: "Esecutive",      value: esecutive,    icon: TrendingUp, href: "/schede",    bg: "bg-green-600",  text: "text-white", sub: "text-green-200" },
+    { label: "Bozze",          value: bozze,        icon: FileText,   href: "/schede",    bg: "bg-gray-500",   text: "text-white", sub: "text-gray-300" },
+    { label: "Clienti / Club", value: clienti,      icon: Users,      href: "/clienti",   bg: "bg-orange-500", text: "text-white", sub: "text-orange-200" },
+    { label: "Materiali",      value: materiali,    icon: Package,    href: "/materiali", bg: "bg-gray-700",   text: "text-white", sub: "text-gray-400" },
   ];
 
   return (
@@ -91,20 +91,6 @@ export default async function DashboardPage() {
         )}
       </div>
 
-      {/* Pipeline stati */}
-      <div className="card">
-        <h2 className="font-semibold text-gray-800 mb-4">Pipeline produzione</h2>
-        <div className="flex items-center gap-2 flex-wrap">
-          {STATI_SCHEDA.map((stato, i) => (
-            <div key={stato.value} className="flex items-center gap-2">
-              <span className={`badge badge-${stato.value}`}>{stato.label}</span>
-              {i < STATI_SCHEDA.length - 1 && (
-                <span className="text-gray-300 text-lg">→</span>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }
