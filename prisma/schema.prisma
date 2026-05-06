@@ -62,9 +62,11 @@ model Scheda {
   immagini    String?
 
   // Specifiche prodotto
-  tessutoPrincipale String?
-  pesoTessuto       String?
-  altezzaTessuto    String?
+  tessutoPrincipale     String?
+  pesoTessuto           String?
+  altezzaTessuto        String?
+  tessutoSecondario     String?
+  pesoTessutoSecondario String?
   coloreBase        String?
   coloriSecondari   String?
   collo             String?

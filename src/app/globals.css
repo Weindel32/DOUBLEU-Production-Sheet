@@ -71,11 +71,8 @@ body {
   border: 1px solid transparent;
 }
 
-.badge-bozza    { background: #f1f5f9; color: #475569; border-color: #cbd5e1; }
-.badge-revisione{ background: #fef3c7; color: #92400e; border-color: #fcd34d; }
-.badge-approvata{ background: #dcfce7; color: #15803d; border-color: #86efac; }
-.badge-produzione{ background: #dbeafe; color: #1d4ed8; border-color: #93c5fd; }
-.badge-consegnata{ background: #ede9fe; color: #6d28d9; border-color: #c4b5fd; }
+.badge-bozza     { background: #f1f5f9; color: #475569; border-color: #cbd5e1; }
+.badge-esecutiva { background: #dcfce7; color: #15803d; border-color: #86efac; }
 
 /* ─── Tables ──────────────────────────────────────────── */
 .tab-active {

@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { PlusCircle, FileText } from "lucide-react";
-import { formatData, STATI_SCHEDA } from "@/lib/utils";
+import { formatData, STATI_SCHEDA, calcolaTotaleQuantita } from "@/lib/utils";
 import SchedaRowMenu from "@/components/scheda/SchedaRowMenu";
 
 export default async function SchedePage() {
@@ -60,7 +60,7 @@ export default async function SchedePage() {
                 <th className="text-left px-4 py-3 text-gray-500 font-medium">Cliente / Club</th>
                 <th className="text-left px-4 py-3 text-gray-500 font-medium">Collezione</th>
                 <th className="text-left px-4 py-3 text-gray-500 font-medium">Stato</th>
-                <th className="text-left px-4 py-3 text-gray-500 font-medium">Versione</th>
+                <th className="text-left px-4 py-3 text-gray-500 font-medium">Quantità</th>
                 <th className="text-left px-4 py-3 text-gray-500 font-medium">Ultima modifica</th>
                 <th className="px-4 py-3" />
               </tr>
@@ -68,6 +68,8 @@ export default async function SchedePage() {
             <tbody className="divide-y divide-gray-100">
               {schede.map((s) => {
                 const stato = STATI_SCHEDA.find((x) => x.value === s.stato);
+                const quantita = s.quantitaTaglia ? JSON.parse(s.quantitaTaglia) : {};
+                const totale = calcolaTotaleQuantita(quantita as Record<string, number>);
                 return (
                   <tr key={s.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3">
@@ -81,7 +83,7 @@ export default async function SchedePage() {
                     <td className="px-4 py-3">
                       {stato && <span className={`badge badge-${s.stato}`}>{stato.label}</span>}
                     </td>
-                    <td className="px-4 py-3 text-gray-500">{s.versione}</td>
+                    <td className="px-4 py-3 text-gray-700 font-medium">{totale > 0 ? `${totale} pz` : "—"}</td>
                     <td className="px-4 py-3 text-gray-400">{formatData(s.updatedAt)}</td>
                     <td className="px-4 py-3 text-right">
                       <SchedaRowMenu id={s.id} nome={s.nomeArticolo} />

@@ -78,13 +78,6 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
   const quantita = scheda.quantitaTaglia || {};
   const totale = calcolaTotaleQuantita(quantita as Record<string, number>);
 
-  const prossimeAzioni: Record<StatoScheda, string> = {
-    bozza: "Inviare in revisione",
-    revisione: "Approvare scheda",
-    approvata: "Inviare in produzione",
-    produzione: "Segnare come consegnata",
-    consegnata: "Scheda completata",
-  };
 
   return (
     <div className="flex flex-col h-full">
@@ -234,36 +227,6 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
             </div>
           </div>
 
-          {/* Pipeline */}
-          <div className="p-4 border-b border-gray-200">
-            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Avanzamento</div>
-            <div className="relative pl-3">
-              <div className="absolute left-[5px] top-2 bottom-2 w-px bg-gray-200" />
-              <div className="space-y-3">
-                {STATI_SCHEDA.map((s) => {
-                  const idx = STATI_SCHEDA.findIndex((x) => x.value === s.value);
-                  const currentIdx = STATI_SCHEDA.findIndex((x) => x.value === statoCorrente);
-                  const isDone = idx < currentIdx;
-                  const isCurrent = idx === currentIdx;
-                  return (
-                    <div key={s.value} className="flex items-center gap-2.5">
-                      <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 border-2 relative z-10 ${
-                        isDone    ? "bg-emerald-500 border-emerald-500" :
-                        isCurrent ? "bg-blue-600 border-blue-600 ring-2 ring-blue-200" :
-                                    "bg-white border-gray-300"
-                      }`} />
-                      <span className={`text-xs ${
-                        isDone    ? "text-emerald-600 line-through" :
-                        isCurrent ? "text-blue-700 font-semibold" :
-                                    "text-gray-400"
-                      }`}>{s.label}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
           {/* Info */}
           <div className="p-4 border-b border-gray-200 space-y-2.5 text-xs">
             <div>
@@ -280,10 +243,14 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
                 <div className="font-bold text-blue-700 text-base mt-0.5">{totale} pz</div>
               </div>
             )}
-            <div className="bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
-              <div className="text-amber-500 text-[10px] uppercase tracking-wider">Prossima azione</div>
-              <div className="font-semibold text-amber-700 text-xs mt-0.5">{prossimeAzioni[statoCorrente]}</div>
-            </div>
+            {statoCorrente === "bozza" && (
+              <button
+                onClick={() => handleStatoChange("esecutiva")}
+                className="w-full bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-xs font-semibold transition-colors"
+              >
+                Porta in Esecutiva
+              </button>
+            )}
           </div>
 
           {/* Note rapide */}
