@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, FileDown, Copy, CheckCircle, ChevronDown, Trash2, Loader2, FileText, Palette, Ruler, Settings2 } from "lucide-react";
+import { ArrowLeft, FileDown, Copy, CheckCircle, ChevronDown, Trash2, Loader2, FileText, Palette, Ruler, Settings2, Save } from "lucide-react";
 import { STATI_SCHEDA, StatoScheda, formatData, formatOra, calcolaTotaleQuantita } from "@/lib/utils";
-import TabArticolo from "./TabArticolo";
-import TabPersonalizzazione from "./TabPersonalizzazione";
-import TabMisure from "./TabMisure";
-import TabProduzione from "./TabProduzione";
+import TabArticolo, { type TabArticoloHandle } from "./TabArticolo";
+import TabPersonalizzazione, { type TabPersonalizzazioneHandle } from "./TabPersonalizzazione";
+import TabMisure, { type TabMisureHandle } from "./TabMisure";
+import TabProduzione, { type TabProduzioneHandle } from "./TabProduzione";
 import type { SchedaCompleta } from "@/types";
 
 interface Props {
@@ -34,6 +34,11 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
   const [showStatoMenu, setShowStatoMenu] = useState(false);
   const [noteRapide, setNoteRapide] = useState(scheda.noteRapide || "");
 
+  const tabArticoloRef = useRef<TabArticoloHandle>(null);
+  const tabPersonalizzazioneRef = useRef<TabPersonalizzazioneHandle>(null);
+  const tabMisureRef = useRef<TabMisureHandle>(null);
+  const tabProduzioneRef = useRef<TabProduzioneHandle>(null);
+
   const statoInfo = STATI_SCHEDA.find((s) => s.value === statoCorrente);
 
   const handleSave = useCallback(async (data: Partial<SchedaCompleta>) => {
@@ -46,6 +51,21 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
     setSaving(false);
     setSavedAt(formatOra(new Date()));
   }, [scheda.id]);
+
+  const handleGlobalSave = useCallback(async () => {
+    setSaving(true);
+    try {
+      await Promise.all([
+        tabArticoloRef.current?.save(),
+        tabPersonalizzazioneRef.current?.save(),
+        tabMisureRef.current?.save(),
+        tabProduzioneRef.current?.save(),
+      ]);
+      setSavedAt(formatOra(new Date()));
+    } finally {
+      setSaving(false);
+    }
+  }, []);
 
   const handleStatoChange = async (nuovoStato: StatoScheda) => {
     setStatoCorrente(nuovoStato);
@@ -95,6 +115,15 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
               : <><CheckCircle size={13} className="text-emerald-500" /><span>Salvato {savedAt}</span></>
             }
           </div>
+          <div className="w-px h-4 bg-gray-200" />
+          <button
+            onClick={handleGlobalSave}
+            disabled={saving}
+            className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-3 py-1.5 rounded-md text-xs font-medium transition-colors"
+          >
+            {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
+            Salva
+          </button>
           <div className="w-px h-4 bg-gray-200" />
           <div className="flex items-center gap-1">
             <a
@@ -180,20 +209,20 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
             </div>
           </div>
 
-          {/* Tab content */}
+          {/* Tab content — tutti montati, visibilità via CSS per preservare lo stato */}
           <div className="p-6 flex-1">
-            {activeTab === "articolo" && (
-              <TabArticolo scheda={scheda} onSave={handleSave} clienti={clientiDisponibili} materiali={materialiDisponibili} />
-            )}
-            {activeTab === "personalizzazione" && (
-              <TabPersonalizzazione scheda={scheda} onSave={handleSave} loghiDisponibili={loghiDisponibili} />
-            )}
-            {activeTab === "misure" && (
-              <TabMisure scheda={scheda} onSave={handleSave} />
-            )}
-            {activeTab === "produzione" && (
-              <TabProduzione scheda={scheda} onSave={handleSave} materialiDisponibili={materialiDisponibili} />
-            )}
+            <div style={{ display: activeTab === "articolo" ? undefined : "none" }}>
+              <TabArticolo ref={tabArticoloRef} scheda={scheda} onSave={handleSave} clienti={clientiDisponibili} materiali={materialiDisponibili} />
+            </div>
+            <div style={{ display: activeTab === "personalizzazione" ? undefined : "none" }}>
+              <TabPersonalizzazione ref={tabPersonalizzazioneRef} scheda={scheda} onSave={handleSave} loghiDisponibili={loghiDisponibili} />
+            </div>
+            <div style={{ display: activeTab === "misure" ? undefined : "none" }}>
+              <TabMisure ref={tabMisureRef} scheda={scheda} onSave={handleSave} />
+            </div>
+            <div style={{ display: activeTab === "produzione" ? undefined : "none" }}>
+              <TabProduzione ref={tabProduzioneRef} scheda={scheda} onSave={handleSave} materialiDisponibili={materialiDisponibili} />
+            </div>
           </div>
         </div>
 

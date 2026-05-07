@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { PlusCircle, Trash2, Loader2, Save, ExternalLink, X } from "lucide-react";
+import { useState, forwardRef, useImperativeHandle } from "react";
+import { PlusCircle, Trash2, ExternalLink, X } from "lucide-react";
 import { TECNICHE_LOGO, POSIZIONI_LOGO } from "@/lib/utils";
 import type { SchedaCompleta, LogoSchedaCompleto } from "@/types";
 import ColorPickerNamed from "@/components/ui/ColorPickerNamed";
@@ -10,6 +10,10 @@ interface Props {
   scheda: SchedaCompleta;
   onSave: (data: Partial<SchedaCompleta>) => Promise<void>;
   loghiDisponibili: { id: string; nome: string; file: string; tipo: string }[];
+}
+
+export interface TabPersonalizzazioneHandle {
+  save: () => Promise<void>;
 }
 
 const DESTINAZIONI_COLORE = [
@@ -49,24 +53,23 @@ function serializeColoriSecondari(voci: ColoreSecondarioVoce[]): string {
   );
 }
 
-export default function TabPersonalizzazione({ scheda, onSave, loghiDisponibili }: Props) {
+const TabPersonalizzazione = forwardRef<TabPersonalizzazioneHandle, Props>(function TabPersonalizzazione({ scheda, onSave, loghiDisponibili }, ref) {
   const [loghi, setLoghi] = useState<LogoSchedaCompleto[]>(scheda.loghi || []);
   const [colorePrincipale, setColorePrincipale] = useState(scheda.colorePrincipale || "");
   const [coloriSecondari, setColoriSecondari] = useState<ColoreSecondarioVoce[]>(
     parseColoriSecondari(scheda.coloreSecondario)
   );
   const [notePersonalizzazione, setNotePersonalizzazione] = useState(scheda.notePersonalizzazione || "");
-  const [saving, setSaving] = useState(false);
 
   const salvaAll = async () => {
-    setSaving(true);
     await onSave({
       colorePrincipale,
       coloreSecondario: coloriSecondari.length > 0 ? serializeColoriSecondari(coloriSecondari) : null,
       notePersonalizzazione,
     });
-    setSaving(false);
   };
+
+  useImperativeHandle(ref, () => ({ save: salvaAll }));
 
   const aggiungiLogo = async () => {
     if (loghiDisponibili.length === 0) return;
@@ -362,16 +365,8 @@ export default function TabPersonalizzazione({ scheda, onSave, loghiDisponibili 
         </div>
       </div>
 
-      <div className="flex justify-end pt-2">
-        <button
-          onClick={salvaAll}
-          disabled={saving}
-          className="flex items-center gap-2 bg-blue-700 hover:bg-blue-800 disabled:opacity-50 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors"
-        >
-          {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
-          {saving ? "Salvataggio..." : "Salva"}
-        </button>
-      </div>
     </>
   );
-}
+});
+
+export default TabPersonalizzazione;
