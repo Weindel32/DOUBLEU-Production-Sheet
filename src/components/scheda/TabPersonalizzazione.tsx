@@ -261,8 +261,10 @@ export default function TabPersonalizzazione({ scheda, onSave, loghiDisponibili 
               <label className="text-xs text-gray-400 block mb-1">Colore principale</label>
               <ColorPickerNamed
                 value={colorePrincipale}
-                onChange={setColorePrincipale}
-                onBlur={() => onSave({ colorePrincipale })}
+                onChange={(val) => {
+                  setColorePrincipale(val);
+                  onSave({ colorePrincipale: val });
+                }}
                 placeholder="es. Blu royal"
               />
             </div>
