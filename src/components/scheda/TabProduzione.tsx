@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { PlusCircle, Trash2, Upload, Info, Loader2, Save } from "lucide-react";
+import { useState, forwardRef, useImperativeHandle } from "react";
+import { PlusCircle, Trash2, Upload, Info } from "lucide-react";
 import type { SchedaCompleta, ConsumoMateriale } from "@/types";
 import { calcolaTotaleQuantita } from "@/lib/utils";
 
@@ -20,6 +20,10 @@ interface Props {
   scheda: SchedaCompleta;
   onSave: (data: Partial<SchedaCompleta>) => Promise<void>;
   materialiDisponibili: MaterialeDisp[];
+}
+
+export interface TabProduzioneHandle {
+  save: () => Promise<void>;
 }
 
 function parseNum(s: string | null | undefined): number | null {
@@ -49,7 +53,7 @@ function calcolaCostoMateriale(c: ConsumoMateriale, mat: MaterialeDisp | undefin
   return consumo * mat.costoMetro;
 }
 
-export default function TabProduzione({ scheda, onSave, materialiDisponibili }: Props) {
+const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzione({ scheda, onSave, materialiDisponibili }, ref) {
   const [noteProduzione, setNoteProduzione] = useState(scheda.noteProduzione || "");
   const [tolleranzaTaglio, setTolleranzaTaglio] = useState(scheda.tolleranzaTaglio || "");
   const [tolleranzaCucitura, setTolleranzaCucitura] = useState(scheda.tolleranzaCucitura || "");
@@ -90,8 +94,6 @@ export default function TabProduzione({ scheda, onSave, materialiDisponibili }: 
     }));
   };
 
-  const [saving, setSaving] = useState(false);
-
   const salva = async (extra?: Partial<SchedaCompleta>) => {
     const costoLavorazione =
       (parseFloat(costoTaglio || "0") || 0) +
@@ -114,10 +116,10 @@ export default function TabProduzione({ scheda, onSave, materialiDisponibili }: 
   };
 
   const salvaAll = async () => {
-    setSaving(true);
     await salva();
-    setSaving(false);
   };
+
+  useImperativeHandle(ref, () => ({ save: salvaAll }));
 
   // Cost calculations
   const costoMaterialePerCapo = consumi.reduce((sum, c) => {
@@ -394,16 +396,8 @@ export default function TabProduzione({ scheda, onSave, materialiDisponibili }: 
       </div>
     </div>
 
-    <div className="flex justify-end pt-2">
-      <button
-        onClick={salvaAll}
-        disabled={saving}
-        className="flex items-center gap-2 bg-blue-700 hover:bg-blue-800 disabled:opacity-50 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors"
-      >
-        {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
-        {saving ? "Salvataggio..." : "Salva"}
-      </button>
-    </div>
     </>
   );
-}
+});
+
+export default TabProduzione;

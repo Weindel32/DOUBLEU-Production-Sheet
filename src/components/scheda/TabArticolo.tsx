@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, forwardRef, useImperativeHandle } from "react";
 import Link from "next/link";
-import { Edit3, Upload, X, Loader2, Save, ExternalLink } from "lucide-react";
+import { Edit3, Upload, X, ExternalLink } from "lucide-react";
 import { CATEGORIE } from "@/lib/utils";
 import type { SchedaCompleta } from "@/types";
 
@@ -13,14 +13,17 @@ interface Props {
   materiali: { id: string; nome: string; tipo: string; costoMetro: number | null; peso: string | null; unitaPeso: string | null; larghezza: string | null }[];
 }
 
+export interface TabArticoloHandle {
+  save: () => Promise<void>;
+}
+
 const CATEGORIE_SENZA_COLLO_MANICHE = ["Short", "Skirt", "Sweatpants"];
 const CATEGORIE_COSTINA = ["Hoodie", "Zip Hoodie", "Sweatshirt", "Sweatpants"];
 
-export default function TabArticolo({ scheda, onSave, clienti, materiali }: Props) {
+const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ scheda, onSave, clienti, materiali }, ref) {
   const [editing, setEditing] = useState<string | null>(null);
   const [immagini, setImmagini] = useState<string[]>(scheda.immagini || []);
   const [uploading, setUploading] = useState(false);
-  const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [values, setValues] = useState({
@@ -51,10 +54,10 @@ export default function TabArticolo({ scheda, onSave, clienti, materiali }: Prop
   const mostraCostina = CATEGORIE_COSTINA.includes(values.categoria);
 
   const salvaAll = async () => {
-    setSaving(true);
     await onSave(values);
-    setSaving(false);
   };
+
+  useImperativeHandle(ref, () => ({ save: salvaAll }));
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -305,14 +308,8 @@ export default function TabArticolo({ scheda, onSave, clienti, materiali }: Prop
         </div>
       </div>
     </div>
-
-    <div className="flex justify-end pt-2">
-      <button onClick={salvaAll} disabled={saving}
-        className="flex items-center gap-2 bg-blue-700 hover:bg-blue-800 disabled:opacity-50 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors">
-        {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
-        {saving ? "Salvataggio..." : "Salva"}
-      </button>
-    </div>
     </>
   );
-}
+});
+
+export default TabArticolo;
