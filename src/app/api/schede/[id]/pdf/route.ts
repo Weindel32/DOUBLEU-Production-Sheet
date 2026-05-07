@@ -23,23 +23,42 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
   const isInterno = tipo === "interno";
 
-  function renderColoreSecondarioPdf(raw: string | null | undefined): string {
-    if (!raw) return "—";
+  const PALETTE_HEX: Record<string, string> = {
+    "Nero": "#000000", "Bianco": "#ffffff", "Grigio chiaro": "#d1d5db",
+    "Grigio": "#6b7280", "Grigio scuro": "#374151", "Rosso": "#ef4444",
+    "Rosso scuro": "#991b1b", "Bordeaux": "#7f1d1d", "Arancione": "#f97316",
+    "Giallo": "#facc15", "Verde chiaro": "#86efac", "Verde": "#22c55e",
+    "Verde scuro": "#15803d", "Verde militare": "#4d7c0f", "Azzurro": "#7dd3fc",
+    "Turchese": "#06b6d4", "Blu cielo": "#38bdf8", "Blu royal": "#2563eb",
+    "Blu navy": "#1e3a8a", "Blu notte": "#0f172a", "Viola": "#7c3aed",
+    "Lilla": "#c4b5fd", "Rosa": "#f9a8d4", "Rosa scuro": "#ec4899",
+    "Marrone": "#92400e", "Beige": "#fef9e7", "Oro": "#d97706", "Argento": "#9ca3af",
+  };
+
+  function getHexPdf(nome: string): string {
+    return PALETTE_HEX[nome] || (/^#[0-9a-fA-F]{6}$/.test(nome) ? nome : "#cccccc");
+  }
+
+  function renderColoriSecondariRighe(raw: string | null | undefined): string {
+    if (!raw) return "";
     try {
       const arr = JSON.parse(raw);
       if (Array.isArray(arr) && arr.length > 0) {
         return arr
           .map((v: { colore: string; destinazione: string; altroTesto?: string }) => {
-            const dest =
-              v.destinazione === "Altro" && v.altroTesto ? v.altroTesto : v.destinazione;
-            return dest ? `${v.colore} (${dest})` : v.colore;
+            const dest = v.destinazione === "Altro" && v.altroTesto ? v.altroTesto : v.destinazione;
+            return `<div class="color-row">
+              <span class="color-swatch" style="background:${getHexPdf(v.colore)};${v.colore === "Bianco" ? "border-color:#ccc;" : ""}"></span>
+              <span style="font-weight:600">${v.colore}</span>
+              ${dest ? `<span class="color-dest">→ ${dest}</span>` : ""}
+            </div>`;
           })
-          .join(", ");
+          .join("");
       }
     } catch {
       // plain string fallback
     }
-    return raw;
+    return `<div class="color-row"><span style="font-weight:600">${raw}</span></div>`;
   }
 
   const taglie = Object.keys(quantitaTaglia);
@@ -89,6 +108,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   td { padding: 5px 8px; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
   .totale-row { background: #f4f6f9; font-weight: 700; }
   .logo-item { background: #f9fafb; padding: 6px 8px; border-radius: 4px; margin-bottom: 4px; }
+  .color-row { display: flex; align-items: center; gap: 7px; padding: 4px 0; border-bottom: 1px solid #f3f4f6; }
+  .color-swatch { display: inline-block; width: 14px; height: 14px; border-radius: 50%; border: 1px solid #e5e7eb; flex-shrink: 0; }
+  .color-dest { font-size: 10px; color: #888; }
   .warning-box { background: #fef9c3; border: 1px solid #fde047; border-radius: 4px; padding: 6px 10px; font-size: 10px; color: #854d0e; margin-bottom: 12px; }
   .cost-table { background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; padding: 10px; }
   .cost-row { display: flex; justify-content: space-between; padding: 3px 0; }
@@ -174,7 +196,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
   ${scheda.loghi.length > 0 ? `
   <div class="section">
-    <div class="section-title">Loghi e personalizzazione</div>
+    <div class="section-title">Loghi applicati</div>
     <div class="grid3">
       ${scheda.loghi.map((l) => `
         <div class="logo-item">
@@ -184,9 +206,31 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         </div>
       `).join("")}
     </div>
-    ${scheda.colorePrincipale ? `<div class="field" style="margin-top:6px"><div class="field-label">Colore principale</div><div class="field-value">${scheda.colorePrincipale}</div></div>` : ""}
-    ${scheda.coloreSecondario ? `<div class="field"><div class="field-label">Colori secondari</div><div class="field-value">${renderColoreSecondarioPdf(scheda.coloreSecondario)}</div></div>` : ""}
-    ${scheda.notePersonalizzazione ? `<div class="field"><div class="field-label">Note personalizzazione</div><div class="field-value">${scheda.notePersonalizzazione}</div></div>` : ""}
+  </div>
+  ` : ""}
+
+  ${scheda.colorePrincipale || scheda.coloreSecondario || scheda.notePersonalizzazione ? `
+  <div class="section">
+    <div class="section-title">Colori e personalizzazione</div>
+    <div class="grid2">
+      <div>
+        <div class="field-label" style="margin-bottom:6px">Abbinamento colori</div>
+        ${scheda.colorePrincipale ? `
+        <div class="color-row">
+          <span class="color-swatch" style="background:${getHexPdf(scheda.colorePrincipale)};${scheda.colorePrincipale === "Bianco" ? "border-color:#ccc;" : ""}"></span>
+          <span style="font-weight:600">${scheda.colorePrincipale}</span>
+          <span class="color-dest">→ Colore principale</span>
+        </div>
+        ` : ""}
+        ${renderColoriSecondariRighe(scheda.coloreSecondario)}
+      </div>
+      ${scheda.notePersonalizzazione ? `
+      <div>
+        <div class="field-label" style="margin-bottom:4px">Note personalizzazione</div>
+        <div style="font-size:12px;color:#333;line-height:1.5">${scheda.notePersonalizzazione}</div>
+      </div>
+      ` : ""}
+    </div>
   </div>
   ` : ""}
 
