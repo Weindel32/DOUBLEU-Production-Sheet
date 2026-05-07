@@ -27,7 +27,7 @@ export const CATEGORIE_ELASTICO = ["Short", "Skirt", "Sweatpants"];
 export const TECNICHE_LOGO = ["Ricamo", "Stampa", "Transfer", "Sublimazione", "Patch"];
 
 export const POSIZIONI_LOGO = [
-  "Lato cuore", "Retro centro", "Manica destra", "Manica sinistra",
+  "Lato cuore", "Lato destro", "Retro centro", "Manica destra", "Manica sinistra",
   "Petto centro", "Collo retro", "Fondo schiena", "Cappuccio",
 ];
 

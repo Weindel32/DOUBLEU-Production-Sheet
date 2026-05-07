@@ -23,6 +23,25 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
   const isInterno = tipo === "interno";
 
+  function renderColoreSecondarioPdf(raw: string | null | undefined): string {
+    if (!raw) return "—";
+    try {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr) && arr.length > 0) {
+        return arr
+          .map((v: { colore: string; destinazione: string; altroTesto?: string }) => {
+            const dest =
+              v.destinazione === "Altro" && v.altroTesto ? v.altroTesto : v.destinazione;
+            return dest ? `${v.colore} (${dest})` : v.colore;
+          })
+          .join(", ");
+      }
+    } catch {
+      // plain string fallback
+    }
+    return raw;
+  }
+
   const taglie = Object.keys(quantitaTaglia);
   const isElastico = CATEGORIE_ELASTICO.includes(scheda.categoria || "");
   const specsElastico = tabellaMisure.__specs as { altezza?: string; tipo?: string; costruzione?: string; applicazione?: string } | undefined;
@@ -141,6 +160,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       <div class="grid2">
         <div class="field"><div class="field-label">Tessuto principale</div><div class="field-value">${scheda.tessutoPrincipale || "—"}</div></div>
         <div class="field"><div class="field-label">Peso tessuto</div><div class="field-value">${scheda.pesoTessuto || "—"}</div></div>
+        ${scheda.altezzaTessuto ? `<div class="field"><div class="field-label">Altezza tessuto</div><div class="field-value">${scheda.altezzaTessuto}</div></div>` : ""}
         ${(scheda as { tessutoSecondario?: string | null }).tessutoSecondario ? `<div class="field"><div class="field-label">Costina</div><div class="field-value">${(scheda as { tessutoSecondario?: string | null }).tessutoSecondario}</div></div>` : ""}
         ${(scheda as { pesoTessutoSecondario?: string | null }).pesoTessutoSecondario ? `<div class="field"><div class="field-label">Peso costina</div><div class="field-value">${(scheda as { pesoTessutoSecondario?: string | null }).pesoTessutoSecondario}</div></div>` : ""}
         <div class="field"><div class="field-label">Colore base</div><div class="field-value">${scheda.coloreBase || "—"}</div></div>
@@ -165,7 +185,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       `).join("")}
     </div>
     ${scheda.colorePrincipale ? `<div class="field" style="margin-top:6px"><div class="field-label">Colore principale</div><div class="field-value">${scheda.colorePrincipale}</div></div>` : ""}
-    ${scheda.coloreSecondario ? `<div class="field"><div class="field-label">Colore secondario</div><div class="field-value">${scheda.coloreSecondario}</div></div>` : ""}
+    ${scheda.coloreSecondario ? `<div class="field"><div class="field-label">Colori secondari</div><div class="field-value">${renderColoreSecondarioPdf(scheda.coloreSecondario)}</div></div>` : ""}
     ${scheda.notePersonalizzazione ? `<div class="field"><div class="field-label">Note personalizzazione</div><div class="field-value">${scheda.notePersonalizzazione}</div></div>` : ""}
   </div>
   ` : ""}
