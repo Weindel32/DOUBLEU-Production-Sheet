@@ -2,7 +2,7 @@
 
 import { useState, useRef, forwardRef, useImperativeHandle } from "react";
 import Link from "next/link";
-import { Edit3, Upload, X, ExternalLink } from "lucide-react";
+import { Edit3, Upload, X, ExternalLink, Loader2 } from "lucide-react";
 import { CATEGORIE } from "@/lib/utils";
 import type { SchedaCompleta } from "@/types";
 
