@@ -162,6 +162,12 @@ input:focus, textarea:focus, select:focus {
 /* ─── Print / PDF ─────────────────────────────────────── */
 @media print {
   .sidebar { display: none !important; }
-  main { width: 100% !important; }
-  body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html, body { height: auto !important; overflow: visible !important; }
+  main {
+    width: 100% !important;
+    overflow: visible !important;
+    height: auto !important;
+  }
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }
