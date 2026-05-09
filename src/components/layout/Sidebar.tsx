@@ -45,7 +45,7 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="sidebar flex flex-col">
+    <aside className="sidebar hidden md:flex flex-col">
       {/* Logo */}
       <div className="sidebar-logo-area px-5 py-5 border-b border-white/5">
         {/* Icona compatta visibile solo su tablet collassato */}
