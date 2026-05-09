@@ -3,9 +3,9 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { formatData, calcolaTotaleQuantita } from "@/lib/utils";
 
-const STATO_BADGE: Record<string, string> = {
-  bozza:     "bg-gray-100 text-gray-600",
-  esecutiva: "bg-green-100 text-green-700",
+const STATO_STYLE: Record<string, string> = {
+  bozza:     "bg-slate-500/20 text-slate-300 border border-slate-500/30",
+  esecutiva: "bg-orange-500/15 text-orange-300 border border-orange-500/30",
 };
 
 const STATO_LABEL: Record<string, string> = {
@@ -15,35 +15,30 @@ const STATO_LABEL: Record<string, string> = {
 
 export default async function MobileSchedePage() {
   const schede = await prisma.scheda.findMany({
-    where: { stato: "esecutiva" },
-    include: { cliente: true },
     orderBy: { updatedAt: "desc" },
+    include: { cliente: true },
   });
+
+  const esecutive = schede.filter((s) => s.stato === "esecutiva").length;
 
   return (
     <div className="flex flex-col min-h-screen">
       {/* Header */}
-      <div className="bg-blue-700 text-white px-4 pt-12 pb-4 sticky top-0 z-10">
-        <div className="text-xs font-medium opacity-70 uppercase tracking-wider mb-1">Double U</div>
-        <h1 className="text-xl font-bold">Schede attive</h1>
-        <div className="text-sm opacity-70 mt-0.5">{schede.length} schede</div>
-      </div>
-
-      {/* Filtro stati */}
-      <div className="bg-white border-b border-gray-200 px-4 py-2 flex gap-2 overflow-x-auto">
-        {["esecutiva"].map((s) => (
-          <span key={s} className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${STATO_BADGE[s]}`}>
-            {STATO_LABEL[s]}
-          </span>
-        ))}
+      <div className="px-4 pt-12 pb-5 sticky top-0 z-10" style={{ backgroundColor: "#0a1628", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+        <div className="text-[10px] font-semibold tracking-[0.2em] uppercase mb-1" style={{ color: "#4e6585" }}>DOUBLEU</div>
+        <h1 className="text-xl font-bold text-white">Schede produzione</h1>
+        <div className="flex gap-4 mt-2 text-xs" style={{ color: "#8ba3c7" }}>
+          <span>{schede.length} totali</span>
+          <span className="text-orange-300">{esecutive} esecutive</span>
+        </div>
       </div>
 
       {/* Lista schede */}
-      <div className="flex-1 px-4 py-3 space-y-3">
+      <div className="flex-1 px-4 py-4 space-y-3">
         {schede.length === 0 ? (
-          <div className="text-center py-16 text-gray-400">
+          <div className="text-center py-16" style={{ color: "#4e6585" }}>
             <div className="text-4xl mb-3">📋</div>
-            <div className="text-sm">Nessuna scheda attiva</div>
+            <div className="text-sm">Nessuna scheda presente</div>
           </div>
         ) : (
           schede.map((s) => {
@@ -53,21 +48,23 @@ export default async function MobileSchedePage() {
               <Link
                 key={s.id}
                 href={`/m/schede/${s.id}`}
-                className="block bg-white rounded-xl shadow-sm border border-gray-100 p-4 active:bg-gray-50 transition-colors"
+                className="block rounded-xl p-4 active:opacity-70 transition-opacity"
+                style={{ backgroundColor: "#112240", border: "1px solid rgba(255,255,255,0.07)" }}
               >
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-gray-800 truncate">{s.nomeArticolo}</div>
-                    <div className="text-xs text-gray-400 mt-0.5">{s.codice}</div>
+                    <div className="font-semibold text-white truncate">{s.nomeArticolo}</div>
+                    <div className="text-xs mt-0.5" style={{ color: "#4e6585" }}>{s.codice}</div>
                   </div>
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${STATO_BADGE[s.stato]}`}>
-                    {STATO_LABEL[s.stato]}
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-semibold flex-shrink-0 ${STATO_STYLE[s.stato] ?? ""}`}>
+                    {STATO_LABEL[s.stato] ?? s.stato}
                   </span>
                 </div>
-                <div className="flex items-center gap-4 text-xs text-gray-500">
-                  {s.cliente && <span>👤 {s.cliente.nome}</span>}
-                  {totale > 0 && <span>📦 {totale} pz</span>}
-                  <span className="ml-auto">{formatData(s.updatedAt.toISOString())}</span>
+                <div className="flex items-center gap-3 text-xs flex-wrap" style={{ color: "#8ba3c7" }}>
+                  {s.cliente && <span>{s.cliente.nome}</span>}
+                  {s.collezione && <span>{s.collezione}</span>}
+                  {totale > 0 && <span>{totale} pz</span>}
+                  <span className="ml-auto" style={{ color: "#4e6585" }}>{formatData(s.updatedAt.toISOString())}</span>
                 </div>
               </Link>
             );
@@ -76,9 +73,9 @@ export default async function MobileSchedePage() {
       </div>
 
       {/* Footer */}
-      <div className="bg-white border-t border-gray-200 px-4 py-3 text-center">
-        <div className="text-xs text-gray-400">Double U Production Sheet</div>
-        <a href="/" className="text-xs text-blue-600 mt-0.5 block">Apri versione desktop →</a>
+      <div className="px-4 py-4 text-center" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+        <div className="text-xs mb-1" style={{ color: "#4e6585" }}>DOUBLEU Production Sheet</div>
+        <a href="/dashboard" className="text-xs text-blue-400">Versione desktop →</a>
       </div>
     </div>
   );

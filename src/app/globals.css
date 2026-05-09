@@ -158,3 +158,52 @@ input:focus, textarea:focus, select:focus {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+/* ─── Responsive sidebar ─────────────────────────────── */
+
+/* Tablet (768–1023px): sidebar collassata a icone */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .sidebar {
+    width: 64px;
+  }
+  .sidebar-link {
+    padding: 10px;
+    justify-content: center;
+    border-left: none;
+    border-radius: 10px;
+    gap: 0;
+  }
+  .sidebar-link.active {
+    background: rgba(37,99,235,0.22);
+    border-left: none;
+  }
+  .sidebar-link span,
+  .sidebar-logo-name,
+  .sidebar-logo-sub,
+  .sidebar-user-info,
+  .sidebar-logout-label {
+    display: none;
+  }
+  .sidebar-logo-area {
+    padding: 14px 0;
+    display: flex;
+    justify-content: center;
+  }
+  .sidebar-logo-icon {
+    display: flex !important;
+  }
+  .sidebar-user-area {
+    padding: 10px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+}
+
+/* Mobile (<768px): sidebar nascosta — si usa la versione /m/ */
+@media (max-width: 767px) {
+  .sidebar {
+    display: none;
+  }
+}

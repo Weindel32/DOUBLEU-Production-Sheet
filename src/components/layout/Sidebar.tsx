@@ -47,9 +47,13 @@ export default function Sidebar() {
   return (
     <aside className="sidebar flex flex-col">
       {/* Logo */}
-      <div className="px-5 py-5 border-b border-white/5">
-        <div className="text-white font-black text-lg tracking-[0.18em] uppercase leading-none">DOUBLEU</div>
-        <div className="text-[#4e6585] text-[9px] tracking-[0.22em] uppercase mt-1.5 font-medium">PRODUCTION SHEET</div>
+      <div className="sidebar-logo-area px-5 py-5 border-b border-white/5">
+        {/* Icona compatta visibile solo su tablet collassato */}
+        <div className="sidebar-logo-icon hidden w-8 h-8 rounded-lg bg-blue-600 items-center justify-center text-white font-black text-sm">
+          U
+        </div>
+        <div className="sidebar-logo-name text-white font-black text-lg tracking-[0.18em] uppercase leading-none">DOUBLEU</div>
+        <div className="sidebar-logo-sub text-[#4e6585] text-[9px] tracking-[0.22em] uppercase mt-1.5 font-medium">PRODUCTION SHEET</div>
       </div>
 
       {/* Nav */}
@@ -64,6 +68,7 @@ export default function Sidebar() {
             <Link
               key={href}
               href={href}
+              title={label}
               className={cn("sidebar-link", isActive && "active")}
             >
               <Icon size={16} />
@@ -74,22 +79,23 @@ export default function Sidebar() {
       </nav>
 
       {/* User + logout */}
-      <div className="p-4 border-t border-slate-700">
+      <div className="sidebar-user-area p-4 border-t border-slate-700">
         <div className="flex items-center gap-3 mb-3">
-          <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold">
+          <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
             AD
           </div>
-          <div className="flex-1 min-w-0">
+          <div className="sidebar-user-info flex-1 min-w-0">
             <div className="text-white text-sm font-medium">Admin</div>
             <div className="text-slate-400 text-xs">Build {BUILD}</div>
           </div>
         </div>
         <button
           onClick={handleLogout}
+          title="Esci"
           className="w-full flex items-center gap-2 text-slate-400 hover:text-white text-xs px-2 py-1.5 rounded-lg hover:bg-slate-700 transition-colors"
         >
           <LogOut size={13} />
-          Esci
+          <span className="sidebar-logout-label">Esci</span>
         </button>
       </div>
     </aside>
