@@ -229,8 +229,8 @@ export default function AnalyticsClient({
                       position: "right",
                       fill: "#8ba3c7",
                       fontSize: 11,
-                      formatter: (v: number) =>
-                        `${v.toLocaleString("it-IT")} pz`,
+                      formatter: (v: unknown) =>
+                        `${Number(v).toLocaleString("it-IT")} pz`,
                     }}
                   >
                     {top10.map((entry, i) => (
@@ -369,7 +369,7 @@ export default function AnalyticsClient({
                       position: "top",
                       fill: "#8ba3c7",
                       fontSize: 10,
-                      formatter: (v: number) => v.toLocaleString("it-IT"),
+                      formatter: (v: unknown) => Number(v).toLocaleString("it-IT"),
                     }}
                   />
                 </BarChart>
