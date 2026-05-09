@@ -158,3 +158,10 @@ input:focus, textarea:focus, select:focus {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+/* ─── Print / PDF ─────────────────────────────────────── */
+@media print {
+  .sidebar { display: none !important; }
+  main { width: 100% !important; }
+  body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}

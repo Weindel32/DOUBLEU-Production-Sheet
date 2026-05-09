@@ -11,6 +11,7 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
+import { Printer } from "lucide-react";
 import type { AnalyticsData } from "@/app/(dashboard)/analytics/page";
 
 const SIZE_ORDER = [
@@ -41,7 +42,7 @@ function FilterTabs({
   onChange: (v: string) => void;
 }) {
   return (
-    <div className="flex gap-1 flex-wrap">
+    <div className="flex gap-1 flex-wrap print:hidden">
       {GENERE_TABS.map((tab) => (
         <button
           key={tab.value}
@@ -97,6 +98,8 @@ export default function AnalyticsClient({
 }: AnalyticsData) {
   const [filtroArticoli, setFiltroArticoli] = useState("tutti");
   const [filtroTaglie, setFiltroTaglie] = useState("tutti");
+  const [activeArticoloIndex, setActiveArticoloIndex] = useState<number | null>(null);
+  const [activeTagliaIndex, setActiveTagliaIndex] = useState<number | null>(null);
 
   const articoliFiltrati = useMemo(() => {
     const filtered =
@@ -135,11 +138,20 @@ export default function AnalyticsClient({
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-white">Analytics Produzione</h1>
-        <p className="text-sm text-[#8ba3c7] mt-0.5">
-          Solo schede in stato esecutiva
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Analytics Produzione</h1>
+          <p className="text-sm text-[#8ba3c7] mt-0.5">
+            Solo schede in stato esecutiva
+          </p>
+        </div>
+        <button
+          onClick={() => window.print()}
+          className="print:hidden flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-[#8ba3c7] hover:text-white hover:bg-white/5 border border-white/10 transition-colors"
+        >
+          <Printer size={15} />
+          Stampa / PDF
+        </button>
       </div>
 
       {/* KPI Cards */}
@@ -193,7 +205,6 @@ export default function AnalyticsClient({
           </div>
         ) : (
           <>
-            {/* Chart */}
             <div style={{ height: barHeight }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
@@ -221,10 +232,12 @@ export default function AnalyticsClient({
                     tickLine={false}
                     width={80}
                   />
-                  <Tooltip content={<ArticoloTooltip />} />
+                  <Tooltip content={<ArticoloTooltip />} cursor={false} />
                   <Bar
                     dataKey="totalePezzi"
                     radius={[0, 4, 4, 0]}
+                    onMouseEnter={(_, index) => setActiveArticoloIndex(index)}
+                    onMouseLeave={() => setActiveArticoloIndex(null)}
                     label={{
                       position: "right",
                       fill: "#8ba3c7",
@@ -240,7 +253,12 @@ export default function AnalyticsClient({
                           GENERE_COLORS[(entry.genere || "").toLowerCase()] ||
                           "#3b82f6"
                         }
-                        fillOpacity={0.85}
+                        fillOpacity={
+                          activeArticoloIndex === null || activeArticoloIndex === i
+                            ? 0.9
+                            : 0.35
+                        }
+                        style={{ transition: "fill-opacity 0.15s" }}
                       />
                     ))}
                   </Bar>
@@ -249,12 +267,12 @@ export default function AnalyticsClient({
             </div>
 
             {/* Legend */}
-            <div className="flex gap-4 flex-wrap">
+            <div className="flex gap-4 flex-wrap print:hidden">
               {Object.entries(GENERE_COLORS).map(([g, color]) => (
                 <div key={g} className="flex items-center gap-1.5">
                   <div
                     className="w-2.5 h-2.5 rounded-sm"
-                    style={{ backgroundColor: color, opacity: 0.85 }}
+                    style={{ backgroundColor: color, opacity: 0.9 }}
                   />
                   <span className="text-xs text-[#8ba3c7] capitalize">{g}</span>
                 </div>
@@ -336,7 +354,6 @@ export default function AnalyticsClient({
           </div>
         ) : (
           <>
-            {/* Chart */}
             <div style={{ height: 280 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
@@ -360,18 +377,32 @@ export default function AnalyticsClient({
                     tickLine={false}
                     tickFormatter={(v) => v.toLocaleString("it-IT")}
                   />
-                  <Tooltip content={<TagliaTooltip />} />
+                  <Tooltip content={<TagliaTooltip />} cursor={false} />
                   <Bar
                     dataKey="pezzi"
-                    fill="#3b82f6"
                     radius={[4, 4, 0, 0]}
+                    onMouseEnter={(_, index) => setActiveTagliaIndex(index)}
+                    onMouseLeave={() => setActiveTagliaIndex(null)}
                     label={{
                       position: "top",
                       fill: "#8ba3c7",
                       fontSize: 10,
                       formatter: (v: unknown) => Number(v).toLocaleString("it-IT"),
                     }}
-                  />
+                  >
+                    {taglieData.map((_, i) => (
+                      <Cell
+                        key={i}
+                        fill="#3b82f6"
+                        fillOpacity={
+                          activeTagliaIndex === null || activeTagliaIndex === i
+                            ? 0.9
+                            : 0.35
+                        }
+                        style={{ transition: "fill-opacity 0.15s" }}
+                      />
+                    ))}
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
