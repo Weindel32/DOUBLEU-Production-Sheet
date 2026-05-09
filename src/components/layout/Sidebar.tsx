@@ -47,14 +47,9 @@ export default function Sidebar() {
   return (
     <aside className="sidebar flex flex-col">
       {/* Logo */}
-      <div className="px-5 py-4 border-b border-white/5">
-        <div className="text-white font-black text-base tracking-[0.15em] uppercase">Double U</div>
-        <div className="text-slate-500 text-[10px] tracking-widest uppercase mt-0.5">Production Sheet</div>
-        <div className="flex gap-0.5 mt-3">
-          {["#009246", "#ffffff", "#ce2b37"].map((c, i) => (
-            <div key={i} className="h-[3px] flex-1 rounded-full opacity-80" style={{ backgroundColor: c }} />
-          ))}
-        </div>
+      <div className="px-5 py-5 border-b border-white/5">
+        <div className="text-white font-black text-lg tracking-[0.18em] uppercase leading-none">DOUBLEU</div>
+        <div className="text-[#4e6585] text-[9px] tracking-[0.22em] uppercase mt-1.5 font-medium">PRODUCTION SHEET</div>
       </div>
 
       {/* Nav */}

@@ -137,7 +137,7 @@ const TabPersonalizzazione = forwardRef<TabPersonalizzazioneHandle, Props>(funct
               href="/loghi/nuovo"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800"
+              className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-800"
             >
               <ExternalLink size={12} /> Libreria loghi
             </a>
@@ -146,35 +146,35 @@ const TabPersonalizzazione = forwardRef<TabPersonalizzazioneHandle, Props>(funct
           <div className="space-y-3 mb-4">
             {loghi.length === 0 ? (
               <div className="text-center py-6">
-                <div className="text-sm text-gray-400 mb-2">Nessun logo aggiunto</div>
+                <div className="text-sm text-[#4e6585] mb-2">Nessun logo aggiunto</div>
                 {loghiDisponibili.length === 0 ? (
                   <a
                     href="/loghi/nuovo"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs text-blue-600 hover:underline"
+                    className="text-xs text-blue-400 hover:underline"
                   >
                     Aggiungi loghi alla libreria →
                   </a>
                 ) : (
-                  <button onClick={aggiungiLogo} className="text-xs text-blue-600 hover:underline">
+                  <button onClick={aggiungiLogo} className="text-xs text-blue-400 hover:underline">
                     Aggiungi il primo logo
                   </button>
                 )}
               </div>
             ) : (
               loghi.map((l) => (
-                <div key={l.id} className="border border-gray-100 rounded-lg p-3 space-y-2">
+                <div key={l.id} className="border border-white/8 rounded-lg p-3 space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       {l.logo?.file ? (
                         <img
                           src={l.logo.file}
                           alt={l.logo.nome}
-                          className="w-8 h-8 object-contain rounded bg-gray-50 border border-gray-100"
+                          className="w-8 h-8 object-contain rounded bg-white/[0.03] border border-white/8"
                         />
                       ) : (
-                        <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center text-xs text-gray-400">
+                        <div className="w-8 h-8 bg-white/[0.05] rounded flex items-center justify-center text-xs text-[#4e6585]">
                           {l.logo?.nome?.[0] || "L"}
                         </div>
                       )}
@@ -182,7 +182,7 @@ const TabPersonalizzazione = forwardRef<TabPersonalizzazioneHandle, Props>(funct
                         <select
                           value={l.logoId}
                           onChange={(e) => aggiornaLogo(l.id, "logoId", e.target.value)}
-                          className="text-sm font-medium text-gray-700 bg-transparent border-0 p-0"
+                          className="text-sm font-medium text-[#e8edf4] bg-transparent border-0 p-0"
                         >
                           {loghiDisponibili.map((logo) => (
                             <option key={logo.id} value={logo.id}>
@@ -190,11 +190,11 @@ const TabPersonalizzazione = forwardRef<TabPersonalizzazioneHandle, Props>(funct
                             </option>
                           ))}
                         </select>
-                        <div className="text-xs text-gray-400">
+                        <div className="text-xs text-[#4e6585]">
                           <select
                             value={l.tecnica}
                             onChange={(e) => aggiornaLogo(l.id, "tecnica", e.target.value)}
-                            className="text-xs text-gray-500 bg-transparent border-0 p-0"
+                            className="text-xs text-[#8ba3c7] bg-transparent border-0 p-0"
                           >
                             {TECNICHE_LOGO.map((t) => (
                               <option key={t} value={t}>
@@ -207,18 +207,18 @@ const TabPersonalizzazione = forwardRef<TabPersonalizzazioneHandle, Props>(funct
                     </div>
                     <button
                       onClick={() => rimuoviLogo(l.id)}
-                      className="text-gray-300 hover:text-red-400 transition-colors"
+                      className="text-[#4e6585] hover:text-red-400 transition-colors"
                     >
                       <Trash2 size={14} />
                     </button>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <div className="text-xs text-gray-400 mb-1">Posizione</div>
+                      <div className="text-xs text-[#4e6585] mb-1">Posizione</div>
                       <select
                         value={l.posizione}
                         onChange={(e) => aggiornaLogo(l.id, "posizione", e.target.value)}
-                        className="w-full text-xs text-gray-600 border border-gray-200 rounded p-1"
+                        className="w-full text-xs text-[#8ba3c7] border border-white/10 rounded p-1"
                       >
                         {POSIZIONI_LOGO.map((p) => (
                           <option key={p} value={p}>
@@ -228,13 +228,13 @@ const TabPersonalizzazione = forwardRef<TabPersonalizzazioneHandle, Props>(funct
                       </select>
                     </div>
                     <div>
-                      <div className="text-xs text-gray-400 mb-1">Dimensione</div>
+                      <div className="text-xs text-[#4e6585] mb-1">Dimensione</div>
                       <input
                         type="text"
                         value={l.dimensione || ""}
                         onChange={(e) => aggiornaLogo(l.id, "dimensione", e.target.value)}
                         placeholder="es. 8 cm"
-                        className="w-full text-xs text-gray-600 border border-gray-200 rounded p-1"
+                        className="w-full text-xs text-[#8ba3c7] border border-white/10 rounded p-1"
                       />
                     </div>
                   </div>
@@ -246,7 +246,7 @@ const TabPersonalizzazione = forwardRef<TabPersonalizzazioneHandle, Props>(funct
           {loghiDisponibili.length > 0 && (
             <button
               onClick={aggiungiLogo}
-              className="w-full flex items-center justify-center gap-2 border border-dashed border-gray-300 rounded-lg py-2 text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors"
+              className="w-full flex items-center justify-center gap-2 border border-dashed border-white/15 rounded-lg py-2 text-sm text-[#8ba3c7] hover:border-blue-500/50 hover:text-blue-400 transition-colors"
             >
               <PlusCircle size={15} />
               Aggiungi logo
@@ -261,7 +261,7 @@ const TabPersonalizzazione = forwardRef<TabPersonalizzazioneHandle, Props>(funct
           <div className="space-y-3">
             {/* Colore principale */}
             <div>
-              <label className="text-xs text-gray-400 block mb-1">Colore principale</label>
+              <label className="text-xs text-[#4e6585] block mb-1">Colore principale</label>
               <ColorPickerNamed
                 value={colorePrincipale}
                 onChange={(val) => {
@@ -274,22 +274,22 @@ const TabPersonalizzazione = forwardRef<TabPersonalizzazioneHandle, Props>(funct
 
             {/* Colori secondari multipli */}
             <div>
-              <label className="text-xs text-gray-400 block mb-2">Colori secondari</label>
+              <label className="text-xs text-[#4e6585] block mb-2">Colori secondari</label>
 
               {coloriSecondari.length === 0 ? (
-                <div className="text-xs text-gray-300 italic mb-2">Nessun colore secondario</div>
+                <div className="text-xs text-[#4e6585] italic mb-2">Nessun colore secondario</div>
               ) : (
                 <div className="space-y-2 mb-2">
                   {coloriSecondari.map((voce) => (
                     <div
                       key={voce.id}
-                      className="border border-gray-100 rounded-lg p-2.5 space-y-2"
+                      className="border border-white/8 rounded-lg p-2.5 space-y-2"
                     >
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-500 font-medium">Colore secondario</span>
+                        <span className="text-xs text-[#8ba3c7] font-medium">Colore secondario</span>
                         <button
                           onClick={() => rimuoviColoreSecondario(voce.id)}
-                          className="text-gray-300 hover:text-red-400 transition-colors"
+                          className="text-[#4e6585] hover:text-red-400 transition-colors"
                         >
                           <X size={13} />
                         </button>
@@ -303,7 +303,7 @@ const TabPersonalizzazione = forwardRef<TabPersonalizzazioneHandle, Props>(funct
                         placeholder="es. Bianco"
                       />
                       <div>
-                        <div className="text-xs text-gray-400 mb-1">Destinazione</div>
+                        <div className="text-xs text-[#4e6585] mb-1">Destinazione</div>
                         <select
                           value={voce.destinazione}
                           onChange={(e) => {
@@ -314,7 +314,7 @@ const TabPersonalizzazione = forwardRef<TabPersonalizzazioneHandle, Props>(funct
                             );
                             salvaColoreSecondario(aggiornate);
                           }}
-                          className="w-full text-xs text-gray-600 border border-gray-200 rounded p-1.5"
+                          className="w-full text-xs text-[#8ba3c7] border border-white/10 rounded p-1.5"
                         >
                           <option value="">— Seleziona destinazione —</option>
                           {DESTINAZIONI_COLORE.map((d) => (
@@ -333,7 +333,7 @@ const TabPersonalizzazione = forwardRef<TabPersonalizzazioneHandle, Props>(funct
                           }
                           onBlur={() => salvaColoreSecondario(coloriSecondari)}
                           placeholder="Specifica destinazione..."
-                          className="w-full text-xs text-gray-600 border border-gray-200 rounded p-1.5 outline-none focus:border-blue-400"
+                          className="w-full text-xs text-[#8ba3c7] border border-white/10 rounded p-1.5 outline-none focus:border-blue-500/50"
                         />
                       )}
                     </div>
@@ -343,7 +343,7 @@ const TabPersonalizzazione = forwardRef<TabPersonalizzazioneHandle, Props>(funct
 
               <button
                 onClick={aggiungiColoreSecondario}
-                className="w-full flex items-center justify-center gap-1.5 border border-dashed border-gray-300 rounded-lg py-1.5 text-xs text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors"
+                className="w-full flex items-center justify-center gap-1.5 border border-dashed border-white/15 rounded-lg py-1.5 text-xs text-[#8ba3c7] hover:border-blue-500/50 hover:text-blue-400 transition-colors"
               >
                 <PlusCircle size={13} />
                 Aggiungi colore secondario
@@ -359,7 +359,7 @@ const TabPersonalizzazione = forwardRef<TabPersonalizzazioneHandle, Props>(funct
               onBlur={() => onSave({ notePersonalizzazione })}
               rows={5}
               placeholder="es. Mantenere distanza minima 1 cm dalle cuciture..."
-              className="w-full text-sm text-gray-700 border border-gray-200 rounded-lg p-3 resize-none focus:border-blue-400 outline-none"
+              className="w-full text-sm text-[#e8edf4] border border-white/10 rounded-lg p-3 resize-none focus:border-blue-500/50 outline-none"
             />
           </div>
         </div>

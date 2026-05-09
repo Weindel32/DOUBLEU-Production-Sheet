@@ -11,80 +11,92 @@ export default async function SchedePage() {
     include: { cliente: true },
   });
 
+  const totale = schede.length;
+  const esecutive = schede.filter((s) => s.stato === "esecutiva").length;
+  const bozze = schede.filter((s) => s.stato === "bozza").length;
+
   return (
     <div className="p-6 space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Schede produzione</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{schede.length} schede totali</p>
+          <h1 className="text-2xl font-bold text-white">Schede produzione</h1>
+          <p className="text-sm text-[#8ba3c7] mt-0.5">Tutte le schede tecniche degli articoli</p>
         </div>
         <Link
           href="/schede/nuova"
-          className="flex items-center gap-2 bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
         >
           <PlusCircle size={16} />
           Nuova scheda
         </Link>
       </div>
 
-      {/* Filtri stato */}
-      <div className="flex gap-2 flex-wrap">
-        <span className="badge bg-gray-100 text-gray-600 cursor-pointer hover:bg-gray-200">Tutte</span>
-        {STATI_SCHEDA.map((s) => (
-          <span key={s.value} className={`badge badge-${s.value} cursor-pointer`}>{s.label}</span>
-        ))}
+      {/* Counter pills */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="card py-3 text-center">
+          <div className="text-2xl font-bold text-white">{totale}</div>
+          <div className="text-[10px] text-[#8ba3c7] uppercase tracking-wider mt-0.5">Totali</div>
+        </div>
+        <div className="card py-3 text-center">
+          <div className="text-2xl font-bold text-orange-400">{esecutive}</div>
+          <div className="text-[10px] text-[#8ba3c7] uppercase tracking-wider mt-0.5">Esecutive</div>
+        </div>
+        <div className="card py-3 text-center">
+          <div className="text-2xl font-bold text-[#8ba3c7]">{bozze}</div>
+          <div className="text-[10px] text-[#8ba3c7] uppercase tracking-wider mt-0.5">Bozze</div>
+        </div>
       </div>
 
       {/* Lista */}
       {schede.length === 0 ? (
         <div className="card text-center py-16">
-          <FileText size={48} className="mx-auto mb-4 text-gray-300" />
-          <h2 className="text-gray-600 font-medium mb-2">Nessuna scheda</h2>
-          <p className="text-gray-400 text-sm mb-4">Crea la prima scheda di produzione</p>
+          <FileText size={48} className="mx-auto mb-4 text-[#4e6585]" />
+          <h2 className="text-[#8ba3c7] font-medium mb-2">Nessuna scheda</h2>
+          <p className="text-[#4e6585] text-sm mb-4">Crea la prima scheda di produzione</p>
           <Link
             href="/schede/nuova"
-            className="inline-flex items-center gap-2 bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-800 transition-colors"
+            className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-500 transition-colors"
           >
             <PlusCircle size={16} />
             Nuova scheda
           </Link>
         </div>
       ) : (
-        <div className="card p-0">
+        <div className="card p-0 overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="text-left px-4 py-3 text-gray-500 font-medium">Articolo</th>
-                <th className="text-left px-4 py-3 text-gray-500 font-medium">Codice</th>
-                <th className="text-left px-4 py-3 text-gray-500 font-medium">Cliente / Club</th>
-                <th className="text-left px-4 py-3 text-gray-500 font-medium">Collezione</th>
-                <th className="text-left px-4 py-3 text-gray-500 font-medium">Stato</th>
-                <th className="text-left px-4 py-3 text-gray-500 font-medium">Quantità</th>
-                <th className="text-left px-4 py-3 text-gray-500 font-medium">Ultima modifica</th>
+              <tr className="border-b border-white/7">
+                <th className="text-left px-4 py-3">Articolo</th>
+                <th className="text-left px-4 py-3">Codice</th>
+                <th className="text-left px-4 py-3">Cliente / Club</th>
+                <th className="text-left px-4 py-3">Collezione</th>
+                <th className="text-left px-4 py-3">Stato</th>
+                <th className="text-left px-4 py-3">Quantità</th>
+                <th className="text-left px-4 py-3">Ultima modifica</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody>
               {schede.map((s) => {
                 const stato = STATI_SCHEDA.find((x) => x.value === s.stato);
                 const quantita = s.quantitaTaglia ? JSON.parse(s.quantitaTaglia) : {};
-                const totale = calcolaTotaleQuantita(quantita as Record<string, number>);
+                const totPz = calcolaTotaleQuantita(quantita as Record<string, number>);
                 return (
-                  <tr key={s.id} className="hover:bg-gray-50 transition-colors">
+                  <tr key={s.id} className="border-b border-white/5 hover:bg-white/[0.03] transition-colors">
                     <td className="px-4 py-3">
-                      <Link href={`/schede/${s.id}`} className="font-medium text-gray-800 hover:text-blue-700">
+                      <Link href={`/schede/${s.id}`} className="font-medium text-white hover:text-blue-300 transition-colors">
                         {s.nomeArticolo}
                       </Link>
                     </td>
-                    <td className="px-4 py-3 text-gray-500 font-mono text-xs">{s.codice}</td>
-                    <td className="px-4 py-3 text-gray-600">{s.cliente?.nome || "—"}</td>
-                    <td className="px-4 py-3 text-gray-600">{s.collezione || "—"}</td>
+                    <td className="px-4 py-3 text-[#8ba3c7] font-mono text-xs">{s.codice}</td>
+                    <td className="px-4 py-3 text-[#8ba3c7]">{s.cliente?.nome || "—"}</td>
+                    <td className="px-4 py-3 text-[#8ba3c7]">{s.collezione || "—"}</td>
                     <td className="px-4 py-3">
                       {stato && <span className={`badge badge-${s.stato}`}>{stato.label}</span>}
                     </td>
-                    <td className="px-4 py-3 text-gray-700 font-medium">{totale > 0 ? `${totale} pz` : "—"}</td>
-                    <td className="px-4 py-3 text-gray-400">{formatData(s.updatedAt)}</td>
+                    <td className="px-4 py-3 text-[#8ba3c7] font-medium">{totPz > 0 ? `${totPz} pz` : "—"}</td>
+                    <td className="px-4 py-3 text-[#4e6585] text-xs">{formatData(s.updatedAt)}</td>
                     <td className="px-4 py-3 text-right">
                       <SchedaRowMenu id={s.id} nome={s.nomeArticolo} />
                     </td>

@@ -103,33 +103,33 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
     <div className="flex flex-col h-full">
 
       {/* ── Top bar ─────────────────────────────────────── */}
-      <div className="h-12 bg-white border-b border-gray-200 flex items-center justify-between px-5 flex-shrink-0">
-        <Link href="/schede" className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-700 transition-colors">
+      <div className="h-12 bg-[#0a1628] border-b border-white/7 flex items-center justify-between px-5 flex-shrink-0">
+        <Link href="/schede" className="flex items-center gap-1.5 text-sm text-[#4e6585] hover:text-white transition-colors">
           <ArrowLeft size={15} />
           Schede
         </Link>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 text-xs text-gray-400">
+          <div className="flex items-center gap-1.5 text-xs text-[#4e6585]">
             {saving
-              ? <><Loader2 size={13} className="animate-spin text-blue-500" /><span className="text-blue-500">Salvataggio...</span></>
-              : <><CheckCircle size={13} className="text-emerald-500" /><span>Salvato {savedAt}</span></>
+              ? <><Loader2 size={13} className="animate-spin text-blue-400" /><span className="text-blue-400">Salvataggio...</span></>
+              : <><CheckCircle size={13} className="text-emerald-400" /><span>Salvato {savedAt}</span></>
             }
           </div>
-          <div className="w-px h-4 bg-gray-200" />
+          <div className="w-px h-4 bg-white/10" />
           <button
             onClick={handleGlobalSave}
             disabled={saving}
-            className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-3 py-1.5 rounded-md text-xs font-medium transition-colors"
+            className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-3 py-1.5 rounded-md text-xs font-medium transition-colors"
           >
             {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
             Salva
           </button>
-          <div className="w-px h-4 bg-gray-200" />
+          <div className="w-px h-4 bg-white/10" />
           <div className="flex items-center gap-1">
             <a
               href={`/api/schede/${scheda.id}/pdf?tipo=tecnico`}
               target="_blank"
-              className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-l-md text-xs font-medium transition-colors"
+              className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-l-md text-xs font-medium transition-colors"
             >
               <FileDown size={13} />
               PDF Tecnico
@@ -137,7 +137,7 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
             <a
               href={`/api/schede/${scheda.id}/pdf?tipo=interno`}
               target="_blank"
-              className="flex items-center gap-1.5 bg-slate-600 hover:bg-slate-700 text-white px-3 py-1.5 rounded-r-md text-xs font-medium transition-colors"
+              className="flex items-center gap-1.5 bg-[#1a3060] hover:bg-[#162a4e] text-[#8ba3c7] px-3 py-1.5 rounded-r-md text-xs font-medium transition-colors"
             >
               PDF Interno
             </a>
@@ -197,7 +197,7 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
                     onClick={() => setActiveTab(tab.id)}
                     className={`flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-t-lg transition-all whitespace-nowrap ${
                       active
-                        ? "bg-white text-blue-700"
+                        ? "bg-[#112240] text-blue-300"
                         : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
                     }`}
                   >
@@ -227,11 +227,11 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
         </div>
 
         {/* ── Sidebar riepilogo ────────────────────────────── */}
-        <div className="w-52 bg-slate-50 border-l border-gray-200 flex-shrink-0 overflow-y-auto flex flex-col">
+        <div className="w-52 bg-[#0a1628] border-l border-white/7 flex-shrink-0 overflow-y-auto flex flex-col">
 
           {/* Stato */}
-          <div className="p-4 border-b border-gray-200">
-            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Stato scheda</div>
+          <div className="p-4 border-b border-white/7">
+            <div className="text-[10px] font-bold text-[#4e6585] uppercase tracking-widest mb-2">Stato scheda</div>
             <div className="relative">
               <button
                 onClick={() => setShowStatoMenu(!showStatoMenu)}
@@ -241,12 +241,12 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
                 <ChevronDown size={11} />
               </button>
               {showStatoMenu && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl z-10 overflow-hidden">
+                <div className="absolute top-full left-0 right-0 mt-1 bg-[#112240] border border-white/10 rounded-lg shadow-xl z-10 overflow-hidden">
                   {STATI_SCHEDA.map((s) => (
                     <button
                       key={s.value}
                       onClick={() => handleStatoChange(s.value as StatoScheda)}
-                      className="w-full text-left px-3 py-2.5 text-xs hover:bg-gray-50 transition-colors"
+                      className="w-full text-left px-3 py-2.5 text-xs hover:bg-white/5 transition-colors"
                     >
                       <span className={`badge badge-${s.value}`}>{s.label}</span>
                     </button>
@@ -257,25 +257,25 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
           </div>
 
           {/* Info */}
-          <div className="p-4 border-b border-gray-200 space-y-2.5 text-xs">
+          <div className="p-4 border-b border-white/7 space-y-2.5 text-xs">
             <div>
-              <div className="text-gray-400 mb-0.5">Creato da</div>
-              <div className="font-semibold text-gray-700">{scheda.createdBy}</div>
+              <div className="text-[#4e6585] mb-0.5">Creato da</div>
+              <div className="font-semibold text-white">{scheda.createdBy}</div>
             </div>
             <div>
-              <div className="text-gray-400 mb-0.5">Ultima modifica</div>
-              <div className="font-semibold text-gray-700">{formatData(scheda.updatedAt)}</div>
+              <div className="text-[#4e6585] mb-0.5">Ultima modifica</div>
+              <div className="font-semibold text-white">{formatData(scheda.updatedAt)}</div>
             </div>
             {totale > 0 && (
-              <div className="bg-blue-50 border border-blue-100 rounded-lg px-3 py-2">
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg px-3 py-2">
                 <div className="text-blue-400 text-[10px] uppercase tracking-wider">Totale pezzi</div>
-                <div className="font-bold text-blue-700 text-base mt-0.5">{totale} pz</div>
+                <div className="font-bold text-blue-300 text-base mt-0.5">{totale} pz</div>
               </div>
             )}
             {statoCorrente === "bozza" && (
               <button
                 onClick={() => handleStatoChange("esecutiva")}
-                className="w-full bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-xs font-semibold transition-colors"
+                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-lg text-xs font-semibold transition-colors"
               >
                 Porta in Esecutiva
               </button>
@@ -283,15 +283,15 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
           </div>
 
           {/* Note rapide */}
-          <div className="p-4 border-b border-gray-200 flex-1">
-            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Note rapide</div>
+          <div className="p-4 border-b border-white/7 flex-1">
+            <div className="text-[10px] font-bold text-[#4e6585] uppercase tracking-widest mb-2">Note rapide</div>
             <textarea
               value={noteRapide}
               onChange={(e) => setNoteRapide(e.target.value)}
               onBlur={() => handleSave({ noteRapide })}
               rows={5}
               placeholder="Note veloci..."
-              className="w-full text-xs border border-gray-200 rounded-lg p-2 resize-none text-gray-700 bg-white focus:border-blue-400 transition-colors"
+              className="w-full text-xs border border-white/10 rounded-lg p-2 resize-none text-[#e8edf4] bg-[#1a3060] focus:border-blue-500/40 transition-colors outline-none"
             />
           </div>
 
@@ -299,14 +299,14 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
           <div className="p-4 space-y-2">
             <button
               onClick={handleDuplica}
-              className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-xs font-semibold transition-colors"
+              className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 rounded-lg text-xs font-semibold transition-colors"
             >
               <Copy size={13} />
               Duplica scheda
             </button>
             <button
               onClick={handleElimina}
-              className="w-full flex items-center justify-center gap-2 border border-red-200 text-red-400 hover:bg-red-50 hover:text-red-600 px-3 py-2 rounded-lg text-xs font-semibold transition-colors"
+              className="w-full flex items-center justify-center gap-2 border border-red-500/30 text-red-400 hover:bg-red-500/10 px-3 py-2 rounded-lg text-xs font-semibold transition-colors"
             >
               <Trash2 size={13} />
               Elimina

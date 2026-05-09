@@ -84,30 +84,30 @@ export default function ColorPickerNamed({ value, onChange, onBlur, placeholder 
   return (
     <div ref={ref} className="relative">
       <div
-        className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-2 cursor-pointer hover:border-blue-400 transition-colors"
+        className="flex items-center gap-2 border border-white/10 rounded-lg px-3 py-2 cursor-pointer hover:border-blue-500/40 transition-colors bg-[#1a3060]"
         onClick={() => setOpen((v) => !v)}
       >
         <div
-          className="w-5 h-5 rounded-full border border-gray-200 flex-shrink-0"
-          style={{ backgroundColor: hex || "#e5e7eb" }}
+          className="w-5 h-5 rounded-full border border-white/15 flex-shrink-0"
+          style={{ backgroundColor: hex || "#1a3060" }}
         />
-        <span className={`text-sm flex-1 ${value ? "text-gray-700" : "text-gray-300 italic"}`}>
+        <span className={`text-sm flex-1 ${value ? "text-[#e8edf4]" : "text-[#4e6585] italic"}`}>
           {value || placeholder || "Seleziona colore..."}
         </span>
-        <ChevronDown size={14} className="text-gray-400 flex-shrink-0" />
+        <ChevronDown size={14} className="text-[#4e6585] flex-shrink-0" />
       </div>
 
       {open && (
-        <div className="absolute z-50 top-full left-0 mt-1 w-64 bg-white border border-gray-200 rounded-xl shadow-lg p-3">
-          <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-2 py-1.5 mb-3">
-            <Search size={13} className="text-gray-400 flex-shrink-0" />
+        <div className="absolute z-50 top-full left-0 mt-1 w-64 bg-[#112240] border border-white/10 rounded-xl shadow-xl p-3">
+          <div className="flex items-center gap-2 border border-white/10 rounded-lg px-2 py-1.5 mb-3">
+            <Search size={13} className="text-[#4e6585] flex-shrink-0" />
             <input
               autoFocus
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Cerca colore..."
-              className="flex-1 text-sm outline-none text-gray-700 bg-transparent"
+              className="flex-1 text-sm outline-none text-[#e8edf4] bg-transparent"
               onClick={(e) => e.stopPropagation()}
             />
           </div>
@@ -121,16 +121,16 @@ export default function ColorPickerNamed({ value, onChange, onBlur, placeholder 
                   e.stopPropagation();
                   selectColor(c.nome);
                 }}
-                className={`flex flex-col items-center gap-1 p-1.5 rounded-lg hover:bg-gray-50 transition-colors ${
-                  value === c.nome ? "ring-2 ring-blue-500 bg-blue-50" : ""
+                className={`flex flex-col items-center gap-1 p-1.5 rounded-lg hover:bg-white/[0.05] transition-colors ${
+                  value === c.nome ? "ring-2 ring-blue-400 bg-blue-500/15" : ""
                 }`}
               >
                 <div
-                  className="w-8 h-8 rounded-full border border-gray-200"
+                  className="w-8 h-8 rounded-full border border-white/15"
                   style={{ backgroundColor: c.hex }}
                 />
                 <span
-                  className="text-gray-500 leading-tight text-center"
+                  className="text-[#8ba3c7] leading-tight text-center"
                   style={{ fontSize: "9px" }}
                 >
                   {c.nome}
@@ -139,11 +139,11 @@ export default function ColorPickerNamed({ value, onChange, onBlur, placeholder 
             ))}
 
             {filtered.length === 0 && search.trim() && (
-              <div className="col-span-4 text-center text-xs text-gray-400 py-3">
+              <div className="col-span-4 text-center text-xs text-[#4e6585] py-3">
                 Colore non trovato.
                 <br />
                 <button
-                  className="text-blue-500 hover:underline mt-1"
+                  className="text-blue-400 hover:underline mt-1"
                   onClick={(e) => {
                     e.stopPropagation();
                     selectColor(search.trim());
@@ -156,13 +156,13 @@ export default function ColorPickerNamed({ value, onChange, onBlur, placeholder 
           </div>
 
           {value && (
-            <div className="mt-2 pt-2 border-t border-gray-100 flex items-center gap-2 text-xs text-gray-500">
+            <div className="mt-2 pt-2 border-t border-white/8 flex items-center gap-2 text-xs text-[#8ba3c7]">
               <div
-                className="w-4 h-4 rounded-full border border-gray-200 flex-shrink-0"
-                style={{ backgroundColor: hex || "#e5e7eb" }}
+                className="w-4 h-4 rounded-full border border-white/15 flex-shrink-0"
+                style={{ backgroundColor: hex || "#1a3060" }}
               />
               <span>
-                Selezionato: <strong>{value}</strong>
+                Selezionato: <strong className="text-white">{value}</strong>
               </span>
             </div>
           )}
