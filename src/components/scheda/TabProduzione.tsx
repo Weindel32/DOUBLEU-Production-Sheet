@@ -148,14 +148,14 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
         <h3 className="section-title">Note di produzione</h3>
         <div className="space-y-3">
           <div>
-            <label className="text-xs text-gray-400 block mb-1">Note generali</label>
+            <label className="text-xs text-[#4e6585] block mb-1">Note generali</label>
             <textarea
               value={noteProduzione}
               onChange={(e) => setNoteProduzione(e.target.value)}
               onBlur={() => salva()}
               rows={3}
               placeholder="Note per il produttore..."
-              className="w-full text-sm text-gray-700 border border-gray-200 rounded-lg p-2 resize-none focus:border-blue-400 outline-none"
+              className="w-full text-sm text-[#e8edf4] border border-white/10 rounded-lg p-2 resize-none focus:border-blue-500/50 outline-none"
             />
           </div>
         </div>
@@ -174,13 +174,13 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
             { label: "Packaging", value: packaging, set: setPackaging },
           ].map(({ label, value, set }) => (
             <div key={label}>
-              <label className="text-xs text-gray-400 block mb-0.5">{label}</label>
+              <label className="text-xs text-[#4e6585] block mb-0.5">{label}</label>
               <textarea
                 value={value}
                 onChange={(e) => set(e.target.value)}
                 onBlur={() => salva()}
                 rows={2}
-                className="w-full text-xs text-gray-700 border border-gray-200 rounded-lg px-2 py-1.5 resize-none focus:border-blue-400 outline-none"
+                className="w-full text-xs text-[#e8edf4] border border-white/10 rounded-lg px-2 py-1.5 resize-none focus:border-blue-500/50 outline-none"
               />
             </div>
           ))}
@@ -194,15 +194,15 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
           <h3 className="section-title">Allegati</h3>
           <div className="space-y-2 mb-3">
             {(scheda.allegati || []).map((a, i) => (
-              <div key={i} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg text-xs text-gray-600">
-                <div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center text-blue-600 text-xs font-bold">
+              <div key={i} className="flex items-center gap-2 p-2 bg-[#1a3060]/[0.03] rounded-lg text-xs text-[#8ba3c7]">
+                <div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center text-blue-400 text-xs font-bold">
                   {a.split(".").pop()?.toUpperCase()}
                 </div>
                 <span className="flex-1 truncate">{a}</span>
               </div>
             ))}
           </div>
-          <button className="w-full border-2 border-dashed border-gray-200 rounded-lg py-2.5 flex items-center justify-center gap-2 text-sm text-gray-400 hover:border-blue-300 hover:text-blue-500 transition-colors">
+          <button className="w-full border-2 border-dashed border-white/10 rounded-lg py-2.5 flex items-center justify-center gap-2 text-sm text-[#4e6585] hover:border-blue-500/40 hover:text-blue-500 transition-colors">
             <Upload size={14} />
             Aggiungi allegato
             <span className="text-xs">PDF, JPG, PNG</span>
@@ -221,7 +221,7 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
 
           {/* Consumo materiali */}
           <div className="mb-4">
-            <div className="text-xs font-medium text-gray-500 mb-2">Consumo materiale</div>
+            <div className="text-xs font-medium text-[#8ba3c7] mb-2">Consumo materiale</div>
             <div className="space-y-2">
               {consumi.map((c, i) => {
                 const mat = materialiDisponibili.find((m) => m.id === c.materialeId);
@@ -229,33 +229,33 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
                 const kgPerM = mat ? calcolaKgPerMetro(mat) : null;
                 const costoRiga = calcolaCostoMateriale(c, mat);
                 return (
-                  <div key={i} className="bg-gray-50 rounded-lg px-3 py-2 space-y-1.5">
+                  <div key={i} className="bg-[#1a3060]/[0.03] rounded-lg px-3 py-2 space-y-1.5">
                     {/* Riga 1: materiale + consumo + elimina */}
                     <div className="flex items-center gap-2">
                       <select
                         value={c.materialeId}
                         onChange={(e) => aggiornaConsumo(i, "materialeId", e.target.value)}
                         onBlur={() => salva()}
-                        className="flex-1 text-xs border border-gray-200 rounded px-2 py-1 bg-white"
+                        className="flex-1 text-xs border border-white/10 rounded px-2 py-1 bg-[#1a3060]"
                       >
                         {materialiDisponibili.map((m) => (
                           <option key={m.id} value={m.id}>{m.nome}</option>
                         ))}
                       </select>
-                      <div className="flex items-center border border-gray-200 rounded px-2 py-1 w-20 bg-white">
+                      <div className="flex items-center border border-white/10 rounded px-2 py-1 w-20 bg-[#1a3060]">
                         <input
                           type="number"
                           value={c.consumoPerCapo}
                           onChange={(e) => aggiornaConsumo(i, "consumoPerCapo", parseFloat(e.target.value) || 0)}
                           onBlur={() => salva()}
-                          className="w-10 text-xs text-right outline-none bg-white"
+                          className="w-10 text-xs text-right outline-none bg-[#1a3060]"
                           placeholder="0"
                           min="0"
                           step="0.01"
                         />
-                        <span className="text-xs text-gray-400 ml-1">m</span>
+                        <span className="text-xs text-[#4e6585] ml-1">m</span>
                       </div>
-                      <button onClick={() => { rimuoviConsumo(i); salva(); }} className="text-gray-300 hover:text-red-400">
+                      <button onClick={() => { rimuoviConsumo(i); salva(); }} className="text-[#4e6585] hover:text-red-400">
                         <Trash2 size={12} />
                       </button>
                     </div>
@@ -265,7 +265,7 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-semibold text-orange-600">€ {costoRiga.toFixed(2)}/capo</span>
                           {isKg && kgPerM !== null && totalePezzi > 0 && (
-                            <span className="text-xs text-gray-400">· {(totalePezzi * c.consumoPerCapo * kgPerM).toFixed(1)} kg ordine</span>
+                            <span className="text-xs text-[#4e6585]">· {(totalePezzi * c.consumoPerCapo * kgPerM).toFixed(1)} kg ordine</span>
                           )}
                         </div>
                         {isKg && kgPerM === null && (
@@ -280,7 +280,7 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
             <button
               onClick={aggiungiConsumo}
               disabled={materialiDisponibili.length === 0}
-              className="mt-2 flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 disabled:opacity-40"
+              className="mt-2 flex items-center gap-1 text-xs text-blue-400 hover:text-blue-400 disabled:opacity-40"
             >
               <PlusCircle size={12} />
               Aggiungi materiale
@@ -289,7 +289,7 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
 
           {/* Costi lavorazione breakdown */}
           <div className="mb-3">
-            <div className="text-xs font-medium text-gray-500 mb-2">Costi lavorazione / capo</div>
+            <div className="text-xs font-medium text-[#8ba3c7] mb-2">Costi lavorazione / capo</div>
             <div className="space-y-1.5">
               {[
                 { label: "Taglio", value: costoTaglio, set: setCostoTaglio },
@@ -298,9 +298,9 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
                 { label: "Ricamo", value: costoRicamo, set: setCostoRicamo },
               ].map(({ label, value, set }) => (
                 <div key={label} className="flex items-center gap-2">
-                  <label className="text-xs text-gray-400 w-20 flex-shrink-0">{label}</label>
-                  <div className="flex items-center border border-gray-200 rounded px-2 py-1 flex-1">
-                    <span className="text-xs text-gray-400">€</span>
+                  <label className="text-xs text-[#4e6585] w-20 flex-shrink-0">{label}</label>
+                  <div className="flex items-center border border-white/10 rounded px-2 py-1 flex-1">
+                    <span className="text-xs text-[#4e6585]">€</span>
                     <input
                       type="number"
                       value={value}
@@ -319,9 +319,9 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
 
           {/* Prezzo vendita */}
           <div className="flex items-center gap-2 mb-3">
-            <label className="text-xs text-gray-400 w-20 flex-shrink-0">Prezzo vendita</label>
-            <div className="flex items-center border border-gray-200 rounded px-2 py-1 flex-1">
-              <span className="text-xs text-gray-400">€</span>
+            <label className="text-xs text-[#4e6585] w-20 flex-shrink-0">Prezzo vendita</label>
+            <div className="flex items-center border border-white/10 rounded px-2 py-1 flex-1">
+              <span className="text-xs text-[#4e6585]">€</span>
               <input
                 type="number"
                 value={prezzoVendita}
@@ -337,55 +337,55 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
 
           {/* Riepilogo costi */}
           {costoTotalePerCapo > 0 && (
-            <div className="bg-gray-50 rounded-lg p-3 space-y-1 text-xs">
+            <div className="bg-[#1a3060]/[0.03] rounded-lg p-3 space-y-1 text-xs">
               {costoMaterialePerCapo > 0 && (
-                <div className="flex justify-between text-gray-500">
+                <div className="flex justify-between text-[#8ba3c7]">
                   <span>Materiali/capo</span>
                   <span>€ {costoMaterialePerCapo.toFixed(2)}</span>
                 </div>
               )}
               {parseFloat(costoTaglio || "0") > 0 && (
-                <div className="flex justify-between text-gray-400">
+                <div className="flex justify-between text-[#4e6585]">
                   <span className="pl-2">— Taglio</span>
                   <span>€ {parseFloat(costoTaglio).toFixed(2)}</span>
                 </div>
               )}
               {parseFloat(costoCucitura || "0") > 0 && (
-                <div className="flex justify-between text-gray-400">
+                <div className="flex justify-between text-[#4e6585]">
                   <span className="pl-2">— Cucitura</span>
                   <span>€ {parseFloat(costoCucitura).toFixed(2)}</span>
                 </div>
               )}
               {parseFloat(costoStampa || "0") > 0 && (
-                <div className="flex justify-between text-gray-400">
+                <div className="flex justify-between text-[#4e6585]">
                   <span className="pl-2">— Stampa</span>
                   <span>€ {parseFloat(costoStampa).toFixed(2)}</span>
                 </div>
               )}
               {parseFloat(costoRicamo || "0") > 0 && (
-                <div className="flex justify-between text-gray-400">
+                <div className="flex justify-between text-[#4e6585]">
                   <span className="pl-2">— Ricamo</span>
                   <span>€ {parseFloat(costoRicamo).toFixed(2)}</span>
                 </div>
               )}
-              <div className="flex justify-between font-semibold text-gray-700 border-t border-gray-200 pt-1">
+              <div className="flex justify-between font-semibold text-[#e8edf4] border-t border-white/10 pt-1">
                 <span>Costo totale/capo</span>
                 <span>€ {costoTotalePerCapo.toFixed(2)}</span>
               </div>
               {totalePezzi > 0 && (
-                <div className="flex justify-between text-gray-500">
+                <div className="flex justify-between text-[#8ba3c7]">
                   <span>Totale ordine ({totalePezzi} pz)</span>
                   <span>€ {costoTotaleOrdine.toFixed(2)}</span>
                 </div>
               )}
               {vendita > 0 && (
-                <div className="flex justify-between text-gray-500">
+                <div className="flex justify-between text-[#8ba3c7]">
                   <span>Prezzo vendita/capo</span>
                   <span>€ {vendita.toFixed(2)}</span>
                 </div>
               )}
               {margine !== null && (
-                <div className={`flex justify-between font-semibold border-t border-gray-200 pt-1 ${margine >= 30 ? "text-green-600" : margine >= 0 ? "text-yellow-600" : "text-red-600"}`}>
+                <div className={`flex justify-between font-semibold border-t border-white/10 pt-1 ${margine >= 30 ? "text-green-600" : margine >= 0 ? "text-yellow-600" : "text-red-400"}`}>
                   <span>Margine</span>
                   <span>{margine.toFixed(1)}%</span>
                 </div>
