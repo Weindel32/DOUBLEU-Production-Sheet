@@ -205,7 +205,7 @@ export default function AnalyticsClient({
           </div>
         ) : (
           <>
-            <div style={{ height: barHeight }}>
+            <div style={{ height: barHeight, overflow: "hidden" }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   layout="vertical"
@@ -354,7 +354,7 @@ export default function AnalyticsClient({
           </div>
         ) : (
           <>
-            <div style={{ height: 280 }}>
+            <div style={{ height: 280, overflow: "hidden" }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={taglieData}
