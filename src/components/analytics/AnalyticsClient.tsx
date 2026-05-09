@@ -146,7 +146,31 @@ export default function AnalyticsClient({
           </p>
         </div>
         <button
-          onClick={() => window.print()}
+          onClick={() => {
+            const main = document.querySelector("main") as HTMLElement | null;
+            const wrap = main?.parentElement as HTMLElement | null;
+            const savedMain = main?.style.cssText ?? "";
+            const savedWrap = wrap?.style.cssText ?? "";
+            if (main) {
+              main.style.overflow = "visible";
+              main.style.height = "auto";
+              main.style.flex = "none";
+              main.style.display = "block";
+              main.style.width = "100%";
+            }
+            if (wrap) {
+              wrap.style.display = "block";
+              wrap.style.height = "auto";
+              wrap.style.minHeight = "0";
+            }
+            const restore = () => {
+              if (main) main.style.cssText = savedMain;
+              if (wrap) wrap.style.cssText = savedWrap;
+              window.removeEventListener("afterprint", restore);
+            };
+            window.addEventListener("afterprint", restore);
+            window.print();
+          }}
           className="print:hidden flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-[#8ba3c7] hover:text-white hover:bg-white/5 border border-white/10 transition-colors"
         >
           <Printer size={15} />
