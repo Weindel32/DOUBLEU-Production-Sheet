@@ -25,18 +25,28 @@ export interface AnalyticsData {
   };
 }
 
+function parseCodiceArticolo(nomeArticolo: string): { codice: string; nome: string } {
+  const sepIndex = nomeArticolo.indexOf(" – ");
+  if (sepIndex !== -1) {
+    return {
+      codice: nomeArticolo.slice(0, sepIndex).trim(),
+      nome: nomeArticolo.slice(sepIndex + 3).trim(),
+    };
+  }
+  return { codice: nomeArticolo, nome: nomeArticolo };
+}
+
 export default async function AnalyticsPage() {
   const schede = await prisma.scheda.findMany({
     where: { stato: "esecutiva" },
     select: {
-      codice: true,
       nomeArticolo: true,
       genere: true,
       quantitaTaglia: true,
     },
   });
 
-  const articoli: ArticoloStats[] = [];
+  const articoliMap = new Map<string, ArticoloStats>();
   const taglieMap: AnalyticsData["taglie"] = {
     tutti: {},
     uomo: {},
@@ -52,13 +62,19 @@ export default async function AnalyticsPage() {
 
     const totalePezzi = Object.values(qt).reduce((s, q) => s + (Number(q) || 0), 0);
     const genereNorm = (scheda.genere || "").toLowerCase() as keyof typeof taglieMap;
+    const { codice, nome } = parseCodiceArticolo(scheda.nomeArticolo);
 
-    articoli.push({
-      codice: scheda.codice,
-      nomeArticolo: scheda.nomeArticolo,
-      genere: scheda.genere || "—",
-      totalePezzi,
-    });
+    const existing = articoliMap.get(codice);
+    if (existing) {
+      existing.totalePezzi += totalePezzi;
+    } else {
+      articoliMap.set(codice, {
+        codice,
+        nomeArticolo: nome,
+        genere: scheda.genere || "—",
+        totalePezzi,
+      });
+    }
 
     for (const [taglia, qty] of Object.entries(qt)) {
       const q = Number(qty) || 0;
@@ -71,7 +87,9 @@ export default async function AnalyticsPage() {
     }
   }
 
-  articoli.sort((a, b) => b.totalePezzi - a.totalePezzi);
+  const articoli = Array.from(articoliMap.values()).sort(
+    (a, b) => b.totalePezzi - a.totalePezzi
+  );
 
   const totPezzi = articoli.reduce((s, a) => s + a.totalePezzi, 0);
   const totali: AnalyticsData["totali"] = {
