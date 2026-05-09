@@ -13,6 +13,7 @@ import {
   Package,
   Settings,
   LogOut,
+  BarChart2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +28,7 @@ const navItems = [
   { href: "/clienti", label: "Clienti / Club", icon: Users },
   { href: "/loghi", label: "Loghi", icon: Image },
   { href: "/materiali", label: "Materiali", icon: Package },
+  { href: "/analytics", label: "Analytics", icon: BarChart2 },
   { href: "/impostazioni", label: "Impostazioni", icon: Settings },
 ];
 
