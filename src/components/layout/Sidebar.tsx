@@ -14,7 +14,6 @@ import {
   Settings,
   LogOut,
   BarChart2,
-  Tablet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -75,14 +74,6 @@ export default function Sidebar() {
           );
         })}
       </nav>
-
-      {/* Tablet mode link */}
-      <div className="px-3 pb-2 border-t border-white/7 pt-2">
-        <Link href="/t/schede" className="sidebar-link">
-          <Tablet size={16} />
-          <span>Modalità Tablet</span>
-        </Link>
-      </div>
 
       {/* User + logout */}
       <div className="p-4 border-t border-slate-700">
