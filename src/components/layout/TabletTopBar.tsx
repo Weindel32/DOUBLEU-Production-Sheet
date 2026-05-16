@@ -120,7 +120,7 @@ export default function TabletTopBar() {
           {/* Separator + Desktop link */}
           <div className="pt-2 mt-2 border-t border-white/7">
             <Link
-              href="/api/layout?mode=desktop&redirect=/schede"
+              href="/schede"
               className="sidebar-link"
             >
               <Monitor size={16} />

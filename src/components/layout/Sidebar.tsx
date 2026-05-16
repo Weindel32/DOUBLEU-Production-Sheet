@@ -78,7 +78,7 @@ export default function Sidebar() {
 
       {/* Tablet mode link */}
       <div className="px-3 pb-2 border-t border-white/7 pt-2">
-        <Link href="/api/layout?mode=tablet&redirect=/t/schede" className="sidebar-link">
+        <Link href="/t/schede" className="sidebar-link">
           <Tablet size={16} />
           <span>Modalità Tablet</span>
         </Link>
