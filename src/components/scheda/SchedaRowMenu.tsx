@@ -2,14 +2,16 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { MoreHorizontal, ExternalLink, Copy, Trash2 } from "lucide-react";
+import { MoreHorizontal, ExternalLink, Copy, Trash2, CheckCircle, FileEdit } from "lucide-react";
+import { STATI_SCHEDA } from "@/lib/utils";
 
 interface Props {
   id: string;
   nome: string;
+  statoCorrente: string;
 }
 
-export default function SchedaRowMenu({ id, nome }: Props) {
+export default function SchedaRowMenu({ id, nome, statoCorrente }: Props) {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState({ top: 0, right: 0 });
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -40,6 +42,16 @@ export default function SchedaRowMenu({ id, nome }: Props) {
     setOpen(false);
     if (!confirm(`Eliminare "${nome}"? L'operazione non è reversibile.`)) return;
     await fetch(`/api/schede/${id}`, { method: "DELETE" });
+    router.refresh();
+  };
+
+  const cambiaStato = async (nuovoStato: string) => {
+    setOpen(false);
+    await fetch(`/api/schede/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ stato: nuovoStato }),
+    });
     router.refresh();
   };
 
@@ -76,6 +88,18 @@ export default function SchedaRowMenu({ id, nome }: Props) {
           >
             <ExternalLink size={14} /> Apri
           </button>
+          <div className="border-t border-white/8 my-0.5" />
+          {STATI_SCHEDA.filter((s) => s.value !== statoCorrente).map((s) => (
+            <button
+              key={s.value}
+              onClick={() => cambiaStato(s.value)}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#e8edf4] hover:bg-white/[0.03]"
+            >
+              {s.value === "esecutiva" ? <CheckCircle size={14} className="text-green-400" /> : <FileEdit size={14} className="text-gray-400" />}
+              Segna come {s.label}
+            </button>
+          ))}
+          <div className="border-t border-white/8 my-0.5" />
           <button
             onClick={duplica}
             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#e8edf4] hover:bg-white/[0.03]"

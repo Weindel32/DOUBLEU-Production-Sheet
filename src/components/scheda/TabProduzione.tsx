@@ -64,6 +64,9 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
   const [consumi, setConsumi] = useState<ConsumoMateriale[]>(
     (scheda.consumoMateriale as ConsumoMateriale[]) || []
   );
+  const [consumiStr, setConsumiStr] = useState<string[]>(
+    ((scheda.consumoMateriale as ConsumoMateriale[]) || []).map((c) => c.consumoPerCapo?.toString() ?? "")
+  );
   const [costoTaglio, setCostoTaglio] = useState(scheda.costoTaglio?.toString() || "");
   const [costoCucitura, setCostoCucitura] = useState(scheda.costoCucitura?.toString() || "");
   const [costoStampa, setCostoStampa] = useState(scheda.costoStampa?.toString() || "");
@@ -79,9 +82,13 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
     setConsumi((prev) => [...prev, {
       materialeId: m.id, nomeM: m.nome, consumoPerCapo: 0, unita: "m", costoUnitario: m.costoMetro || 0,
     }]);
+    setConsumiStr((prev) => [...prev, ""]);
   };
 
-  const rimuoviConsumo = (idx: number) => setConsumi((prev) => prev.filter((_, i) => i !== idx));
+  const rimuoviConsumo = (idx: number) => {
+    setConsumi((prev) => prev.filter((_, i) => i !== idx));
+    setConsumiStr((prev) => prev.filter((_, i) => i !== idx));
+  };
 
   const aggiornaConsumo = (idx: number, field: keyof ConsumoMateriale, value: string | number) => {
     setConsumi((prev) => prev.map((c, i) => {
@@ -94,23 +101,29 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
     }));
   };
 
+  const aggiornaConsumoStr = (idx: number, raw: string) => {
+    setConsumiStr((prev) => prev.map((s, i) => i === idx ? raw : s));
+    const n = parseNum(raw);
+    setConsumi((prev) => prev.map((c, i) => i === idx ? { ...c, consumoPerCapo: n ?? 0 } : c));
+  };
+
   const salva = async (extra?: Partial<SchedaCompleta>) => {
-    const costoLavorazione =
-      (parseFloat(costoTaglio || "0") || 0) +
-      (parseFloat(costoCucitura || "0") || 0) +
-      (parseFloat(costoStampa || "0") || 0) +
-      (parseFloat(costoRicamo || "0") || 0);
+    const pTaglio = parseNum(costoTaglio) ?? 0;
+    const pCucitura = parseNum(costoCucitura) ?? 0;
+    const pStampa = parseNum(costoStampa) ?? 0;
+    const pRicamo = parseNum(costoRicamo) ?? 0;
+    const costoLavorazione = pTaglio + pCucitura + pStampa + pRicamo;
 
     await onSave({
       noteProduzione, tolleranzaTaglio, tolleranzaCucitura, tolleranzaColore,
       tolleranzaStampa, controlloQualita, packaging,
       consumoMateriale: consumi,
-      costoTaglio: costoTaglio ? parseFloat(costoTaglio) : null,
-      costoCucitura: costoCucitura ? parseFloat(costoCucitura) : null,
-      costoStampa: costoStampa ? parseFloat(costoStampa) : null,
-      costoRicamo: costoRicamo ? parseFloat(costoRicamo) : null,
+      costoTaglio: parseNum(costoTaglio),
+      costoCucitura: parseNum(costoCucitura),
+      costoStampa: parseNum(costoStampa),
+      costoRicamo: parseNum(costoRicamo),
       costoLavorazione: costoLavorazione || null,
-      prezzoVendita: prezzoVendita ? parseFloat(prezzoVendita) : null,
+      prezzoVendita: parseNum(prezzoVendita),
       ...extra,
     });
   };
@@ -128,14 +141,14 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
   }, 0);
 
   const lavorazionePerCapo =
-    (parseFloat(costoTaglio || "0") || 0) +
-    (parseFloat(costoCucitura || "0") || 0) +
-    (parseFloat(costoStampa || "0") || 0) +
-    (parseFloat(costoRicamo || "0") || 0);
+    (parseNum(costoTaglio) ?? 0) +
+    (parseNum(costoCucitura) ?? 0) +
+    (parseNum(costoStampa) ?? 0) +
+    (parseNum(costoRicamo) ?? 0);
 
   const costoTotalePerCapo = costoMaterialePerCapo + lavorazionePerCapo;
   const costoTotaleOrdine = costoTotalePerCapo * totalePezzi;
-  const vendita = parseFloat(prezzoVendita || "0") || 0;
+  const vendita = parseNum(prezzoVendita) ?? 0;
   const margine = vendita > 0 && costoTotalePerCapo > 0
     ? ((vendita - costoTotalePerCapo) / vendita * 100)
     : null;
@@ -244,14 +257,13 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
                       </select>
                       <div className="flex items-center border border-white/10 rounded px-2 py-1 w-20 bg-[#1a3060]">
                         <input
-                          type="number"
-                          value={c.consumoPerCapo}
-                          onChange={(e) => aggiornaConsumo(i, "consumoPerCapo", parseFloat(e.target.value) || 0)}
+                          type="text"
+                          inputMode="decimal"
+                          value={consumiStr[i] ?? ""}
+                          onChange={(e) => aggiornaConsumoStr(i, e.target.value)}
                           onBlur={() => salva()}
                           className="w-10 text-xs text-right outline-none bg-[#1a3060]"
                           placeholder="0"
-                          min="0"
-                          step="0.01"
                         />
                         <span className="text-xs text-[#4e6585] ml-1">m</span>
                       </div>
@@ -302,14 +314,13 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
                   <div className="flex items-center border border-white/10 rounded px-2 py-1 flex-1">
                     <span className="text-xs text-[#4e6585]">€</span>
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="decimal"
                       value={value}
                       onChange={(e) => set(e.target.value)}
                       onBlur={() => salva()}
                       className="flex-1 text-xs text-right outline-none"
                       placeholder="0.00"
-                      min="0"
-                      step="0.01"
                     />
                   </div>
                 </div>
@@ -323,14 +334,13 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
             <div className="flex items-center border border-white/10 rounded px-2 py-1 flex-1">
               <span className="text-xs text-[#4e6585]">€</span>
               <input
-                type="number"
+                type="text"
+                inputMode="decimal"
                 value={prezzoVendita}
                 onChange={(e) => setPrezzoVendita(e.target.value)}
                 onBlur={() => salva()}
                 className="flex-1 text-xs text-right outline-none"
                 placeholder="0.00"
-                min="0"
-                step="0.01"
               />
             </div>
           </div>
@@ -344,28 +354,28 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
                   <span>€ {costoMaterialePerCapo.toFixed(2)}</span>
                 </div>
               )}
-              {parseFloat(costoTaglio || "0") > 0 && (
+              {(parseNum(costoTaglio) ?? 0) > 0 && (
                 <div className="flex justify-between text-[#4e6585]">
                   <span className="pl-2">— Taglio</span>
-                  <span>€ {parseFloat(costoTaglio).toFixed(2)}</span>
+                  <span>€ {(parseNum(costoTaglio) ?? 0).toFixed(2)}</span>
                 </div>
               )}
-              {parseFloat(costoCucitura || "0") > 0 && (
+              {(parseNum(costoCucitura) ?? 0) > 0 && (
                 <div className="flex justify-between text-[#4e6585]">
                   <span className="pl-2">— Cucitura</span>
-                  <span>€ {parseFloat(costoCucitura).toFixed(2)}</span>
+                  <span>€ {(parseNum(costoCucitura) ?? 0).toFixed(2)}</span>
                 </div>
               )}
-              {parseFloat(costoStampa || "0") > 0 && (
+              {(parseNum(costoStampa) ?? 0) > 0 && (
                 <div className="flex justify-between text-[#4e6585]">
                   <span className="pl-2">— Stampa</span>
-                  <span>€ {parseFloat(costoStampa).toFixed(2)}</span>
+                  <span>€ {(parseNum(costoStampa) ?? 0).toFixed(2)}</span>
                 </div>
               )}
-              {parseFloat(costoRicamo || "0") > 0 && (
+              {(parseNum(costoRicamo) ?? 0) > 0 && (
                 <div className="flex justify-between text-[#4e6585]">
                   <span className="pl-2">— Ricamo</span>
-                  <span>€ {parseFloat(costoRicamo).toFixed(2)}</span>
+                  <span>€ {(parseNum(costoRicamo) ?? 0).toFixed(2)}</span>
                 </div>
               )}
               <div className="flex justify-between font-semibold text-[#e8edf4] border-t border-white/10 pt-1">

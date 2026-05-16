@@ -201,7 +201,7 @@ const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ 
               </div>
             ))}
           </div>
-          <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" multiple className="hidden" onChange={handleUpload} />
+          <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleUpload} />
           <button onClick={() => fileInputRef.current?.click()} disabled={uploading}
             className="w-full border-2 border-dashed border-white/10 rounded-lg py-3 flex items-center justify-center gap-2 text-sm text-[#4e6585] hover:border-blue-500/40 hover:text-blue-500 transition-colors disabled:opacity-50">
             {uploading ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} />}
