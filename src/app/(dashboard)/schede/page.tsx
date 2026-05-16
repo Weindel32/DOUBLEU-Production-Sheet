@@ -98,7 +98,7 @@ export default async function SchedePage() {
                     <td className="px-4 py-3 text-[#8ba3c7] font-medium">{totPz > 0 ? `${totPz} pz` : "—"}</td>
                     <td className="px-4 py-3 text-[#4e6585] text-xs">{formatData(s.updatedAt)}</td>
                     <td className="px-4 py-3 text-right">
-                      <SchedaRowMenu id={s.id} nome={s.nomeArticolo} />
+                      <SchedaRowMenu id={s.id} nome={s.nomeArticolo} statoCorrente={s.stato} />
                     </td>
                   </tr>
                 );

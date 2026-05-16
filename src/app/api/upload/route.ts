@@ -7,8 +7,8 @@ export async function POST(req: NextRequest) {
 
   if (!file) return NextResponse.json({ error: "Nessun file" }, { status: 400 });
 
-  const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-  if (!allowed.includes(file.type))
+  const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/heic", "image/heif"];
+  if (!allowed.includes(file.type) && !file.type.startsWith("image/"))
     return NextResponse.json({ error: "Formato non supportato" }, { status: 400 });
 
   if (file.size > 10 * 1024 * 1024)

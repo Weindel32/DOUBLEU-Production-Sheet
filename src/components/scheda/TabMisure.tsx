@@ -77,9 +77,10 @@ const TabMisure = forwardRef<TabMisureHandle, Props>(function TabMisure({ scheda
   const totale = calcolaTotaleQuantita(quantitaTaglia as Record<string, number>);
 
   const aggiornaMisura = (taglia: string, campo: string, valore: string) => {
+    const normalizzato = valore.replace(",", ".");
     setTabellaMisure((prev) => ({
       ...prev,
-      [taglia]: { ...(prev[taglia] as MisureTaglia), [campo]: valore ? Number(valore) : undefined },
+      [taglia]: { ...(prev[taglia] as MisureTaglia), [campo]: normalizzato ? Number(normalizzato) : undefined },
     }));
   };
 
@@ -224,7 +225,8 @@ const TabMisure = forwardRef<TabMisureHandle, Props>(function TabMisure({ scheda
                     {colonne.map((c) => (
                       <td key={c.key} className="px-2 py-1 text-right">
                         <input
-                          type="number"
+                          type="text"
+                          inputMode="decimal"
                           value={(tabellaMisure[taglia] as MisureTaglia)?.[c.key as keyof MisureTaglia] ?? ""}
                           onChange={(e) => aggiornaMisura(taglia, c.key, e.target.value)}
                           onBlur={salva}
@@ -262,10 +264,10 @@ const TabMisure = forwardRef<TabMisureHandle, Props>(function TabMisure({ scheda
                   {tagliAttive.map((taglia) => (
                     <td key={taglia} className="text-center px-2 py-1">
                       <input
-                        type="number"
-                        min="0"
+                        type="text"
+                        inputMode="numeric"
                         value={quantitaTaglia[taglia] ?? ""}
-                        onChange={(e) => aggiornaQuantita(taglia, e.target.value)}
+                        onChange={(e) => aggiornaQuantita(taglia, e.target.value.replace(/\D/g, ""))}
                         onBlur={salva}
                         className="w-12 text-center text-sm font-medium text-[#e8edf4] border border-white/10 focus:border-blue-500/50 rounded-lg px-1 py-1 outline-none"
                         placeholder="0"
