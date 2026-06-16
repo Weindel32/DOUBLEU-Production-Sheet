@@ -15,8 +15,8 @@ import { Printer } from "lucide-react";
 import type { AnalyticsData } from "@/app/(dashboard)/analytics/page";
 
 const SIZE_ORDER = [
-  "XS", "S", "M", "L", "XL", "XXL", "XXXL",
   "4A", "6A", "8A", "10A", "12A", "14A", "16A",
+  "XS", "S", "M", "L", "XL", "XXL", "XXXL",
 ];
 
 const GENERE_COLORS: Record<string, string> = {
