@@ -120,7 +120,7 @@ const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ 
       {options ? (
         <select value={values[field]} onChange={(e) => setValues((v) => ({ ...v, [field]: e.target.value }))}
           onBlur={() => handleBlur(field)}
-          className="flex-1 text-sm font-medium text-[#e8edf4] bg-transparent border-0 focus:ring-0 cursor-pointer">
+          className="flex-1 min-w-0 text-sm font-medium text-[#e8edf4] bg-transparent border-0 focus:ring-0 cursor-pointer">
           <option value="">—</option>
           {options.map((o) => <option key={o} value={o}>{o}</option>)}
         </select>
@@ -128,12 +128,12 @@ const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ 
         <input autoFocus type={type} value={values[field]}
           onChange={(e) => setValues((v) => ({ ...v, [field]: e.target.value }))}
           onBlur={() => handleBlur(field)}
-          className="flex-1 text-sm font-medium text-[#e8edf4] border-b border-blue-500/50 bg-transparent outline-none" />
+          className="flex-1 min-w-0 text-sm font-medium text-[#e8edf4] border-b border-blue-500/50 bg-transparent outline-none" />
       ) : (
         <button onClick={() => setEditing(field)}
-          className="flex-1 text-sm font-medium text-[#e8edf4] text-left hover:text-blue-400 transition-colors group flex items-center gap-1">
-          {values[field] || <span className="text-[#4e6585] italic">—</span>}
-          <Edit3 size={12} className="opacity-0 group-hover:opacity-100 text-[#4e6585]" />
+          className="flex-1 min-w-0 text-sm font-medium text-[#e8edf4] text-left hover:text-blue-400 transition-colors group flex items-center gap-1">
+          <span className="truncate">{values[field] || <span className="text-[#4e6585] italic">—</span>}</span>
+          <Edit3 size={12} className="opacity-0 group-hover:opacity-100 text-[#4e6585] flex-shrink-0" />
         </button>
       )}
     </div>
@@ -164,13 +164,13 @@ const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ 
           <Field label="Utilizzo" field="utilizzo" options={["Training / Warm-up", "Gara", "Casual", "Allenamento"]} />
           <div className="flex items-start py-2 gap-4">
             <span className="text-sm text-[#4e6585] w-32 flex-shrink-0">Cliente</span>
-            <div className="flex-1 flex items-center gap-2">
+            <div className="flex-1 min-w-0 flex items-center gap-2">
               <select value={values.clienteId}
                 onChange={async (e) => {
                   setValues((v) => ({ ...v, clienteId: e.target.value }));
                   await onSave({ clienteId: e.target.value || null });
                 }}
-                className="flex-1 text-sm font-medium text-[#e8edf4] bg-transparent border-0 focus:ring-0 cursor-pointer">
+                className="flex-1 min-w-0 text-sm font-medium text-[#e8edf4] bg-transparent border-0 focus:ring-0 cursor-pointer">
                 <option value="">Nessun cliente</option>
                 {clienti.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
               </select>
@@ -223,7 +223,7 @@ const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ 
           <div className="flex items-start py-2 border-b border-white/8 gap-4">
             <span className="text-sm text-[#4e6585] w-32 flex-shrink-0 mt-0.5">Tessuto principale</span>
             <select value={values.tessutoPrincipale} onChange={(e) => handleTessutoPrincipaleChange(e.target.value)}
-              className="flex-1 text-sm font-medium text-[#e8edf4] bg-transparent border-0 focus:ring-0 cursor-pointer">
+              className="flex-1 min-w-0 text-sm font-medium text-[#e8edf4] bg-transparent border-0 focus:ring-0 cursor-pointer">
               <option value="">—</option>
               {tessutoOptions.map((o) => <option key={o} value={o}>{o}</option>)}
             </select>
@@ -238,7 +238,7 @@ const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ 
               <div className="flex items-start py-2 border-b border-white/8 gap-4">
                 <span className="text-sm text-[#4e6585] w-32 flex-shrink-0 mt-0.5">Costina</span>
                 <select value={values.tessutoSecondario} onChange={(e) => handleTessutoSecondarioChange(e.target.value)}
-                  className="flex-1 text-sm font-medium text-[#e8edf4] bg-transparent border-0 focus:ring-0 cursor-pointer">
+                  className="flex-1 min-w-0 text-sm font-medium text-[#e8edf4] bg-transparent border-0 focus:ring-0 cursor-pointer">
                   <option value="">—</option>
                   {materiali.length > 0
                     ? materiali.map((m) => <option key={m.nome} value={m.nome}>{m.nome}</option>)
@@ -252,12 +252,12 @@ const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ 
 
           <div className="flex items-center py-2 border-b border-white/8 gap-4">
             <span className="text-sm text-[#4e6585] w-32 flex-shrink-0">Colore base</span>
-            <div className="flex items-center gap-2">
-              {values.coloreBase && <div className="w-4 h-4 rounded-full border border-white/10" style={{ backgroundColor: values.coloreBase }} />}
+            <div className="flex-1 min-w-0 flex items-center gap-2">
+              {values.coloreBase && <div className="w-4 h-4 rounded-full border border-white/10 flex-shrink-0" style={{ backgroundColor: values.coloreBase }} />}
               <input type="text" value={values.coloreBase}
                 onChange={(e) => setValues((v) => ({ ...v, coloreBase: e.target.value }))}
                 onBlur={() => handleBlur("coloreBase")} placeholder="es. Blu royal"
-                className="text-sm font-medium text-[#e8edf4] border-0 bg-transparent outline-none" />
+                className="flex-1 min-w-0 w-full text-sm font-medium text-[#e8edf4] border-0 bg-transparent outline-none" />
             </div>
           </div>
           <div className="flex items-center py-2 border-b border-white/8 gap-4">
@@ -265,7 +265,7 @@ const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ 
             <input type="text" value={values.coloriSecondari}
               onChange={(e) => setValues((v) => ({ ...v, coloriSecondari: e.target.value }))}
               onBlur={() => handleBlur("coloriSecondari")} placeholder="es. Blu navy"
-              className="text-sm font-medium text-[#e8edf4] border-0 bg-transparent outline-none" />
+              className="flex-1 min-w-0 w-full text-sm font-medium text-[#e8edf4] border-0 bg-transparent outline-none" />
           </div>
 
           {/* Collo e Maniche solo per categorie pertinenti */}

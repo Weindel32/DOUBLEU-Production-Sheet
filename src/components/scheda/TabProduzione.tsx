@@ -249,7 +249,7 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
                         value={c.materialeId}
                         onChange={(e) => aggiornaConsumo(i, "materialeId", e.target.value)}
                         onBlur={() => salva()}
-                        className="flex-1 text-xs border border-white/10 rounded px-2 py-1 bg-[#1a3060]"
+                        className="flex-1 min-w-0 text-xs border border-white/10 rounded px-2 py-1 bg-[#1a3060]"
                       >
                         {materialiDisponibili.map((m) => (
                           <option key={m.id} value={m.id}>{m.nome}</option>
