@@ -148,7 +148,7 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
       <div className="flex flex-1 overflow-hidden">
 
         {/* ── Main content ────────────────────────────────── */}
-        <div className="flex-1 overflow-y-auto flex flex-col">
+        <div className="flex-1 min-w-0 overflow-y-auto flex flex-col">
 
           {/* Header scheda */}
           <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-blue-950 px-6 pt-5 pb-0 flex-shrink-0">
