@@ -183,7 +183,7 @@ export default function ModelliPage() {
                     <td className="px-4 py-2.5 text-right">
                       <button
                         onClick={() => creaScheda(m, cat.nome)}
-                        className="text-xs text-blue-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity hover:text-blue-300"
+                        className="text-xs text-blue-400 font-medium transition-opacity hover:text-blue-300 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100"
                       >
                         Usa modello →
                       </button>
