@@ -3,7 +3,7 @@
 import { useState, forwardRef, useImperativeHandle } from "react";
 import { PlusCircle, Trash2, Upload, Info } from "lucide-react";
 import type { SchedaCompleta, ConsumoMateriale } from "@/types";
-import { calcolaTotaleQuantita } from "@/lib/utils";
+import { calcolaTotaleQuantita, parseNumIt, calcolaKgPerMetroLineare, calcolaCostoAlMetro } from "@/lib/utils";
 
 interface MaterialeDisp {
   id: string;
@@ -26,20 +26,8 @@ export interface TabProduzioneHandle {
   save: () => Promise<void>;
 }
 
-function parseNum(s: string | null | undefined): number | null {
-  if (!s) return null;
-  const n = parseFloat(s.replace(",", "."));
-  return isNaN(n) ? null : n;
-}
-
-function calcolaKgPerMetro(mat: MaterialeDisp): number | null {
-  const peso = parseNum(mat.peso);
-  if (!peso) return null;
-  if (mat.unitaPeso === "g/m") return peso / 1000;
-  const larghezza = parseNum(mat.larghezza);
-  if (!larghezza) return null;
-  return (peso * larghezza) / 100000;
-}
+const parseNum = parseNumIt;
+const calcolaKgPerMetro = calcolaKgPerMetroLineare;
 
 function calcolaCostoMateriale(c: ConsumoMateriale, mat: MaterialeDisp | undefined): number {
   if (!mat || !mat.costoMetro) return 0;
@@ -49,8 +37,18 @@ function calcolaCostoMateriale(c: ConsumoMateriale, mat: MaterialeDisp | undefin
     if (kgPerM === null) return 0;
     return consumo * kgPerM * mat.costoMetro;
   }
-  if (mat.unitaMisura === "pz") return consumo * mat.costoMetro;
   return consumo * mat.costoMetro;
+}
+
+/**
+ * Costo unitario "per metro/pezzo" da persistere nel consumo materiale: già convertito
+ * quando il materiale è prezzato al kg, così il PDF può limitarsi a moltiplicare per il
+ * consumo senza riconoscere l'unità di misura originale del materiale.
+ */
+function costoUnitarioPersistito(mat: MaterialeDisp | undefined): number {
+  if (!mat) return 0;
+  if (mat.unitaMisura === "kg") return calcolaCostoAlMetro(mat) ?? 0;
+  return mat.costoMetro || 0;
 }
 
 const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzione({ scheda, onSave, materialiDisponibili }, ref) {
@@ -80,7 +78,7 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
     if (materialiDisponibili.length === 0) return;
     const m = materialiDisponibili[0];
     setConsumi((prev) => [...prev, {
-      materialeId: m.id, nomeM: m.nome, consumoPerCapo: 0, unita: "m", costoUnitario: m.costoMetro || 0,
+      materialeId: m.id, nomeM: m.nome, consumoPerCapo: 0, unita: "m", costoUnitario: costoUnitarioPersistito(m),
     }]);
     setConsumiStr((prev) => [...prev, ""]);
   };
@@ -95,7 +93,7 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
       if (i !== idx) return c;
       if (field === "materialeId") {
         const m = materialiDisponibili.find((x) => x.id === value);
-        return { ...c, materialeId: value as string, nomeM: m?.nome || "", costoUnitario: m?.costoMetro || 0 };
+        return { ...c, materialeId: value as string, nomeM: m?.nome || "", costoUnitario: costoUnitarioPersistito(m) };
       }
       return { ...c, [field]: value };
     }));
@@ -114,10 +112,16 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
     const pRicamo = parseNum(costoRicamo) ?? 0;
     const costoLavorazione = pTaglio + pCucitura + pStampa + pRicamo;
 
+    const consumiAggiornati = consumi.map((c) => {
+      const mat = materialiDisponibili.find((m) => m.id === c.materialeId);
+      return { ...c, costoUnitario: costoUnitarioPersistito(mat) };
+    });
+    setConsumi(consumiAggiornati);
+
     await onSave({
       noteProduzione, tolleranzaTaglio, tolleranzaCucitura, tolleranzaColore,
       tolleranzaStampa, controlloQualita, packaging,
-      consumoMateriale: consumi,
+      consumoMateriale: consumiAggiornati,
       costoTaglio: parseNum(costoTaglio),
       costoCucitura: parseNum(costoCucitura),
       costoStampa: parseNum(costoStampa),

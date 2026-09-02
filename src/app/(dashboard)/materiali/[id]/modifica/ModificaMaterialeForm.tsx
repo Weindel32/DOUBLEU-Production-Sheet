@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { calcolaCostoAlMetro } from "@/lib/utils";
 
 const TIPI = ["Tessuto", "Fodera", "Elastico", "Cerniera", "Bottoni", "Ricamo", "Stampa", "Altro"];
 const COMPOSIZIONI = [
@@ -52,6 +53,16 @@ export default function ModificaMaterialeForm({ materiale }: { materiale: Materi
 
   const set = (field: string, value: string) =>
     setForm((f) => ({ ...f, [field]: value }));
+
+  const costoAlMetro = form.unitaMisura === "kg"
+    ? calcolaCostoAlMetro({
+        costoMetro: parseFloat(form.costoMetro.replace(",", ".")) || null,
+        unitaMisura: form.unitaMisura,
+        peso: form.peso,
+        unitaPeso: form.unitaPeso,
+        larghezza: form.larghezza,
+      })
+    : null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -184,6 +195,16 @@ export default function ModificaMaterialeForm({ materiale }: { materiale: Materi
             />
           </div>
         </div>
+
+        {form.unitaMisura === "kg" && form.costoMetro && (
+          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg px-3 py-2 text-sm">
+            {costoAlMetro !== null ? (
+              <span className="text-blue-300">→ Costo al metro lineare: <strong>€ {costoAlMetro.toFixed(2)}/m</strong></span>
+            ) : (
+              <span className="text-orange-400">Inserisci peso e altezza tessuto per calcolare il costo al metro</span>
+            )}
+          </div>
+        )}
 
         <div>
           <label className="text-sm text-[#8ba3c7] block mb-1">Fornitore</label>

@@ -3,12 +3,15 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { Package, PlusCircle } from "lucide-react";
 import MaterialiActions from "./MaterialiActions";
+import { calcolaCostoAlMetro } from "@/lib/utils";
 
 function mPerKg(peso: string): string | null {
   const p = parseFloat(peso.replace(",", "."));
   if (!p || p <= 0) return null;
   return (1000 / p).toFixed(2);
 }
+
+const UNITA_LABEL: Record<string, string> = { metro: "/m", kg: "/kg", pz: "/pz" };
 
 export default async function MaterialiPage() {
   const materiali = await prisma.materiale.findMany({ orderBy: { nome: "asc" } });
@@ -52,12 +55,15 @@ export default async function MaterialiPage() {
                 <th className="text-left px-4 py-3">Composizione</th>
                 <th className="text-left px-4 py-3">Peso</th>
                 <th className="text-left px-4 py-3">Fornitore</th>
-                <th className="text-right px-4 py-3">Costo/metro</th>
+                <th className="text-right px-4 py-3">Costo</th>
                 <th className="px-4 py-3"></th>
               </tr>
             </thead>
             <tbody>
-              {materiali.map((m) => (
+              {materiali.map((m) => {
+                const unita = m.unitaMisura ?? "metro";
+                const costoAlMetro = calcolaCostoAlMetro(m);
+                return (
                 <tr key={m.id} className="border-b border-white/5 hover:bg-white/[0.03] transition-colors">
                   <td className="px-4 py-3 font-medium text-white">{m.nome}</td>
                   <td className="px-4 py-3 text-[#8ba3c7]">{m.tipo}</td>
@@ -74,13 +80,23 @@ export default async function MaterialiPage() {
                   </td>
                   <td className="px-4 py-3 text-[#8ba3c7]">{m.fornitore || "—"}</td>
                   <td className="px-4 py-3 text-right text-[#8ba3c7]">
-                    {m.costoMetro ? `€ ${m.costoMetro.toFixed(2)}` : "—"}
+                    {m.costoMetro ? (
+                      <span>
+                        € {m.costoMetro.toFixed(2)}{UNITA_LABEL[unita] ?? "/m"}
+                        {unita === "kg" && (
+                          costoAlMetro !== null
+                            ? <span className="text-xs text-blue-400 block">≈ €{costoAlMetro.toFixed(2)}/m</span>
+                            : <span className="text-xs text-orange-400 block">peso/altezza mancanti</span>
+                        )}
+                      </span>
+                    ) : "—"}
                   </td>
                   <td className="px-4 py-3 w-20">
                     <MaterialiActions id={m.id} />
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
