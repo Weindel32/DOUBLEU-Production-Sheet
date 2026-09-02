@@ -158,12 +158,179 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
     : null;
 
   return (
-    <>
-    <div className="grid grid-cols-3 gap-5">
-      {/* Note di produzione */}
-      <div className="card">
-        <h3 className="section-title">Note di produzione</h3>
-        <div className="space-y-3">
+    <div className="space-y-5">
+      {/* Costi interni — in cima e a piena larghezza: sono i numeri che contano di più */}
+      <div className="card border-2 border-orange-500/20">
+        <div className="flex items-center gap-2 mb-4">
+          <h3 className="section-title">Costi interni</h3>
+          <div className="flex items-center gap-1 text-xs text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded-full">
+            <Info size={11} />
+            Solo PDF interno
+          </div>
+        </div>
+
+        <div className="grid grid-cols-[1.3fr_1fr] gap-6">
+          {/* Colonna sinistra: consumo materiali + lavorazione */}
+          <div className="space-y-4">
+            <div>
+              <div className="text-xs font-medium text-[#8ba3c7] mb-2">Consumo materiale</div>
+              <div className="space-y-2">
+                {consumi.map((c, i) => {
+                  const mat = materialiDisponibili.find((m) => m.id === c.materialeId);
+                  const isKg = mat?.unitaMisura === "kg";
+                  const kgPerM = mat ? calcolaKgPerMetro(mat) : null;
+                  const costoRiga = calcolaCostoMateriale(c, mat);
+                  return (
+                    <div key={i} className="bg-[#1a3060]/[0.03] rounded-lg px-3 py-2 space-y-1.5">
+                      {/* Riga 1: materiale + consumo + elimina */}
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={c.materialeId}
+                          onChange={(e) => aggiornaConsumo(i, "materialeId", e.target.value)}
+                          onBlur={() => salva()}
+                          className="flex-1 text-xs border border-white/10 rounded px-2 py-1 bg-[#1a3060]"
+                        >
+                          {materialiDisponibili.map((m) => (
+                            <option key={m.id} value={m.id}>{m.nome}</option>
+                          ))}
+                        </select>
+                        <div className="flex items-center border border-white/10 rounded px-2 py-1 w-20 bg-[#1a3060]">
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            value={consumiStr[i] ?? ""}
+                            onChange={(e) => aggiornaConsumoStr(i, e.target.value)}
+                            onBlur={() => salva()}
+                            className="w-10 text-xs text-right outline-none bg-[#1a3060]"
+                            placeholder="0"
+                          />
+                          <span className="text-xs text-[#4e6585] ml-1">m</span>
+                        </div>
+                        <button onClick={() => { rimuoviConsumo(i); salva(); }} className="text-[#4e6585] hover:text-red-400">
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                      {/* Riga 2: risultati */}
+                      {c.consumoPerCapo > 0 && mat?.costoMetro && (
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold text-orange-400">€ {costoRiga.toFixed(2)}/capo</span>
+                            {isKg && kgPerM !== null && totalePezzi > 0 && (
+                              <span className="text-xs text-[#4e6585]">· {(totalePezzi * c.consumoPerCapo * kgPerM).toFixed(1)} kg ordine</span>
+                            )}
+                          </div>
+                          {isKg && kgPerM === null && (
+                            <span className="text-xs text-orange-400">Inserire peso nel materiale</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              <button
+                onClick={aggiungiConsumo}
+                disabled={materialiDisponibili.length === 0}
+                className="mt-2 flex items-center gap-1 text-xs text-blue-400 hover:text-blue-400 disabled:opacity-40"
+              >
+                <PlusCircle size={12} />
+                Aggiungi materiale
+              </button>
+            </div>
+
+            <div>
+              <div className="text-xs font-medium text-[#8ba3c7] mb-2">Costi lavorazione / capo</div>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { label: "Taglio", value: costoTaglio, set: setCostoTaglio },
+                  { label: "Cucitura", value: costoCucitura, set: setCostoCucitura },
+                  { label: "Stampa", value: costoStampa, set: setCostoStampa },
+                  { label: "Ricamo", value: costoRicamo, set: setCostoRicamo },
+                ].map(({ label, value, set }) => (
+                  <div key={label} className="flex items-center gap-2">
+                    <label className="text-xs text-[#4e6585] w-14 flex-shrink-0">{label}</label>
+                    <div className="flex items-center border border-white/10 rounded px-2 py-1 flex-1">
+                      <span className="text-xs text-[#4e6585]">€</span>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={value}
+                        onChange={(e) => set(e.target.value)}
+                        onBlur={() => salva()}
+                        className="flex-1 text-xs text-right outline-none"
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-[#8ba3c7] block mb-2">Prezzo vendita</label>
+              <div className="flex items-center border border-white/10 rounded-lg px-3 py-2 max-w-[180px]">
+                <span className="text-sm text-[#4e6585]">€</span>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={prezzoVendita}
+                  onChange={(e) => setPrezzoVendita(e.target.value)}
+                  onBlur={() => salva()}
+                  className="flex-1 text-sm text-right outline-none"
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Colonna destra: riepilogo costi, ben visibile */}
+          <div className="bg-[#1a3060]/[0.06] rounded-lg p-4 space-y-1.5 text-sm self-start">
+            <div className="text-xs font-semibold text-[#8ba3c7] uppercase tracking-wide mb-2">Riepilogo</div>
+            {costoMaterialePerCapo > 0 && (
+              <div className="flex justify-between text-[#8ba3c7]">
+                <span>Materiali/capo</span>
+                <span>€ {costoMaterialePerCapo.toFixed(2)}</span>
+              </div>
+            )}
+            {lavorazionePerCapo > 0 && (
+              <div className="flex justify-between text-[#8ba3c7]">
+                <span>Lavorazione/capo</span>
+                <span>€ {lavorazionePerCapo.toFixed(2)}</span>
+              </div>
+            )}
+            <div className="flex justify-between font-bold text-[#e8edf4] border-t border-white/10 pt-1.5 text-base">
+              <span>Costo totale/capo</span>
+              <span>€ {costoTotalePerCapo.toFixed(2)}</span>
+            </div>
+            {totalePezzi > 0 && (
+              <div className="flex justify-between text-[#8ba3c7]">
+                <span>Totale ordine ({totalePezzi} pz)</span>
+                <span>€ {costoTotaleOrdine.toFixed(2)}</span>
+              </div>
+            )}
+            {vendita > 0 && (
+              <div className="flex justify-between text-[#8ba3c7]">
+                <span>Prezzo vendita/capo</span>
+                <span>€ {vendita.toFixed(2)}</span>
+              </div>
+            )}
+            {margine !== null && (
+              <div className={`flex justify-between font-bold border-t border-white/10 pt-1.5 text-base ${margine >= 30 ? "text-green-400" : margine >= 0 ? "text-yellow-400" : "text-red-400"}`}>
+                <span>Margine</span>
+                <span>{margine.toFixed(1)}%</span>
+              </div>
+            )}
+            {costoTotalePerCapo === 0 && (
+              <div className="text-xs text-[#4e6585] italic">Aggiungi consumo materiali o costi lavorazione per vedere il riepilogo</div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-5">
+        {/* Note di produzione */}
+        <div className="card">
+          <h3 className="section-title">Note di produzione</h3>
           <div>
             <label className="text-xs text-[#4e6585] block mb-1">Note generali</label>
             <textarea
@@ -176,36 +343,33 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
             />
           </div>
         </div>
-      </div>
 
-      {/* Tolleranze */}
-      <div className="card">
-        <h3 className="section-title">Tolleranze</h3>
-        <div className="space-y-2.5">
-          {[
-            { label: "Taglio", value: tolleranzaTaglio, set: setTolleranzaTaglio },
-            { label: "Cucitura", value: tolleranzaCucitura, set: setTolleranzaCucitura },
-            { label: "Colore", value: tolleranzaColore, set: setTolleranzaColore },
-            { label: "Stampa / Ricamo", value: tolleranzaStampa, set: setTolleranzaStampa },
-            { label: "Controllo qualità", value: controlloQualita, set: setControlloQualita },
-            { label: "Packaging", value: packaging, set: setPackaging },
-          ].map(({ label, value, set }) => (
-            <div key={label}>
-              <label className="text-xs text-[#4e6585] block mb-0.5">{label}</label>
-              <textarea
-                value={value}
-                onChange={(e) => set(e.target.value)}
-                onBlur={() => salva()}
-                rows={2}
-                className="w-full text-xs text-[#e8edf4] border border-white/10 rounded-lg px-2 py-1.5 resize-none focus:border-blue-500/50 outline-none"
-              />
-            </div>
-          ))}
+        {/* Tolleranze */}
+        <div className="card">
+          <h3 className="section-title">Tolleranze</h3>
+          <div className="space-y-2.5">
+            {[
+              { label: "Taglio", value: tolleranzaTaglio, set: setTolleranzaTaglio },
+              { label: "Cucitura", value: tolleranzaCucitura, set: setTolleranzaCucitura },
+              { label: "Colore", value: tolleranzaColore, set: setTolleranzaColore },
+              { label: "Stampa / Ricamo", value: tolleranzaStampa, set: setTolleranzaStampa },
+              { label: "Controllo qualità", value: controlloQualita, set: setControlloQualita },
+              { label: "Packaging", value: packaging, set: setPackaging },
+            ].map(({ label, value, set }) => (
+              <div key={label}>
+                <label className="text-xs text-[#4e6585] block mb-0.5">{label}</label>
+                <textarea
+                  value={value}
+                  onChange={(e) => set(e.target.value)}
+                  onBlur={() => salva()}
+                  rows={2}
+                  className="w-full text-xs text-[#e8edf4] border border-white/10 rounded-lg px-2 py-1.5 resize-none focus:border-blue-500/50 outline-none"
+                />
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* Colonna destra */}
-      <div className="space-y-4">
         {/* Allegati */}
         <div className="card">
           <h3 className="section-title">Allegati</h3>
@@ -225,192 +389,8 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
             <span className="text-xs">PDF, JPG, PNG</span>
           </button>
         </div>
-
-        {/* Costi interni */}
-        <div className="card border-2 border-orange-100">
-          <div className="flex items-center gap-2 mb-3">
-            <h3 className="section-title">Costi interni</h3>
-            <div className="flex items-center gap-1 text-xs text-orange-500 bg-orange-50 px-2 py-0.5 rounded-full">
-              <Info size={11} />
-              Solo PDF interno
-            </div>
-          </div>
-
-          {/* Consumo materiali */}
-          <div className="mb-4">
-            <div className="text-xs font-medium text-[#8ba3c7] mb-2">Consumo materiale</div>
-            <div className="space-y-2">
-              {consumi.map((c, i) => {
-                const mat = materialiDisponibili.find((m) => m.id === c.materialeId);
-                const isKg = mat?.unitaMisura === "kg";
-                const kgPerM = mat ? calcolaKgPerMetro(mat) : null;
-                const costoRiga = calcolaCostoMateriale(c, mat);
-                return (
-                  <div key={i} className="bg-[#1a3060]/[0.03] rounded-lg px-3 py-2 space-y-1.5">
-                    {/* Riga 1: materiale + consumo + elimina */}
-                    <div className="flex items-center gap-2">
-                      <select
-                        value={c.materialeId}
-                        onChange={(e) => aggiornaConsumo(i, "materialeId", e.target.value)}
-                        onBlur={() => salva()}
-                        className="flex-1 text-xs border border-white/10 rounded px-2 py-1 bg-[#1a3060]"
-                      >
-                        {materialiDisponibili.map((m) => (
-                          <option key={m.id} value={m.id}>{m.nome}</option>
-                        ))}
-                      </select>
-                      <div className="flex items-center border border-white/10 rounded px-2 py-1 w-20 bg-[#1a3060]">
-                        <input
-                          type="text"
-                          inputMode="decimal"
-                          value={consumiStr[i] ?? ""}
-                          onChange={(e) => aggiornaConsumoStr(i, e.target.value)}
-                          onBlur={() => salva()}
-                          className="w-10 text-xs text-right outline-none bg-[#1a3060]"
-                          placeholder="0"
-                        />
-                        <span className="text-xs text-[#4e6585] ml-1">m</span>
-                      </div>
-                      <button onClick={() => { rimuoviConsumo(i); salva(); }} className="text-[#4e6585] hover:text-red-400">
-                        <Trash2 size={12} />
-                      </button>
-                    </div>
-                    {/* Riga 2: risultati */}
-                    {c.consumoPerCapo > 0 && mat?.costoMetro && (
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-semibold text-orange-600">€ {costoRiga.toFixed(2)}/capo</span>
-                          {isKg && kgPerM !== null && totalePezzi > 0 && (
-                            <span className="text-xs text-[#4e6585]">· {(totalePezzi * c.consumoPerCapo * kgPerM).toFixed(1)} kg ordine</span>
-                          )}
-                        </div>
-                        {isKg && kgPerM === null && (
-                          <span className="text-xs text-orange-400">Inserire peso nel materiale</span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-            <button
-              onClick={aggiungiConsumo}
-              disabled={materialiDisponibili.length === 0}
-              className="mt-2 flex items-center gap-1 text-xs text-blue-400 hover:text-blue-400 disabled:opacity-40"
-            >
-              <PlusCircle size={12} />
-              Aggiungi materiale
-            </button>
-          </div>
-
-          {/* Costi lavorazione breakdown */}
-          <div className="mb-3">
-            <div className="text-xs font-medium text-[#8ba3c7] mb-2">Costi lavorazione / capo</div>
-            <div className="space-y-1.5">
-              {[
-                { label: "Taglio", value: costoTaglio, set: setCostoTaglio },
-                { label: "Cucitura", value: costoCucitura, set: setCostoCucitura },
-                { label: "Stampa", value: costoStampa, set: setCostoStampa },
-                { label: "Ricamo", value: costoRicamo, set: setCostoRicamo },
-              ].map(({ label, value, set }) => (
-                <div key={label} className="flex items-center gap-2">
-                  <label className="text-xs text-[#4e6585] w-20 flex-shrink-0">{label}</label>
-                  <div className="flex items-center border border-white/10 rounded px-2 py-1 flex-1">
-                    <span className="text-xs text-[#4e6585]">€</span>
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      value={value}
-                      onChange={(e) => set(e.target.value)}
-                      onBlur={() => salva()}
-                      className="flex-1 text-xs text-right outline-none"
-                      placeholder="0.00"
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Prezzo vendita */}
-          <div className="flex items-center gap-2 mb-3">
-            <label className="text-xs text-[#4e6585] w-20 flex-shrink-0">Prezzo vendita</label>
-            <div className="flex items-center border border-white/10 rounded px-2 py-1 flex-1">
-              <span className="text-xs text-[#4e6585]">€</span>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={prezzoVendita}
-                onChange={(e) => setPrezzoVendita(e.target.value)}
-                onBlur={() => salva()}
-                className="flex-1 text-xs text-right outline-none"
-                placeholder="0.00"
-              />
-            </div>
-          </div>
-
-          {/* Riepilogo costi */}
-          {costoTotalePerCapo > 0 && (
-            <div className="bg-[#1a3060]/[0.03] rounded-lg p-3 space-y-1 text-xs">
-              {costoMaterialePerCapo > 0 && (
-                <div className="flex justify-between text-[#8ba3c7]">
-                  <span>Materiali/capo</span>
-                  <span>€ {costoMaterialePerCapo.toFixed(2)}</span>
-                </div>
-              )}
-              {(parseNum(costoTaglio) ?? 0) > 0 && (
-                <div className="flex justify-between text-[#4e6585]">
-                  <span className="pl-2">— Taglio</span>
-                  <span>€ {(parseNum(costoTaglio) ?? 0).toFixed(2)}</span>
-                </div>
-              )}
-              {(parseNum(costoCucitura) ?? 0) > 0 && (
-                <div className="flex justify-between text-[#4e6585]">
-                  <span className="pl-2">— Cucitura</span>
-                  <span>€ {(parseNum(costoCucitura) ?? 0).toFixed(2)}</span>
-                </div>
-              )}
-              {(parseNum(costoStampa) ?? 0) > 0 && (
-                <div className="flex justify-between text-[#4e6585]">
-                  <span className="pl-2">— Stampa</span>
-                  <span>€ {(parseNum(costoStampa) ?? 0).toFixed(2)}</span>
-                </div>
-              )}
-              {(parseNum(costoRicamo) ?? 0) > 0 && (
-                <div className="flex justify-between text-[#4e6585]">
-                  <span className="pl-2">— Ricamo</span>
-                  <span>€ {(parseNum(costoRicamo) ?? 0).toFixed(2)}</span>
-                </div>
-              )}
-              <div className="flex justify-between font-semibold text-[#e8edf4] border-t border-white/10 pt-1">
-                <span>Costo totale/capo</span>
-                <span>€ {costoTotalePerCapo.toFixed(2)}</span>
-              </div>
-              {totalePezzi > 0 && (
-                <div className="flex justify-between text-[#8ba3c7]">
-                  <span>Totale ordine ({totalePezzi} pz)</span>
-                  <span>€ {costoTotaleOrdine.toFixed(2)}</span>
-                </div>
-              )}
-              {vendita > 0 && (
-                <div className="flex justify-between text-[#8ba3c7]">
-                  <span>Prezzo vendita/capo</span>
-                  <span>€ {vendita.toFixed(2)}</span>
-                </div>
-              )}
-              {margine !== null && (
-                <div className={`flex justify-between font-semibold border-t border-white/10 pt-1 ${margine >= 30 ? "text-green-600" : margine >= 0 ? "text-yellow-600" : "text-red-400"}`}>
-                  <span>Margine</span>
-                  <span>{margine.toFixed(1)}%</span>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
       </div>
     </div>
-
-    </>
   );
 });
 
