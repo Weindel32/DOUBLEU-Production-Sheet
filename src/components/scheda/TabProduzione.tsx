@@ -249,7 +249,7 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
                 ].map(({ label, value, set }) => (
                   <div key={label}>
                     <label className="text-xs text-[#4e6585] block mb-1">{label}</label>
-                    <div className="flex items-center border border-white/10 rounded-lg px-2.5 py-1.5">
+                    <div className="flex items-center border border-white/10 rounded-lg px-2.5 py-1.5 bg-[#1a3060]">
                       <span className="text-xs text-[#4e6585]">€</span>
                       <input
                         type="text"
@@ -257,7 +257,7 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
                         value={value}
                         onChange={(e) => set(e.target.value)}
                         onBlur={() => salva()}
-                        className="w-full text-xs text-right outline-none"
+                        className="w-full text-xs text-right outline-none bg-transparent"
                         placeholder="0.00"
                       />
                     </div>
@@ -268,7 +268,7 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
 
             <div>
               <label className="text-xs font-medium text-[#8ba3c7] block mb-2">Prezzo vendita</label>
-              <div className="flex items-center border border-white/10 rounded-lg px-3 py-2 max-w-[180px]">
+              <div className="flex items-center border border-white/10 rounded-lg px-3 py-2 max-w-[180px] bg-[#1a3060]">
                 <span className="text-sm text-[#4e6585]">€</span>
                 <input
                   type="text"
@@ -276,7 +276,7 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
                   value={prezzoVendita}
                   onChange={(e) => setPrezzoVendita(e.target.value)}
                   onBlur={() => salva()}
-                  className="flex-1 text-sm text-right outline-none"
+                  className="flex-1 text-sm text-right outline-none bg-transparent"
                   placeholder="0.00"
                 />
               </div>
