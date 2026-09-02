@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const BUILD = 3;
+const BUILD = 4;
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
