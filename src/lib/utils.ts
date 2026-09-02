@@ -55,3 +55,46 @@ export function generaCodiceScheda(categoria: string): string {
 export function calcolaTotaleQuantita(quantitaTaglia: Record<string, number>): number {
   return Object.values(quantitaTaglia).reduce((sum, q) => sum + (q || 0), 0);
 }
+
+export function parseNumIt(s: string | null | undefined): number | null {
+  if (!s) return null;
+  const n = parseFloat(s.replace(",", "."));
+  return isNaN(n) ? null : n;
+}
+
+interface MaterialePesoInfo {
+  peso?: string | null;
+  unitaPeso?: string | null;
+  larghezza?: string | null;
+}
+
+/** Kg per metro lineare, dato peso (g/m² o g/m) e altezza tessuto (cm). Null se dati insufficienti. */
+export function calcolaKgPerMetroLineare(mat: MaterialePesoInfo): number | null {
+  const peso = parseNumIt(mat.peso);
+  if (!peso) return null;
+  if (mat.unitaPeso === "g/m") return peso / 1000;
+  const larghezza = parseNumIt(mat.larghezza);
+  if (!larghezza) return null;
+  return (peso * larghezza) / 100000;
+}
+
+interface MaterialeCostoInfo extends MaterialePesoInfo {
+  costoMetro?: number | null;
+  unitaMisura?: string | null;
+}
+
+/**
+ * Costo effettivo per metro lineare di un materiale, indipendentemente dall'unità
+ * in cui è stato inserito il prezzo (€/m, €/kg, €/pz). Per €/kg serve peso + altezza
+ * tessuto: senza questi dati la conversione non è possibile e ritorna null.
+ */
+export function calcolaCostoAlMetro(mat: MaterialeCostoInfo): number | null {
+  if (!mat.costoMetro) return null;
+  if (mat.unitaMisura === "kg") {
+    const kgPerM = calcolaKgPerMetroLineare(mat);
+    if (kgPerM === null) return null;
+    return kgPerM * mat.costoMetro;
+  }
+  if (mat.unitaMisura === "pz") return null;
+  return mat.costoMetro;
+}
