@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { calcolaCostoAlMetro } from "@/lib/utils";
+import { calcolaCostoAlMetro, calcolaGrammiMq } from "@/lib/utils";
 
 const TIPI = ["Tessuto", "Fodera", "Elastico", "Cerniera", "Bottoni", "Ricamo", "Stampa", "Altro"];
 const COMPOSIZIONI = [
@@ -50,6 +50,7 @@ export default function NuovoMaterialePage() {
         larghezza: form.larghezza,
       })
     : null;
+  const grammiMq = calcolaGrammiMq({ peso: form.peso, unitaPeso: form.unitaPeso, larghezza: form.larghezza });
   const mostraCalcoli = (form.unitaPeso === "g/m" && pesoNum > 0) || (form.unitaMisura === "kg" && form.costoMetro);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -189,6 +190,13 @@ export default function NuovoMaterialePage() {
             <div className="mt-4 bg-blue-500/10 border border-blue-500/20 rounded-lg px-4 py-3 text-sm flex flex-wrap gap-x-8 gap-y-1.5">
               {form.unitaPeso === "g/m" && pesoNum > 0 && (
                 <div className="text-blue-300">Equivalenza peso: <strong>{(1000 / pesoNum).toFixed(2)} m/kg</strong></div>
+              )}
+              {form.unitaPeso === "g/m" && pesoNum > 0 && (
+                grammiMq !== null ? (
+                  <div className="text-blue-300">Grammatura da comunicare: <strong>{grammiMq.toFixed(0)} g/m²</strong></div>
+                ) : (
+                  <div className="text-orange-400">Inserisci l&apos;altezza tessuto per ricavare i g/m²</div>
+                )
               )}
               {form.unitaMisura === "kg" && form.costoMetro && (
                 costoAlMetro !== null ? (

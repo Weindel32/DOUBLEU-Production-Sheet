@@ -68,6 +68,20 @@ interface MaterialePesoInfo {
   larghezza?: string | null;
 }
 
+/**
+ * Converte un peso espresso in g/m (grammi al metro lineare, "GR MTL") nell'equivalente
+ * g/m² (grammatura standard da comunicare al cliente), dividendo per l'altezza del
+ * tessuto in metri. I due valori non sono la stessa grandezza: un rotolo più stretto
+ * "pesa" meno al metro lineare a parità di grammatura reale del tessuto.
+ */
+export function calcolaGrammiMq(mat: MaterialePesoInfo): number | null {
+  if (mat.unitaPeso !== "g/m") return null;
+  const pesoGm = parseNumIt(mat.peso);
+  const larghezzaCm = parseNumIt(mat.larghezza);
+  if (!pesoGm || !larghezzaCm) return null;
+  return pesoGm / (larghezzaCm / 100);
+}
+
 /** Kg per metro lineare, dato peso (g/m² o g/m) e altezza tessuto (cm). Null se dati insufficienti. */
 export function calcolaKgPerMetroLineare(mat: MaterialePesoInfo): number | null {
   const peso = parseNumIt(mat.peso);
