@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Upload, X, ExternalLink, Loader2 } from "lucide-react";
 import { CATEGORIE } from "@/lib/utils";
 import type { SchedaCompleta } from "@/types";
+import ColorPickerNamed from "@/components/ui/ColorPickerNamed";
 
 interface Props {
   scheda: SchedaCompleta;
@@ -217,15 +218,20 @@ const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ 
 
             <div>
               <label className="text-xs text-[#4e6585] block mb-1">Colore base</label>
-              <div className="flex items-center gap-2 border border-white/10 rounded-lg px-3 py-2 focus-within:border-blue-500/50">
-                {values.coloreBase && <div className="w-4 h-4 rounded-full border border-white/10 flex-shrink-0" style={{ backgroundColor: values.coloreBase }} />}
-                <input type="text" value={values.coloreBase}
-                  onChange={(e) => set("coloreBase", e.target.value)}
-                  onBlur={() => handleBlur("coloreBase")} placeholder="es. Blu royal"
-                  className="w-full text-sm text-[#e8edf4] bg-transparent outline-none" />
-              </div>
+              <ColorPickerNamed
+                value={values.coloreBase}
+                onChange={(val) => { set("coloreBase", val); onSave({ coloreBase: val || null }); }}
+                placeholder="es. Blu royal"
+              />
             </div>
-            <FieldInput label="Colori secondari" field="coloriSecondari" placeholder="es. Blu navy" />
+            <div>
+              <label className="text-xs text-[#4e6585] block mb-1">Colori secondari</label>
+              <ColorPickerNamed
+                value={values.coloriSecondari}
+                onChange={(val) => { set("coloriSecondari", val); onSave({ coloriSecondari: val || null }); }}
+                placeholder="es. Blu navy"
+              />
+            </div>
 
             {mostraColloManiche && (
               <>

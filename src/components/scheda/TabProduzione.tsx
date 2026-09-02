@@ -181,33 +181,33 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
                   const kgPerM = mat ? calcolaKgPerMetro(mat) : null;
                   const costoRiga = calcolaCostoMateriale(c, mat);
                   return (
-                    <div key={i} className="bg-[#1a3060]/[0.03] rounded-lg px-3 py-2 space-y-1.5">
+                    <div key={i} className="bg-[#1a3060]/[0.03] rounded-lg px-3 py-2.5 space-y-2">
                       {/* Riga 1: materiale + consumo + elimina */}
                       <div className="flex items-center gap-2">
                         <select
                           value={c.materialeId}
                           onChange={(e) => aggiornaConsumo(i, "materialeId", e.target.value)}
                           onBlur={() => salva()}
-                          className="flex-1 text-xs border border-white/10 rounded px-2 py-1 bg-[#1a3060]"
+                          className="flex-1 min-w-0 text-xs border border-white/10 rounded-lg px-2.5 py-1.5 bg-[#1a3060]"
                         >
                           {materialiDisponibili.map((m) => (
                             <option key={m.id} value={m.id}>{m.nome}</option>
                           ))}
                         </select>
-                        <div className="flex items-center border border-white/10 rounded px-2 py-1 w-20 bg-[#1a3060]">
+                        <div className="flex items-center flex-shrink-0 border border-white/10 rounded-lg px-2.5 py-1.5 w-24 bg-[#1a3060]">
                           <input
                             type="text"
                             inputMode="decimal"
                             value={consumiStr[i] ?? ""}
                             onChange={(e) => aggiornaConsumoStr(i, e.target.value)}
                             onBlur={() => salva()}
-                            className="w-10 text-xs text-right outline-none bg-[#1a3060]"
+                            className="w-full text-xs text-right outline-none bg-[#1a3060]"
                             placeholder="0"
                           />
-                          <span className="text-xs text-[#4e6585] ml-1">m</span>
+                          <span className="text-xs text-[#4e6585] ml-1 flex-shrink-0">m</span>
                         </div>
-                        <button onClick={() => { rimuoviConsumo(i); salva(); }} className="text-[#4e6585] hover:text-red-400">
-                          <Trash2 size={12} />
+                        <button onClick={() => { rimuoviConsumo(i); salva(); }} className="text-[#4e6585] hover:text-red-400 flex-shrink-0">
+                          <Trash2 size={13} />
                         </button>
                       </div>
                       {/* Riga 2: risultati */}
@@ -247,9 +247,9 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
                   { label: "Stampa", value: costoStampa, set: setCostoStampa },
                   { label: "Ricamo", value: costoRicamo, set: setCostoRicamo },
                 ].map(({ label, value, set }) => (
-                  <div key={label} className="flex items-center gap-2">
-                    <label className="text-xs text-[#4e6585] w-14 flex-shrink-0">{label}</label>
-                    <div className="flex items-center border border-white/10 rounded px-2 py-1 flex-1">
+                  <div key={label}>
+                    <label className="text-xs text-[#4e6585] block mb-1">{label}</label>
+                    <div className="flex items-center border border-white/10 rounded-lg px-2.5 py-1.5">
                       <span className="text-xs text-[#4e6585]">€</span>
                       <input
                         type="text"
@@ -257,7 +257,7 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
                         value={value}
                         onChange={(e) => set(e.target.value)}
                         onBlur={() => salva()}
-                        className="flex-1 text-xs text-right outline-none"
+                        className="w-full text-xs text-right outline-none"
                         placeholder="0.00"
                       />
                     </div>
