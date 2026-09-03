@@ -3,7 +3,7 @@
 import { useState, useRef, forwardRef, useImperativeHandle } from "react";
 import Link from "next/link";
 import { Upload, X, ExternalLink, Loader2 } from "lucide-react";
-import { CATEGORIE } from "@/lib/utils";
+import { CATEGORIE, parseGrammaturaCommerciale } from "@/lib/utils";
 import type { SchedaCompleta } from "@/types";
 import ColorPickerNamed from "@/components/ui/ColorPickerNamed";
 
@@ -196,8 +196,21 @@ const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ 
                 {tessutoOptions.map((o) => <option key={o} value={o}>{o}</option>)}
               </select>
             </div>
-            <FieldInput label="Peso tessuto" field="pesoTessuto" placeholder="es. 260 g/m²" />
+            <FieldInput label="Peso tessuto (da scheda tecnica)" field="pesoTessuto" placeholder="es. 260 g/m²" />
             <FieldInput label="Altezza tessuto" field="altezzaTessuto" placeholder="es. 150 cm" />
+            <div className="col-span-2">
+              <label className="text-xs text-[#4e6585] block mb-1">Grammatura commerciale</label>
+              {(() => {
+                const grammatura = parseGrammaturaCommerciale(values.pesoTessuto, values.altezzaTessuto);
+                return (
+                  <div className="text-sm text-blue-300 border border-white/10 rounded-lg px-3 py-2 bg-[#1a3060]/50">
+                    {grammatura !== null
+                      ? `${grammatura.toFixed(0)} g/m²`
+                      : <span className="text-[#4e6585] italic">Inserisci peso (con unità g/m o g/m²) e altezza tessuto</span>}
+                  </div>
+                );
+              })()}
+            </div>
 
             {mostraCostina && (
               <>

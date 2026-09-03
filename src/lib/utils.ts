@@ -82,6 +82,37 @@ export function calcolaGrammiMq(mat: MaterialePesoInfo): number | null {
   return pesoGm / (larghezzaCm / 100);
 }
 
+/**
+ * Grammatura commerciale (g/m²) di un materiale, indipendentemente dall'unità in cui
+ * è stato inserito il peso: se già g/m² è il peso stesso, se g/m lineare va convertito
+ * (serve l'altezza tessuto). Questo è il numero da comunicare al cliente/catalogo.
+ */
+export function calcolaGrammaturaCommerciale(mat: MaterialePesoInfo): number | null {
+  if (mat.unitaPeso === "g/m²") return parseNumIt(mat.peso);
+  if (mat.unitaPeso === "g/m") return calcolaGrammiMq(mat);
+  return null;
+}
+
+/**
+ * Come calcolaGrammaturaCommerciale, ma a partire dai campi testo liberi della scheda
+ * produzione ("195 g/m²", "660 g/m") invece che dai campi strutturati del materiale.
+ */
+export function parseGrammaturaCommerciale(
+  pesoTessuto: string | null | undefined,
+  altezzaTessuto: string | null | undefined
+): number | null {
+  if (!pesoTessuto) return null;
+  const peso = parseNumIt(pesoTessuto);
+  if (!peso) return null;
+  if (/m\s*[²2]/i.test(pesoTessuto)) return peso;
+  if (/g\s*\/\s*m\b/i.test(pesoTessuto)) {
+    const larghezzaCm = parseNumIt(altezzaTessuto);
+    if (!larghezzaCm) return null;
+    return peso / (larghezzaCm / 100);
+  }
+  return null;
+}
+
 /** Kg per metro lineare, dato peso (g/m² o g/m) e altezza tessuto (cm). Null se dati insufficienti. */
 export function calcolaKgPerMetroLineare(mat: MaterialePesoInfo): number | null {
   const peso = parseNumIt(mat.peso);
