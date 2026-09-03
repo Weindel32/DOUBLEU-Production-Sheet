@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { Package, PlusCircle } from "lucide-react";
 import MaterialiActions from "./MaterialiActions";
-import { calcolaCostoAlMetro } from "@/lib/utils";
+import { calcolaCostoAlMetro, calcolaGrammaturaCommerciale } from "@/lib/utils";
 
 function mPerKg(peso: string): string | null {
   const p = parseFloat(peso.replace(",", "."));
@@ -54,6 +54,7 @@ export default async function MaterialiPage() {
                 <th className="text-left px-4 py-3">Tipo</th>
                 <th className="text-left px-4 py-3">Composizione</th>
                 <th className="text-left px-4 py-3">Peso</th>
+                <th className="text-left px-4 py-3">Grammatura commerciale</th>
                 <th className="text-left px-4 py-3">Fornitore</th>
                 <th className="text-right px-4 py-3">Costo</th>
                 <th className="px-4 py-3"></th>
@@ -63,6 +64,7 @@ export default async function MaterialiPage() {
               {materiali.map((m) => {
                 const unita = m.unitaMisura ?? "metro";
                 const costoAlMetro = calcolaCostoAlMetro(m);
+                const grammaturaCommerciale = calcolaGrammaturaCommerciale(m);
                 return (
                 <tr key={m.id} className="border-b border-white/5 hover:bg-white/[0.03] transition-colors">
                   <td className="px-4 py-3 font-medium text-white">{m.nome}</td>
@@ -77,6 +79,9 @@ export default async function MaterialiPage() {
                         )}
                       </span>
                     ) : "—"}
+                  </td>
+                  <td className="px-4 py-3 text-[#8ba3c7]">
+                    {grammaturaCommerciale !== null ? `${grammaturaCommerciale.toFixed(0)} g/m²` : "—"}
                   </td>
                   <td className="px-4 py-3 text-[#8ba3c7]">{m.fornitore || "—"}</td>
                   <td className="px-4 py-3 text-right text-[#8ba3c7]">

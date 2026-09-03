@@ -193,7 +193,7 @@ export default function NuovoMaterialePage() {
               )}
               {form.unitaPeso === "g/m" && pesoNum > 0 && (
                 grammiMq !== null ? (
-                  <div className="text-blue-300">Grammatura da comunicare: <strong>{grammiMq.toFixed(0)} g/m²</strong></div>
+                  <div className="text-blue-300">Grammatura commerciale: <strong>{grammiMq.toFixed(0)} g/m²</strong></div>
                 ) : (
                   <div className="text-orange-400">Inserisci l&apos;altezza tessuto per ricavare i g/m²</div>
                 )
