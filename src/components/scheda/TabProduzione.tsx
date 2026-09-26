@@ -3,13 +3,14 @@
 import { useState, forwardRef, useImperativeHandle } from "react";
 import { PlusCircle, Trash2, Upload, Info } from "lucide-react";
 import type { SchedaCompleta, ConsumoMateriale } from "@/types";
-import { calcolaTotaleQuantita, parseNumIt, calcolaKgPerMetroLineare, calcolaCostoAlMetro } from "@/lib/utils";
+import { calcolaTotaleQuantita, parseNumIt, calcolaKgPerMetroLineare, calcolaCostoUnitarioConsumo } from "@/lib/utils";
 
 interface MaterialeDisp {
   id: string;
   nome: string;
   tipo: string;
   costoMetro: number | null;
+  prezzoKg: number | null;
   unitaMisura: string | null;
   peso: string | null;
   unitaPeso: string | null;
@@ -29,26 +30,9 @@ export interface TabProduzioneHandle {
 const parseNum = parseNumIt;
 const calcolaKgPerMetro = calcolaKgPerMetroLineare;
 
+// costoMetro è sempre €/m anche per i tessuti acquistati al kg: non va riconvertito.
 function calcolaCostoMateriale(c: ConsumoMateriale, mat: MaterialeDisp | undefined): number {
-  if (!mat || !mat.costoMetro) return 0;
-  const consumo = c.consumoPerCapo || 0;
-  if (mat.unitaMisura === "kg") {
-    const kgPerM = calcolaKgPerMetro(mat);
-    if (kgPerM === null) return 0;
-    return consumo * kgPerM * mat.costoMetro;
-  }
-  return consumo * mat.costoMetro;
-}
-
-/**
- * Costo unitario "per metro/pezzo" da persistere nel consumo materiale: già convertito
- * quando il materiale è prezzato al kg, così il PDF può limitarsi a moltiplicare per il
- * consumo senza riconoscere l'unità di misura originale del materiale.
- */
-function costoUnitarioPersistito(mat: MaterialeDisp | undefined): number {
-  if (!mat) return 0;
-  if (mat.unitaMisura === "kg") return calcolaCostoAlMetro(mat) ?? 0;
-  return mat.costoMetro || 0;
+  return (c.consumoPerCapo || 0) * calcolaCostoUnitarioConsumo(mat);
 }
 
 const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzione({ scheda, onSave, materialiDisponibili }, ref) {
@@ -78,7 +62,7 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
     if (materialiDisponibili.length === 0) return;
     const m = materialiDisponibili[0];
     setConsumi((prev) => [...prev, {
-      materialeId: m.id, nomeM: m.nome, consumoPerCapo: 0, unita: "m", costoUnitario: costoUnitarioPersistito(m),
+      materialeId: m.id, nomeM: m.nome, consumoPerCapo: 0, unita: "m", costoUnitario: calcolaCostoUnitarioConsumo(m),
     }]);
     setConsumiStr((prev) => [...prev, ""]);
   };
@@ -93,7 +77,7 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
       if (i !== idx) return c;
       if (field === "materialeId") {
         const m = materialiDisponibili.find((x) => x.id === value);
-        return { ...c, materialeId: value as string, nomeM: m?.nome || "", costoUnitario: costoUnitarioPersistito(m) };
+        return { ...c, materialeId: value as string, nomeM: m?.nome || "", costoUnitario: calcolaCostoUnitarioConsumo(m) };
       }
       return { ...c, [field]: value };
     }));
@@ -114,7 +98,7 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
 
     const consumiAggiornati = consumi.map((c) => {
       const mat = materialiDisponibili.find((m) => m.id === c.materialeId);
-      return { ...c, costoUnitario: costoUnitarioPersistito(mat) };
+      return { ...c, costoUnitario: calcolaCostoUnitarioConsumo(mat) };
     });
     setConsumi(consumiAggiornati);
 
@@ -211,7 +195,7 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
                         </button>
                       </div>
                       {/* Riga 2: risultati */}
-                      {c.consumoPerCapo > 0 && mat?.costoMetro && (
+                      {c.consumoPerCapo > 0 && !!(mat?.costoMetro || mat?.prezzoKg) && (
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <span className="text-xs font-semibold text-orange-400">€ {costoRiga.toFixed(2)}/capo</span>

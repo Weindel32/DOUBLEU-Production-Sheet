@@ -85,15 +85,17 @@ export default async function MaterialiPage() {
                   </td>
                   <td className="px-4 py-3 text-[#8ba3c7]">{m.fornitore || "—"}</td>
                   <td className="px-4 py-3 text-right text-[#8ba3c7]">
-                    {m.costoMetro ? (
-                      <span>
-                        € {m.costoMetro.toFixed(2)}{UNITA_LABEL[unita] ?? "/m"}
-                        {unita === "kg" && (
-                          costoAlMetro !== null
-                            ? <span className="text-xs text-blue-400 block">≈ €{costoAlMetro.toFixed(2)}/m</span>
-                            : <span className="text-xs text-orange-400 block">peso/altezza mancanti</span>
-                        )}
-                      </span>
+                    {unita === "kg" ? (
+                      costoAlMetro !== null || m.prezzoKg ? (
+                        <span>
+                          {costoAlMetro !== null
+                            ? `€ ${costoAlMetro.toFixed(2)}/m`
+                            : <span className="text-orange-400">peso/altezza mancanti</span>}
+                          {m.prezzoKg ? <span className="text-xs text-blue-400 block">€{m.prezzoKg.toFixed(2)}/kg</span> : null}
+                        </span>
+                      ) : "—"
+                    ) : m.costoMetro ? (
+                      <span>€ {m.costoMetro.toFixed(2)}{UNITA_LABEL[unita] ?? "/m"}</span>
                     ) : "—"}
                   </td>
                   <td className="px-4 py-3 w-20">

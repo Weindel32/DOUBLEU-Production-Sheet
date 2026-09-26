@@ -37,7 +37,9 @@ model Materiale {
   larghezza    String?
   unitaMisura  String?
   fornitore    String?
-  costoMetro   Float?
+  costoMetro   Float? // sempre €/metro lineare (convenzione condivisa con il Kit Builder)
+  prezzoKg     Float? // €/kg, solo per unitaMisura = "kg"
+  codice       String?
   note         String?
   createdAt    DateTime          @default(now())
   schede       MaterialeScheda[]
