@@ -125,21 +125,45 @@ export function calcolaKgPerMetroLineare(mat: MaterialePesoInfo): number | null 
 
 interface MaterialeCostoInfo extends MaterialePesoInfo {
   costoMetro?: number | null;
+  prezzoKg?: number | null;
   unitaMisura?: string | null;
 }
 
+/** Arrotonda ai centesimi evitando gli errori di virgola mobile (2.925 → 2.93). */
+function arrotondaCentesimi(n: number): number {
+  return Math.round(parseFloat((n * 100).toFixed(6))) / 100;
+}
+
 /**
- * Costo effettivo per metro lineare di un materiale, indipendentemente dall'unità
- * in cui è stato inserito il prezzo (€/m, €/kg, €/pz). Per €/kg serve peso + altezza
- * tessuto: senza questi dati la conversione non è possibile e ritorna null.
+ * €/m di un tessuto acquistato al kg: kg per metro lineare × prezzo al kg.
+ * È il valore da salvare in costoMetro (stessa convenzione del Kit Builder).
+ * Null se mancano prezzo, peso o altezza tessuto.
+ */
+export function calcolaCostoMetroDaPrezzoKg(mat: MaterialeCostoInfo): number | null {
+  if (!mat.prezzoKg) return null;
+  const kgPerM = calcolaKgPerMetroLineare(mat);
+  if (kgPerM === null) return null;
+  return arrotondaCentesimi(kgPerM * mat.prezzoKg);
+}
+
+/**
+ * Costo effettivo per metro lineare di un materiale. costoMetro è sempre €/m anche per
+ * i tessuti acquistati al kg (il prezzo al kg sta in prezzoKg): se per un tessuto al kg
+ * costoMetro manca, lo si ricava da prezzoKg. Per i materiali al pezzo ritorna null.
  */
 export function calcolaCostoAlMetro(mat: MaterialeCostoInfo): number | null {
-  if (!mat.costoMetro) return null;
-  if (mat.unitaMisura === "kg") {
-    const kgPerM = calcolaKgPerMetroLineare(mat);
-    if (kgPerM === null) return null;
-    return kgPerM * mat.costoMetro;
-  }
   if (mat.unitaMisura === "pz") return null;
-  return mat.costoMetro;
+  if (mat.costoMetro) return mat.costoMetro;
+  if (mat.unitaMisura === "kg") return calcolaCostoMetroDaPrezzoKg(mat);
+  return null;
+}
+
+/**
+ * Costo unitario da moltiplicare per il consumo per capo: €/m per tessuti (a metro o
+ * al kg), €/pz per i materiali al pezzo. 0 se non determinabile.
+ */
+export function calcolaCostoUnitarioConsumo(mat: MaterialeCostoInfo | null | undefined): number {
+  if (!mat) return 0;
+  if (mat.unitaMisura === "pz") return mat.costoMetro || 0;
+  return calcolaCostoAlMetro(mat) ?? 0;
 }

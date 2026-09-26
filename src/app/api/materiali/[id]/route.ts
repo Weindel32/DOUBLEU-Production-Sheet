@@ -23,6 +23,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       unitaMisura: body.unitaMisura,
       fornitore: body.fornitore,
       costoMetro: body.costoMetro,
+      prezzoKg: body.prezzoKg,
       note: body.note,
     },
   });

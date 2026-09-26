@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { calcolaCostoAlMetro, calcolaGrammiMq } from "@/lib/utils";
+import { calcolaCostoMetroDaPrezzoKg, calcolaGrammiMq, parseNumIt } from "@/lib/utils";
 
 const TIPI = ["Tessuto", "Fodera", "Elastico", "Cerniera", "Bottoni", "Ricamo", "Stampa", "Altro"];
 const COMPOSIZIONI = [
@@ -32,6 +32,7 @@ type Materiale = {
   unitaMisura: string | null;
   fornitore: string | null;
   costoMetro: number | null;
+  prezzoKg: number | null;
   note: string | null;
 };
 
@@ -48,6 +49,7 @@ export default function ModificaMaterialeForm({ materiale }: { materiale: Materi
     unitaMisura: materiale.unitaMisura ?? "metro",
     fornitore: materiale.fornitore ?? "",
     costoMetro: materiale.costoMetro?.toString() ?? "",
+    prezzoKg: materiale.prezzoKg?.toString() ?? "",
     note: materiale.note ?? "",
   });
 
@@ -55,17 +57,19 @@ export default function ModificaMaterialeForm({ materiale }: { materiale: Materi
     setForm((f) => ({ ...f, [field]: value }));
 
   const pesoNum = parseFloat(form.peso.replace(",", ".")) || 0;
-  const costoAlMetro = form.unitaMisura === "kg"
-    ? calcolaCostoAlMetro({
-        costoMetro: parseFloat(form.costoMetro.replace(",", ".")) || null,
-        unitaMisura: form.unitaMisura,
+  // Tessuti al kg: il prezzo inserito è €/kg e va in prezzoKg; costoMetro è sempre €/m
+  // (kg per metro × prezzo al kg), stessa convenzione del Kit Builder.
+  const isKg = form.unitaMisura === "kg";
+  const costoAlMetro = isKg
+    ? calcolaCostoMetroDaPrezzoKg({
+        prezzoKg: parseNumIt(form.prezzoKg),
         peso: form.peso,
         unitaPeso: form.unitaPeso,
         larghezza: form.larghezza,
       })
     : null;
   const grammiMq = calcolaGrammiMq({ peso: form.peso, unitaPeso: form.unitaPeso, larghezza: form.larghezza });
-  const mostraCalcoli = (form.unitaPeso === "g/m" && pesoNum > 0) || (form.unitaMisura === "kg" && form.costoMetro);
+  const mostraCalcoli = (form.unitaPeso === "g/m" && pesoNum > 0) || (isKg && form.prezzoKg);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,7 +79,12 @@ export default function ModificaMaterialeForm({ materiale }: { materiale: Materi
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...form,
-        costoMetro: form.costoMetro ? parseFloat(form.costoMetro) : null,
+        // Se il €/m non è calcolabile (manca prezzo al kg, peso o altezza) si conserva
+        // quello già salvato, invece di azzerarlo.
+        costoMetro: isKg
+          ? costoAlMetro ?? (materiale.unitaMisura === "kg" ? materiale.costoMetro : null)
+          : parseNumIt(form.costoMetro),
+        prezzoKg: isKg ? parseNumIt(form.prezzoKg) : null,
       }),
     });
     router.push("/materiali");
@@ -150,14 +159,14 @@ export default function ModificaMaterialeForm({ materiale }: { materiale: Materi
             </div>
             <div>
               <label className="text-sm text-[#8ba3c7] block mb-1">
-                {form.unitaMisura === "kg" ? "Costo al kg (€)" : form.unitaMisura === "pz" ? "Costo al pezzo (€)" : "Costo al metro (€)"}
+                {isKg ? "Prezzo al kg (€)" : form.unitaMisura === "pz" ? "Costo al pezzo (€)" : "Costo al metro (€)"}
               </label>
               <input
                 type="number"
                 step="0.01"
                 min="0"
-                value={form.costoMetro}
-                onChange={(e) => set("costoMetro", e.target.value)}
+                value={isKg ? form.prezzoKg : form.costoMetro}
+                onChange={(e) => set(isKg ? "prezzoKg" : "costoMetro", e.target.value)}
                 placeholder="es. 4.50"
                 className="w-full border border-white/15 rounded-lg px-3 py-2 text-sm focus:border-blue-400 outline-none"
               />
@@ -213,11 +222,11 @@ export default function ModificaMaterialeForm({ materiale }: { materiale: Materi
                   <div className="text-orange-400">Inserisci l&apos;altezza tessuto per ricavare i g/m²</div>
                 )
               )}
-              {form.unitaMisura === "kg" && form.costoMetro && (
+              {isKg && form.prezzoKg && (
                 costoAlMetro !== null ? (
                   <div className="text-blue-300">Costo al metro lineare: <strong>€ {costoAlMetro.toFixed(2)}/m</strong></div>
                 ) : (
-                  <div className="text-orange-400">Inserisci peso e altezza tessuto per calcolare il costo al metro</div>
+                  <div className="text-orange-400">Inserisci peso e altezza tessuto per calcolare il costo al metro (senza, il costo al metro non viene salvato)</div>
                 )
               )}
             </div>

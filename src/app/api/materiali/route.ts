@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     data: {
       nome: body.nome, tipo: body.tipo, composizione: body.composizione,
       peso: body.peso, unitaPeso: body.unitaPeso, larghezza: body.larghezza, unitaMisura: body.unitaMisura,
-      fornitore: body.fornitore, costoMetro: body.costoMetro, note: body.note,
+      fornitore: body.fornitore, costoMetro: body.costoMetro, prezzoKg: body.prezzoKg, note: body.note,
     },
   });
   return NextResponse.json(materiale, { status: 201 });

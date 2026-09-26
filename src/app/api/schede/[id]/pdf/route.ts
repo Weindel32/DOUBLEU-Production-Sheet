@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-import { CATEGORIE_ELASTICO } from "@/lib/utils";
+import { CATEGORIE_ELASTICO, calcolaCostoUnitarioConsumo } from "@/lib/utils";
 import type { ConsumoMateriale } from "@/types";
 
 const PALETTE_HEX: Record<string, string> = {
@@ -67,7 +67,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
   const tabellaMisure = scheda.tabellaMisure ? JSON.parse(scheda.tabellaMisure) : {};
   const quantitaTaglia = scheda.quantitaTaglia ? JSON.parse(scheda.quantitaTaglia) : {};
-  const consumi = scheda.consumoMateriale ? JSON.parse(scheda.consumoMateriale) : [];
+  const consumiSalvati: ConsumoMateriale[] = scheda.consumoMateriale ? JSON.parse(scheda.consumoMateriale) : [];
+  // Il costo unitario si ricalcola dal materiale attuale: quello salvato nella scheda è
+  // una fotografia dell'ultimo salvataggio e resta solo come ripiego (materiale eliminato).
+  const materialiConsumo = await prisma.materiale.findMany({
+    where: { id: { in: consumiSalvati.map((c) => c.materialeId) } },
+  });
+  const consumi = consumiSalvati.map((c) => {
+    const mat = materialiConsumo.find((m) => m.id === c.materialeId);
+    return mat ? { ...c, costoUnitario: calcolaCostoUnitarioConsumo(mat) } : c;
+  });
   const immagini: string[] = scheda.immagini ? JSON.parse(scheda.immagini) : [];
   const totalePezzi = Object.values(quantitaTaglia as Record<string, number>).reduce((s, q) => s + q, 0);
 
