@@ -69,6 +69,7 @@ export async function POST(req: NextRequest) {
         packaging: body.packaging,
         allegati: body.allegati ? JSON.stringify(body.allegati) : null,
         consumoMateriale: body.consumoMateriale ? JSON.stringify(body.consumoMateriale) : null,
+        accessori: body.accessori ? JSON.stringify(body.accessori) : null,
         costoLavorazione: body.costoLavorazione,
         prezzoVendita: body.prezzoVendita,
         noteRapide: body.noteRapide,

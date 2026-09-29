@@ -68,6 +68,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const tabellaMisure = scheda.tabellaMisure ? JSON.parse(scheda.tabellaMisure) : {};
   const quantitaTaglia = scheda.quantitaTaglia ? JSON.parse(scheda.quantitaTaglia) : {};
   const consumiSalvati: ConsumoMateriale[] = scheda.consumoMateriale ? JSON.parse(scheda.consumoMateriale) : [];
+  const accessori: { nome: string; quantita: number; prezzoUnitario: number }[] = scheda.accessori ? JSON.parse(scheda.accessori) : [];
+  const escHtml = (t: string) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   // Il costo unitario si ricalcola dal materiale attuale: quello salvato nella scheda è
   // una fotografia dell'ultimo salvataggio e resta solo come ripiego (materiale eliminato).
   const materialiConsumo = await prisma.materiale.findMany({
@@ -90,7 +92,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       sum + c.consumoPerCapo * (c.costoUnitario || 0),
     0
   );
-  const costoTotalePerCapo = costoMaterialePerCapo + (scheda.costoLavorazione || 0);
+  const costoAccessoriPerCapo = accessori.reduce((sum, a) => sum + (a.quantita || 0) * (a.prezzoUnitario || 0), 0);
+  const costoTotalePerCapo = costoMaterialePerCapo + costoAccessoriPerCapo + (scheda.costoLavorazione || 0);
 
   // ── Pre-build HTML sections ───────────────────────────────────────────────
 
@@ -177,7 +180,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       '</div></div></div>'
     : '';
 
-  const sezioneCosti = isInterno && (consumi.length > 0 || scheda.costoLavorazione)
+  const sezioneCosti = isInterno && (consumi.length > 0 || accessori.length > 0 || scheda.costoLavorazione)
     ? '<div class="section">' +
       '<div class="warning-box">&#9888;&#65039; DOCUMENTO RISERVATO &ndash; Questa sezione contiene informazioni economiche riservate. NON distribuire a produttori, modellisti o sala taglio.</div>' +
       '<div class="section-title">Costi interni (solo uso interno)</div>' +
@@ -190,7 +193,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
           }).join('') +
           '</div>'
         : '') +
+      (accessori.length > 0
+        ? '<div style="margin-bottom:8px;"><div style="font-size:9px;color:#92400e;margin-bottom:4px;font-weight:700;">ACCESSORI</div>' +
+          accessori.map(function(a) {
+            return '<div class="cost-row"><span>' + escHtml(a.nome || 'Accessorio') + '</span><span>' + a.quantita + ' pz &times; &euro;' + a.prezzoUnitario + ' = &euro;' + (a.quantita * a.prezzoUnitario).toFixed(2) + '/capo</span></div>';
+          }).join('') +
+          '</div>'
+        : '') +
       '<div class="cost-row"><span>Costo materiali/capo</span><span>&euro; ' + costoMaterialePerCapo.toFixed(2) + '</span></div>' +
+      (accessori.length > 0 ? '<div class="cost-row"><span>Costo accessori/capo</span><span>&euro; ' + costoAccessoriPerCapo.toFixed(2) + '</span></div>' : '') +
       '<div class="cost-row"><span>Costo lavorazione/capo</span><span>&euro; ' + (scheda.costoLavorazione || 0).toFixed(2) + '</span></div>' +
       '<div class="cost-row cost-total"><span>COSTO TOTALE/CAPO</span><span>&euro; ' + costoTotalePerCapo.toFixed(2) + '</span></div>' +
       (totalePezzi > 0 ? '<div class="cost-row"><span>Costo totale ordine (' + totalePezzi + ' pz)</span><span>&euro; ' + (costoTotalePerCapo * totalePezzi).toFixed(2) + '</span></div>' : '') +

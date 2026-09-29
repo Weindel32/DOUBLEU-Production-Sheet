@@ -101,6 +101,7 @@ model Scheda {
 
   // Costi interni
   consumoMateriale String?
+  accessori        String? // JSON: [{nome, quantita, prezzoUnitario}] — costo per capo
   costoLavorazione Float?
   costoTaglio      Float?
   costoCucitura    Float?

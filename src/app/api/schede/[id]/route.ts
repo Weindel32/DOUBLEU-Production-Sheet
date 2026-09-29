@@ -25,6 +25,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     data.allegati = body.allegati ? JSON.stringify(body.allegati) : null;
   if (body.consumoMateriale !== undefined)
     data.consumoMateriale = body.consumoMateriale ? JSON.stringify(body.consumoMateriale) : null;
+  if (body.accessori !== undefined)
+    data.accessori = body.accessori ? JSON.stringify(body.accessori) : null;
   if (body.immagini !== undefined)
     data.immagini = body.immagini ? JSON.stringify(body.immagini) : null;
 
