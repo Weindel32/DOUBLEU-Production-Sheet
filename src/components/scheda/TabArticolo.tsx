@@ -21,9 +21,39 @@ export interface TabArticoloHandle {
 const CATEGORIE_SENZA_COLLO_MANICHE = ["Short", "Skirt", "Sweatpants"];
 const CATEGORIE_COSTINA = ["Hoodie", "Zip Hoodie", "Sweatshirt", "Sweatpants"];
 
+// Le foto da iPad/iPhone sono grandi (HEIC, 4-10MB) e Vercel rifiuta body > ~4.5MB:
+// ridimensiono e converto in JPEG lato client prima dell'upload.
+const MAX_DIM = 2400;
+const SOGLIA_BYTES = 3 * 1024 * 1024;
+
+async function preparaImmagine(file: File): Promise<File> {
+  const leggero = file.size <= SOGLIA_BYTES && ["image/jpeg", "image/png", "image/webp"].includes(file.type);
+  if (leggero) return file;
+  try {
+    const bmp = await createImageBitmap(file);
+    const scala = Math.min(1, MAX_DIM / Math.max(bmp.width, bmp.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bmp.width * scala);
+    canvas.height = Math.round(bmp.height * scala);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return file;
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+    bmp.close?.();
+    const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/jpeg", 0.85));
+    if (!blob) return file;
+    const nome = (file.name || "foto").replace(/\.[^.]+$/, "") + ".jpg";
+    return new File([blob], nome, { type: "image/jpeg" });
+  } catch {
+    return file;
+  }
+}
+
 const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ scheda, onSave, clienti, materiali }, ref) {
   const [immagini, setImmagini] = useState<string[]>(scheda.immagini || []);
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [values, setValues] = useState({
@@ -60,21 +90,43 @@ const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ 
   useImperativeHandle(ref, () => ({ save: salvaAll }));
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
+    const input = e.target;
+    const files = Array.from(input.files || []);
     if (!files.length) return;
     setUploading(true);
+    setUploadError(null);
     const nuove: string[] = [];
-    for (const file of files) {
-      const fd = new FormData();
-      fd.append("file", file);
-      const res = await fetch("/api/upload", { method: "POST", body: fd });
-      if (res.ok) { const { url } = await res.json(); nuove.push(url); }
+    const errori: string[] = [];
+    try {
+      for (const originale of files) {
+        try {
+          const file = await preparaImmagine(originale);
+          const fd = new FormData();
+          fd.append("file", file);
+          const res = await fetch("/api/upload", { method: "POST", body: fd });
+          if (res.ok) {
+            const { url } = await res.json();
+            nuove.push(url);
+          } else if (res.status === 413) {
+            errori.push(`${originale.name}: file troppo grande`);
+          } else {
+            const body = await res.json().catch(() => null);
+            errori.push(`${originale.name}: ${body?.error || `errore ${res.status}`}`);
+          }
+        } catch {
+          errori.push(`${originale.name}: caricamento non riuscito`);
+        }
+      }
+      if (nuove.length) {
+        const aggiornate = [...immagini, ...nuove];
+        setImmagini(aggiornate);
+        await onSave({ immagini: aggiornate });
+      }
+      if (errori.length) setUploadError(errori.join(" · "));
+    } finally {
+      setUploading(false);
+      input.value = "";
     }
-    const aggiornate = [...immagini, ...nuove];
-    setImmagini(aggiornate);
-    await onSave({ immagini: aggiornate });
-    setUploading(false);
-    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const rimuoviImmagine = async (idx: number) => {
@@ -274,7 +326,7 @@ const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ 
             <div key={i} className="relative group">
               <img src={img} alt={`Immagine ${i + 1}`} className="w-full h-28 object-contain rounded-lg bg-white/[0.03]" />
               <button onClick={() => rimuoviImmagine(i)}
-                className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 transition-opacity">
                 <X size={12} />
               </button>
             </div>
@@ -285,8 +337,9 @@ const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ 
           className="w-full border-2 border-dashed border-white/10 rounded-lg py-3 flex items-center justify-center gap-2 text-sm text-[#4e6585] hover:border-blue-500/40 hover:text-blue-500 transition-colors disabled:opacity-50">
           {uploading ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} />}
           {uploading ? "Caricamento..." : "Carica immagini"}
-          {!uploading && <span className="text-xs">PNG, JPG fino a 10MB</span>}
+          {!uploading && <span className="text-xs">PNG, JPG, HEIC</span>}
         </button>
+        {uploadError && <p className="mt-2 text-xs text-red-400">{uploadError}</p>}
       </div>
 
       {/* Fornitori & Referenti */}
