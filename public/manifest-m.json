@@ -1,8 +1,8 @@
 {
-  "name": "Double U – Production Sheet",
-  "short_name": "DUSP",
-  "description": "Gestionale schede di produzione Double U",
-  "start_url": "/",
+  "name": "Double U – Mobile",
+  "short_name": "DU Mobile",
+  "description": "Double U in mobilità: materiali, spese campione, costi, schede",
+  "start_url": "/m",
   "display": "standalone",
   "background_color": "#F6F4EF",
   "theme_color": "#0E1B2C",
@@ -17,5 +17,7 @@
       "sizes": "512x512",
       "type": "image/png"
     }
-  ]
+  ],
+  "scope": "/m",
+  "orientation": "portrait"
 }

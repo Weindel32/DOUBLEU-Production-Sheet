@@ -88,6 +88,7 @@ export default function TabCampioni({ scheda, onSave, onTotaleChange }: Props) {
     aggiorna(campioni.map((c) => c.id !== id ? c : {
       ...c,
       voci: c.voci.map((v, i) => i !== idx ? v : {
+        ...v, // conserva la foto dello scontrino, se c'è
         descrizione: patch.descrizione ?? v.descrizione,
         importo: patch.importoRaw !== undefined ? (parseNumIt(patch.importoRaw) ?? 0) : v.importo,
       }),
@@ -138,9 +139,17 @@ export default function TabCampioni({ scheda, onSave, onTotaleChange }: Props) {
 
             {c.voci.map((v, i) => (
               <div key={i} className="grid grid-cols-[minmax(0,1fr)_170px_44px] gap-2.5 items-center border-t border-[#EFEBE2] py-1.5">
-                <input id={`camp-${c.id}-desc-${i}`} type="text" value={v.descrizione} aria-label="Voce di costo"
-                  onChange={(e) => modificaVoce(c.id, i, { descrizione: e.target.value })} onBlur={lascia}
-                  placeholder="es. Taglio campione" className={inputCls} />
+                <span className="flex items-center gap-2 min-w-0">
+                  <input id={`camp-${c.id}-desc-${i}`} type="text" value={v.descrizione} aria-label="Voce di costo"
+                    onChange={(e) => modificaVoce(c.id, i, { descrizione: e.target.value })} onBlur={lascia}
+                    placeholder="es. Taglio campione" className={inputCls} />
+                  {v.foto && (
+                    <a href={v.foto} target="_blank" rel="noreferrer" aria-label="Foto dello scontrino"
+                      className="w-11 h-11 flex-shrink-0 rounded-[10px] overflow-hidden border border-[#D6D1C4]">
+                      <img src={v.foto} alt="" className="w-full h-full object-cover" />
+                    </a>
+                  )}
+                </span>
                 <EuroInput id={`camp-${c.id}-imp-${i}`} label={`Importo ${v.descrizione || "voce"}`}
                   value={importiStr[`${c.id}:${i}`] ?? numStr(v.importo || null)}
                   onChange={(raw) => modificaVoce(c.id, i, { importoRaw: raw })} onBlur={lascia} />

@@ -1,4 +1,4 @@
-// Sessione di accesso: cookie firmato con HMAC-SHA256 (Web Crypto, funziona anche nel middleware).
+// Sessione di accesso: cookie firmato con HMAC-SHA256 (Web Crypto, usato anche dal proxy).
 // Le credenziali restano AUTH_USER / AUTH_PASSWORD. La chiave di firma è AUTH_SECRET se c'è,
 // altrimenti è ricavata dalla password: nessuna variabile nuova obbligatoria, e cambiare la
 // password invalida tutte le sessioni aperte.

@@ -1,218 +1,152 @@
 export const dynamic = "force-dynamic";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
-import Link from "next/link";
-import { formatData, calcolaTotaleQuantita, TAGLIE_ADULTO, TAGLIE_KIDS, CATEGORIE_ELASTICO } from "@/lib/utils";
+import type { ReactNode } from "react";
+import { formatData, calcolaTotaleQuantita, TAGLIE_ADULTO, TAGLIE_KIDS, CATEGORIE_ELASTICO, STATI_SCHEDA } from "@/lib/utils";
+import Testata from "@/components/mobile/Testata";
 
-const STATO_BADGE: Record<string, string> = {
-  bozza: "bg-gray-100 text-gray-600",
-  revisione: "bg-yellow-100 text-yellow-700",
-  approvata: "bg-blue-100 text-blue-700",
-  produzione: "bg-purple-100 text-purple-700",
-  consegnata: "bg-green-100 text-green-700",
-};
+function Blocco({ titolo, destra, children }: { titolo: string; destra?: ReactNode; children: ReactNode }) {
+  return (
+    <section className="bg-white border border-[#E4E0D6] rounded-2xl overflow-hidden">
+      <div className="px-4 py-3 border-b border-[#EFEBE2] flex items-baseline justify-between">
+        <h2 className="font-display font-bold text-[16px]">{titolo}</h2>
+        {destra}
+      </div>
+      {children}
+    </section>
+  );
+}
 
-const STATO_LABEL: Record<string, string> = {
-  bozza: "Bozza",
-  revisione: "Revisione",
-  approvata: "Approvata",
-  produzione: "In produzione",
-  consegnata: "Consegnata",
-};
+function Righe({ righe }: { righe: { label: string; value: string | null | undefined }[] }) {
+  return (
+    <dl className="divide-y divide-[#EFEBE2]">
+      {righe.filter((r) => r.value).map(({ label, value }) => (
+        <div key={label} className="flex items-baseline gap-3 px-4 py-2.5">
+          <dt className="text-[13px] text-[#5F6878] w-32 flex-shrink-0">{label}</dt>
+          <dd className="text-[15px] font-medium">{value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
 
+/** Consultazione della scheda dal telefono (laboratorio, fornitore): sola lettura, niente costi. */
 export default async function MobileSchedaDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const scheda = await prisma.scheda.findUnique({
-    where: { id },
-    include: { cliente: true },
-  });
-
+  const scheda = await prisma.scheda.findUnique({ where: { id }, include: { cliente: true } });
   if (!scheda) notFound();
 
   const quantita: Record<string, number> = scheda.quantitaTaglia ? JSON.parse(scheda.quantitaTaglia) : {};
   const tabellaMisure = scheda.tabellaMisure ? JSON.parse(scheda.tabellaMisure) : {};
   const totale = calcolaTotaleQuantita(quantita);
   const immagini: string[] = scheda.immagini ? JSON.parse(scheda.immagini) : [];
-  const tutteLeTaglie = [...TAGLIE_ADULTO, ...TAGLIE_KIDS];
-  const taglieAttive = tutteLeTaglie.filter((t) => quantita[t] || tabellaMisure[t]);
+  const taglieAttive = [...TAGLIE_ADULTO, ...TAGLIE_KIDS].filter((t) => quantita[t] || tabellaMisure[t]);
+  const stato = STATI_SCHEDA.find((s) => s.value === scheda.stato);
+  const isElastico = CATEGORIE_ELASTICO.includes(scheda.categoria || "");
+  const specs = tabellaMisure.__specs as { altezza?: string; tipo?: string; costruzione?: string; applicazione?: string } | undefined;
+  const misura = (t: string, k: string) => (tabellaMisure[t] as Record<string, number | undefined> | undefined)?.[k] ?? "—";
 
   return (
-    <div className="flex flex-col min-h-screen pb-6">
-      {/* Header */}
-      <div className="bg-blue-700 text-white px-4 pt-12 pb-4">
-        <Link href="/m/schede" className="text-sm opacity-80 mb-3 block">← Tutte le schede</Link>
-        <div className="flex items-start justify-between gap-2">
-          <div>
-            <h1 className="text-lg font-bold leading-tight">{scheda.nomeArticolo}</h1>
-            <div className="text-sm opacity-70 mt-0.5">{scheda.codice}</div>
-          </div>
-          <span className={`px-2.5 py-1 rounded-full text-xs font-semibold flex-shrink-0 ${STATO_BADGE[scheda.stato]}`}>
-            {STATO_LABEL[scheda.stato]}
-          </span>
-        </div>
-      </div>
+    <>
+      <Testata indietro="/m/schede" sopra={[scheda.codiceModello, scheda.codice].filter(Boolean).join(" · ")} titolo={scheda.nomeArticolo}
+        destra={stato && <span className={`badge badge-${scheda.stato} flex-shrink-0 mb-2`}>{stato.label}</span>} />
 
-      <div className="px-4 py-4 space-y-4">
-        {/* Immagini */}
+      <div className="px-4 space-y-3 pb-6">
         {immagini.length > 0 && (
-          <div className="flex gap-2 overflow-x-auto pb-1">
+          <div className="flex gap-2 overflow-x-auto -mx-4 px-4 pb-1 snap-x">
             {immagini.map((img, i) => (
-              <img
-                key={i}
-                src={img}
-                alt={`Immagine ${i + 1}`}
-                className="h-40 w-40 object-contain rounded-xl bg-white border border-gray-100 flex-shrink-0"
-              />
+              <a key={i} href={img} target="_blank" rel="noreferrer" className="snap-start flex-shrink-0">
+                <img src={img} alt={`Immagine ${i + 1}`} className="h-48 w-48 object-contain rounded-2xl bg-white border border-[#E4E0D6]" />
+              </a>
             ))}
           </div>
         )}
 
-        {/* Info principali */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="px-4 py-2.5 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wide">Articolo</div>
-          <div className="divide-y divide-gray-50">
-            {[
-              { label: "Cliente", value: scheda.cliente?.nome },
-              { label: "Collezione", value: scheda.collezione },
-              { label: "Categoria", value: scheda.categoria },
-              { label: "Genere", value: scheda.genere },
-              { label: "Vestibilità", value: scheda.vestibilita },
-              { label: "Stagione", value: scheda.stagione },
-              { label: "Tessuto", value: scheda.tessutoPrincipale },
-              { label: "Colore base", value: scheda.coloreBase },
-              { label: "Maniche", value: scheda.maniche },
-              { label: "Collo", value: scheda.collo },
-            ].filter((r) => r.value).map(({ label, value }) => (
-              <div key={label} className="flex items-center px-4 py-2.5">
-                <span className="text-xs text-gray-400 w-28 flex-shrink-0">{label}</span>
-                <span className="text-sm font-medium text-gray-700">{value}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+        <Blocco titolo="Articolo">
+          <Righe righe={[
+            { label: "Modello", value: scheda.codiceModello },
+            { label: "Cliente", value: scheda.cliente?.nome },
+            { label: "Collezione", value: scheda.collezione },
+            { label: "Categoria", value: scheda.categoria },
+            { label: "Genere", value: scheda.genere },
+            { label: "Vestibilità", value: scheda.vestibilita },
+            { label: "Tessuto", value: scheda.tessutoPrincipale },
+            { label: "Peso", value: scheda.pesoTessuto },
+            { label: "Colore base", value: scheda.coloreBase },
+            { label: "Colori secondari", value: scheda.coloriSecondari },
+            { label: "Collo", value: scheda.collo },
+            { label: "Maniche", value: scheda.maniche },
+          ]} />
+        </Blocco>
 
-        {/* Quantità per taglia */}
         {taglieAttive.length > 0 && (
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-            <div className="px-4 py-2.5 bg-gray-50 flex items-center justify-between">
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Quantità per taglia</span>
-              {totale > 0 && <span className="text-xs font-bold text-blue-700">Totale: {totale} pz</span>}
+          <Blocco titolo="Quantità" destra={totale > 0 && <span className="font-mono font-semibold text-[#1F3A68]">{totale} pz</span>}>
+            <div className="grid grid-cols-4 gap-2 p-3">
+              {taglieAttive.map((t) => (
+                <div key={t} className="rounded-xl bg-[#F6F4EF] py-2 text-center">
+                  <div className="text-xs text-[#5F6878]">{t}</div>
+                  <div className="font-mono font-semibold text-lg">{quantita[t] || 0}</div>
+                </div>
+              ))}
             </div>
-            <div className="px-4 py-3 overflow-x-auto">
-              <table className="text-sm w-full">
+          </Blocco>
+        )}
+
+        {taglieAttive.some((t) => tabellaMisure[t]) && (
+          <Blocco titolo={isElastico ? "Elastico vita" : "Misure (cm)"}>
+            {isElastico && (specs?.altezza || specs?.tipo || specs?.costruzione || specs?.applicazione) && (
+              <Righe righe={[
+                { label: "Altezza", value: specs?.altezza ? `${specs.altezza} cm` : null },
+                { label: "Tipo", value: specs?.tipo },
+                { label: "Costruzione", value: specs?.costruzione },
+                { label: "Applicazione", value: specs?.applicazione },
+              ]} />
+            )}
+            <div className="overflow-x-auto">
+              <table className="w-full text-[15px]">
                 <thead>
-                  <tr>
-                    {taglieAttive.map((t) => (
-                      <th key={t} className="text-center px-2 py-1 text-xs text-gray-400 font-medium min-w-[40px]">{t}</th>
+                  <tr className="text-left">
+                    <th className="px-4 py-2 text-xs">Taglia</th>
+                    {(isElastico ? ["Lungh. elastico", "Altezza"] : ["Torace", "Lungh.", "Spalla", "Manica"]).map((h) => (
+                      <th key={h} className="px-2 py-2 text-xs text-right">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  <tr>
-                    {taglieAttive.map((t) => (
-                      <td key={t} className="text-center px-2 py-1 font-semibold text-gray-700 text-sm">
-                        {quantita[t] || 0}
-                      </td>
-                    ))}
-                  </tr>
+                  {taglieAttive.filter((t) => tabellaMisure[t]).map((t) => (
+                    <tr key={t}>
+                      <td className="px-4 py-2 font-semibold">{t}</td>
+                      {(isElastico ? ["lunghezzaElastico", "altezzaElastico"] : ["torace", "lunghezza", "spalla", "lungManica"]).map((k) => (
+                        <td key={k} className="px-2 py-2 text-right font-mono">{misura(t, k)}</td>
+                      ))}
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
-          </div>
+          </Blocco>
         )}
 
-        {/* Tabella misure */}
-        {taglieAttive.length > 0 && Object.keys(tabellaMisure).length > 0 && (() => {
-          const isElastico = CATEGORIE_ELASTICO.includes(scheda.categoria || "");
-          const specs = tabellaMisure.__specs as { altezza?: string; tipo?: string; costruzione?: string; applicazione?: string } | undefined;
-          return (
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-              <div className="px-4 py-2.5 bg-gray-50">
-                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                  {isElastico ? "Elastico Vita" : "Misure (cm)"}
-                </span>
-              </div>
-              {isElastico && (specs?.tipo || specs?.costruzione || specs?.applicazione) && (
-                <div className="px-4 py-3 border-b border-gray-50 space-y-1">
-                  {specs?.altezza && <p className="text-xs text-gray-600">- Altezza elastico: <strong>{specs.altezza} cm</strong></p>}
-                  {specs?.tipo && <p className="text-xs text-gray-600">- Tipo: {specs.tipo}</p>}
-                  {specs?.costruzione && <p className="text-xs text-gray-600">- Costruzione: {specs.costruzione}</p>}
-                  {specs?.applicazione && <p className="text-xs text-gray-600">- Applicazione: {specs.applicazione}</p>}
-                </div>
-              )}
-              <div className="overflow-x-auto">
-                <table className="text-xs w-full">
-                  <thead>
-                    <tr className="bg-gray-50">
-                      <th className="text-left px-3 py-2 text-gray-400 font-medium">Taglia</th>
-                      {isElastico
-                        ? [["Lung. Elastico", "lunghezzaElastico"], ["Altezza", "altezzaElastico"]].map(([h]) => (
-                            <th key={h} className="text-right px-2 py-2 text-gray-400 font-medium">{h}</th>
-                          ))
-                        : ["Torace", "Lung.", "Spalla", "Manica"].map((h) => (
-                            <th key={h} className="text-right px-2 py-2 text-gray-400 font-medium">{h}</th>
-                          ))
-                      }
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-50">
-                    {taglieAttive.filter((t) => tabellaMisure[t]).map((t) => (
-                      <tr key={t}>
-                        <td className="px-3 py-2 font-semibold text-gray-700">{t}</td>
-                        {isElastico ? (
-                          <>
-                            <td className="px-2 py-2 text-right text-gray-600">{(tabellaMisure[t] as { lunghezzaElastico?: number })?.lunghezzaElastico ?? "—"}</td>
-                            <td className="px-2 py-2 text-right text-gray-600">{(tabellaMisure[t] as { altezzaElastico?: number })?.altezzaElastico ?? "—"}</td>
-                          </>
-                        ) : (
-                          <>
-                            <td className="px-2 py-2 text-right text-gray-600">{(tabellaMisure[t] as { torace?: number })?.torace ?? "—"}</td>
-                            <td className="px-2 py-2 text-right text-gray-600">{(tabellaMisure[t] as { lunghezza?: number })?.lunghezza ?? "—"}</td>
-                            <td className="px-2 py-2 text-right text-gray-600">{(tabellaMisure[t] as { spalla?: number })?.spalla ?? "—"}</td>
-                            <td className="px-2 py-2 text-right text-gray-600">{(tabellaMisure[t] as { lungManica?: number })?.lungManica ?? "—"}</td>
-                          </>
-                        )}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          );
-        })()}
-
-        {/* Fornitori */}
         {(scheda.modellista || scheda.fornitoreTessuto || scheda.produttore) && (
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-            <div className="px-4 py-2.5 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wide">Fornitori</div>
-            <div className="divide-y divide-gray-50">
-              {[
-                { label: "Modellista", value: scheda.modellista },
-                { label: "Fornitore tessuto", value: scheda.fornitoreTessuto },
-                { label: "Produttore", value: scheda.produttore },
-              ].filter((r) => r.value).map(({ label, value }) => (
-                <div key={label} className="flex items-center px-4 py-2.5">
-                  <span className="text-xs text-gray-400 w-32 flex-shrink-0">{label}</span>
-                  <span className="text-sm font-medium text-gray-700">{value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+          <Blocco titolo="Fornitori">
+            <Righe righe={[
+              { label: "Modellista", value: scheda.modellista },
+              { label: "Fornitore tessuto", value: scheda.fornitoreTessuto },
+              { label: "Produttore", value: scheda.produttore },
+            ]} />
+          </Blocco>
         )}
 
-        {/* Note produzione */}
         {scheda.noteProduzione && (
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Note di produzione</div>
-            <p className="text-sm text-gray-700 leading-relaxed">{scheda.noteProduzione}</p>
-          </div>
+          <Blocco titolo="Note per il produttore">
+            <p className="px-4 py-3 text-[15px] leading-relaxed whitespace-pre-line">{scheda.noteProduzione}</p>
+          </Blocco>
         )}
 
-        {/* Meta */}
-        <div className="text-center text-xs text-gray-400 pt-2">
-          Creato {formatData(scheda.createdAt.toISOString())} · Versione {scheda.versione}
-        </div>
+        <p className="text-center text-xs text-[#5F6878] pt-1">
+          Creata il {formatData(scheda.createdAt.toISOString())} · aggiornata il {formatData(scheda.updatedAt.toISOString())}
+        </p>
       </div>
-    </div>
+    </>
   );
 }

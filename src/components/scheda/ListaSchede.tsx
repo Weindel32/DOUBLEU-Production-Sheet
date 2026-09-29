@@ -2,9 +2,10 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { Plus, FileText, Search } from "lucide-react";
 import {
-  formatData, STATI_SCHEDA, TIPI_COSTO_DB, calcolaTotaleQuantita, calcolaRiepilogoCosti, formatEuro, totaleSviluppo,
+  formatData, STATI_SCHEDA, TIPI_COSTO_DB, calcolaTotaleQuantita, formatEuro, totaleSviluppo,
 } from "@/lib/utils";
 import SchedaRowMenu from "@/components/scheda/SchedaRowMenu";
+import { riepilogoScheda } from "@/lib/costiScheda";
 import type { Campione } from "@/types";
 
 type Filtri = { stato?: string; margine?: string; campioni?: string; q?: string };
@@ -57,17 +58,7 @@ export default async function ListaSchede({ vista, searchParams }: {
   const ordiniPerArticolo = new Map(conteggiOrdini.map((c) => [c.origineId, c._count._all]));
 
   const righe = schede.map((s) => {
-    const lavSplit = [s.costoTaglio, s.costoCucitura, s.costoStampa, s.costoRicamo];
-    const costi = calcolaRiepilogoCosti(
-      {
-        consumi: parseJson(s.consumoMateriale, []),
-        accessori: parseJson(s.accessori, []),
-        // Schede vecchie: solo il totale lavorazione, senza il dettaglio per voce.
-        lavorazioni: lavSplit.some((v) => v !== null) ? lavSplit : [s.costoLavorazione],
-        prezzoVendita: s.prezzoVendita,
-      },
-      materiali,
-    );
+    const costi = riepilogoScheda(s, materiali);
     const campioni = parseJson<Campione[]>(s.campioni, []);
     return {
       s,

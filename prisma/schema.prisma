@@ -41,6 +41,7 @@ model Materiale {
   prezzoKg     Float? // €/kg, solo per unitaMisura = "kg"
   codice       String?
   note         String?
+  foto         String? // URL della foto del cartellino o del campione
   createdAt    DateTime          @default(now())
   schede       MaterialeScheda[]
 }

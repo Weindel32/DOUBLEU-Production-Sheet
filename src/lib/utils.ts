@@ -173,7 +173,7 @@ export function calcolaKgPerMetroLineare(mat: MaterialePesoInfo): number | null 
   return (peso * larghezza) / 100000;
 }
 
-interface MaterialeCostoInfo extends MaterialePesoInfo {
+export interface MaterialeCostoInfo extends MaterialePesoInfo {
   costoMetro?: number | null;
   prezzoKg?: number | null;
   unitaMisura?: string | null;
