@@ -116,12 +116,12 @@ export default function ClientiClient({ clientiIniziali }: Props) {
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Clienti / Club</h1>
-          <p className="text-sm text-[#8ba3c7] mt-0.5">{clienti.length} clienti registrati</p>
+          <h1 className="text-2xl font-bold text-[#0E1B2C]">Clienti / Club</h1>
+          <p className="text-sm text-[#4A5566] mt-0.5">{clienti.length} clienti registrati</p>
         </div>
         <Link
           href="/clienti/nuovo"
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+          className="flex items-center gap-2 bg-[#0E1B2C] hover:bg-[#1F3A68] text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
         >
           <PlusCircle size={16} />
           Nuovo cliente
@@ -130,12 +130,12 @@ export default function ClientiClient({ clientiIniziali }: Props) {
 
       {clienti.length === 0 ? (
         <div className="card text-center py-16">
-          <Users size={48} className="mx-auto mb-4 text-[#4e6585]" />
-          <h2 className="text-[#8ba3c7] font-medium mb-2">Nessun cliente</h2>
-          <p className="text-[#4e6585] text-sm mb-4">Aggiungi il primo cliente o club sportivo</p>
+          <Users size={48} className="mx-auto mb-4 text-[#5F6878]" />
+          <h2 className="text-[#4A5566] font-medium mb-2">Nessun cliente</h2>
+          <p className="text-[#5F6878] text-sm mb-4">Aggiungi il primo cliente o club sportivo</p>
           <Link
             href="/clienti/nuovo"
-            className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-500 transition-colors"
+            className="inline-flex items-center gap-2 bg-[#0E1B2C] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#1F3A68] transition-colors"
           >
             <PlusCircle size={16} />
             Nuovo cliente
@@ -144,34 +144,34 @@ export default function ClientiClient({ clientiIniziali }: Props) {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {clienti.map((c) => (
-            <div key={c.id} className="card hover:bg-[#162a4e] transition-colors">
+            <div key={c.id} className="card hover:bg-[#FBFAF7] transition-colors">
               <div className="flex items-start justify-between mb-4">
-                <div className={`w-10 h-10 rounded-xl ${avatarColor(c.nome)} flex items-center justify-center font-bold text-sm text-white`}>
+                <div className={`w-10 h-10 rounded-xl ${avatarColor(c.nome)} flex items-center justify-center font-bold text-sm text-[#0E1B2C]`}>
                   {c.nome.slice(0, 2).toUpperCase()}
                 </div>
                 <div className="flex items-center gap-1">
-                  <span className="text-xs text-[#4e6585] mr-2">{c._count.schede} schede</span>
+                  <span className="text-xs text-[#5F6878] mr-2">{c._count.schede} schede</span>
                   <button
                     onClick={() => apriEdit(c)}
-                    className="p-1.5 text-[#4e6585] hover:text-blue-400 transition-colors rounded-lg hover:bg-blue-500/10"
+                    className="p-1.5 text-[#5F6878] hover:text-[#1F3A68] transition-colors rounded-lg hover:bg-[#1F3A68]/10"
                     title="Modifica cliente"
                   >
                     <Pencil size={13} />
                   </button>
                   <button
                     onClick={() => { setDeletingId(c.id); setErrore(null); }}
-                    className="p-1.5 text-[#4e6585] hover:text-red-400 transition-colors rounded-lg hover:bg-red-500/10"
+                    className="p-1.5 text-[#5F6878] hover:text-red-700 transition-colors rounded-lg hover:bg-red-500/10"
                     title="Elimina cliente"
                   >
                     <Trash2 size={13} />
                   </button>
                 </div>
               </div>
-              <div className="font-semibold text-white mb-1">{c.nome}</div>
-              {c.email && <div className="text-sm text-[#8ba3c7]">{c.email}</div>}
-              {c.telefono && <div className="text-sm text-[#8ba3c7]">{c.telefono}</div>}
-              {c.indirizzo && <div className="text-xs text-[#4e6585] mt-1">{c.indirizzo}</div>}
-              <div className="text-xs text-[#4e6585] mt-2">Aggiunto il {formatData(c.createdAt)}</div>
+              <div className="font-semibold text-[#0E1B2C] mb-1">{c.nome}</div>
+              {c.email && <div className="text-sm text-[#4A5566]">{c.email}</div>}
+              {c.telefono && <div className="text-sm text-[#4A5566]">{c.telefono}</div>}
+              {c.indirizzo && <div className="text-xs text-[#5F6878] mt-1">{c.indirizzo}</div>}
+              <div className="text-xs text-[#5F6878] mt-2">Aggiunto il {formatData(c.createdAt)}</div>
             </div>
           ))}
         </div>
@@ -180,10 +180,10 @@ export default function ClientiClient({ clientiIniziali }: Props) {
       {/* Modal modifica */}
       {editingCliente && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="bg-[#112240] border border-white/10 rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6">
+          <div className="bg-[#FFFFFF] border border-[#E4E0D6] rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-lg font-bold text-white">Modifica cliente</h2>
-              <button onClick={chiudiEdit} className="text-[#4e6585] hover:text-white transition-colors">
+              <h2 className="text-lg font-bold text-[#0E1B2C]">Modifica cliente</h2>
+              <button onClick={chiudiEdit} className="text-[#5F6878] hover:text-[#0E1B2C] transition-colors">
                 <X size={20} />
               </button>
             </div>
@@ -196,28 +196,28 @@ export default function ClientiClient({ clientiIniziali }: Props) {
                 { label: "Indirizzo", field: "indirizzo" },
               ].map(({ label, field }) => (
                 <div key={field}>
-                  <label className="block text-xs text-[#8ba3c7] mb-1">{label}</label>
+                  <label className="block text-xs text-[#4A5566] mb-1">{label}</label>
                   <input
                     type="text"
                     value={form[field as keyof FormState]}
                     onChange={(e) => setForm((f) => ({ ...f, [field]: e.target.value }))}
-                    className="w-full border border-white/10 rounded-lg px-3 py-2 text-sm text-white bg-[#1a3060] focus:border-blue-500/50 outline-none"
+                    className="w-full border border-[#E4E0D6] rounded-lg px-3 py-2 text-sm text-[#0E1B2C] bg-[#FFFFFF] focus:border-blue-500/50 outline-none"
                   />
                 </div>
               ))}
               <div>
-                <label className="block text-xs text-[#8ba3c7] mb-1">Note</label>
+                <label className="block text-xs text-[#4A5566] mb-1">Note</label>
                 <textarea
                   value={form.note}
                   onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))}
                   rows={2}
-                  className="w-full border border-white/10 rounded-lg px-3 py-2 text-sm text-white bg-[#1a3060] focus:border-blue-500/50 outline-none resize-none"
+                  className="w-full border border-[#E4E0D6] rounded-lg px-3 py-2 text-sm text-[#0E1B2C] bg-[#FFFFFF] focus:border-blue-500/50 outline-none resize-none"
                 />
               </div>
             </div>
 
             {errore && (
-              <div className="mt-3 flex items-center gap-2 text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+              <div className="mt-3 flex items-center gap-2 text-sm text-red-700 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
                 <AlertCircle size={14} />
                 {errore}
               </div>
@@ -226,14 +226,14 @@ export default function ClientiClient({ clientiIniziali }: Props) {
             <div className="flex gap-3 mt-5">
               <button
                 onClick={chiudiEdit}
-                className="flex-1 border border-white/10 rounded-lg py-2 text-sm text-[#8ba3c7] hover:bg-white/5 transition-colors"
+                className="flex-1 border border-[#E4E0D6] rounded-lg py-2 text-sm text-[#4A5566] hover:bg-[#0E1B2C]/5 transition-colors"
               >
                 Annulla
               </button>
               <button
                 onClick={salvaEdit}
                 disabled={saving || !form.nome.trim()}
-                className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-lg py-2 text-sm font-medium transition-colors"
+                className="flex-1 flex items-center justify-center gap-2 bg-[#0E1B2C] hover:bg-[#1F3A68] disabled:opacity-50 text-white rounded-lg py-2 text-sm font-medium transition-colors"
               >
                 {saving ? <Loader2 size={14} className="animate-spin" /> : null}
                 {saving ? "Salvataggio..." : "Salva modifiche"}
@@ -246,24 +246,24 @@ export default function ClientiClient({ clientiIniziali }: Props) {
       {/* Dialog conferma eliminazione */}
       {deletingId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="bg-[#112240] border border-white/10 rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6">
+          <div className="bg-[#FFFFFF] border border-[#E4E0D6] rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-red-500/15 rounded-xl flex items-center justify-center">
-                <Trash2 size={18} className="text-red-400" />
+                <Trash2 size={18} className="text-red-700" />
               </div>
               <div>
-                <h2 className="font-bold text-white">Elimina cliente</h2>
-                <p className="text-sm text-[#8ba3c7]">
+                <h2 className="font-bold text-[#0E1B2C]">Elimina cliente</h2>
+                <p className="text-sm text-[#4A5566]">
                   {clienti.find((c) => c.id === deletingId)?.nome}
                 </p>
               </div>
             </div>
-            <p className="text-sm text-[#8ba3c7] mb-4">
+            <p className="text-sm text-[#4A5566] mb-4">
               Questa azione è irreversibile. Il cliente sarà eliminato permanentemente.
             </p>
 
             {errore && (
-              <div className="mb-4 flex items-center gap-2 text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+              <div className="mb-4 flex items-center gap-2 text-sm text-red-700 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
                 <AlertCircle size={14} />
                 {errore}
               </div>
@@ -272,7 +272,7 @@ export default function ClientiClient({ clientiIniziali }: Props) {
             <div className="flex gap-3">
               <button
                 onClick={() => { setDeletingId(null); setErrore(null); }}
-                className="flex-1 border border-white/10 rounded-lg py-2 text-sm text-[#8ba3c7] hover:bg-white/5 transition-colors"
+                className="flex-1 border border-[#E4E0D6] rounded-lg py-2 text-sm text-[#4A5566] hover:bg-[#0E1B2C]/5 transition-colors"
               >
                 Annulla
               </button>

@@ -19,7 +19,7 @@ export default function MaterialiActions({ id }: { id: string }) {
   if (confirming) {
     return (
       <div className="flex items-center gap-2 justify-end">
-        <span className="text-xs text-[#8ba3c7]">Eliminare?</span>
+        <span className="text-xs text-[#4A5566]">Eliminare?</span>
         <button
           onClick={handleDelete}
           disabled={loading}
@@ -29,7 +29,7 @@ export default function MaterialiActions({ id }: { id: string }) {
         </button>
         <button
           onClick={() => setConfirming(false)}
-          className="text-xs text-[#8ba3c7] bg-white/[0.05] hover:bg-white/[0.08] px-2 py-1 rounded transition-colors"
+          className="text-xs text-[#4A5566] bg-[#0E1B2C]/[0.05] hover:bg-[#0E1B2C]/[0.08] px-2 py-1 rounded transition-colors"
         >
           No
         </button>
@@ -41,14 +41,14 @@ export default function MaterialiActions({ id }: { id: string }) {
     <div className="flex items-center gap-2 justify-end">
       <Link
         href={`/materiali/${id}/modifica`}
-        className="p-1.5 text-[#4e6585] hover:text-blue-300 hover:bg-blue-500/10 rounded transition-colors"
+        className="p-1.5 text-[#5F6878] hover:text-[#1F3A68] hover:bg-[#1F3A68]/10 rounded transition-colors"
         title="Modifica"
       >
         <Pencil size={14} />
       </Link>
       <button
         onClick={() => setConfirming(true)}
-        className="p-1.5 text-[#4e6585] hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
+        className="p-1.5 text-[#5F6878] hover:text-red-700 hover:bg-red-500/10 rounded transition-colors"
         title="Elimina"
       >
         <Trash2 size={14} />

@@ -12,7 +12,7 @@ export async function GET() {
 const CATEGORIA_PREFISSO: Record<string, string> = {
   "T-Shirt PRF": "TP", "T-Shirt WS": "TW", "T-Shirt COT": "TC",
   "Polo": "PO", "Hoodie": "HO", "Zip Hoodie": "ZH",
-  "Sweatshirt": "SW", "Sweatpants": "SP",
+  "Sweatshirt": "SW", "Jacket": "JK", "Sweatpants": "SP",
   "Short": "SH", "Skirt": "SK", "Dress": "DR", "Altro": "AL",
 };
 
@@ -30,12 +30,19 @@ async function generaCodice(categoria: string): Promise<string> {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const codice = await generaCodice(body.categoria || "Altro");
+    const codiceManuale = typeof body.codice === "string" ? body.codice.trim() : "";
+    if (codiceManuale) {
+      const esistente = await prisma.scheda.findUnique({ where: { codice: codiceManuale } });
+      if (esistente)
+        return NextResponse.json({ error: `Il codice ${codiceManuale} è già usato da un'altra scheda` }, { status: 409 });
+    }
+    const codice = codiceManuale || await generaCodice(body.categoria || "Altro");
     const scheda = await prisma.scheda.create({
       data: {
         codice,
         nomeArticolo: body.nomeArticolo,
         stato: body.stato || "bozza",
+        tipo: body.tipo === "preventivo" ? "preventivo" : "produzione",
         versione: body.versione || "1.0",
         collezione: body.collezione,
         clienteId: body.clienteId || null,
@@ -71,6 +78,10 @@ export async function POST(req: NextRequest) {
         consumoMateriale: body.consumoMateriale ? JSON.stringify(body.consumoMateriale) : null,
         accessori: body.accessori ? JSON.stringify(body.accessori) : null,
         costoLavorazione: body.costoLavorazione,
+        costoTaglio: body.costoTaglio,
+        costoCucitura: body.costoCucitura,
+        costoStampa: body.costoStampa,
+        costoRicamo: body.costoRicamo,
         prezzoVendita: body.prezzoVendita,
         noteRapide: body.noteRapide,
       },

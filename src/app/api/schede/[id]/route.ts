@@ -30,12 +30,23 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (body.immagini !== undefined)
     data.immagini = body.immagini ? JSON.stringify(body.immagini) : null;
 
-  const scheda = await prisma.scheda.update({
-    where: { id },
-    data,
-    include: { cliente: true, loghi: { include: { logo: true } }, materiali: { include: { materiale: true } } },
-  });
-  return NextResponse.json(scheda);
+  if (data.tipo !== undefined && data.tipo !== "preventivo" && data.tipo !== "produzione")
+    return NextResponse.json({ error: "Tipo scheda non valido" }, { status: 400 });
+
+  try {
+    const scheda = await prisma.scheda.update({
+      where: { id },
+      data,
+      include: { cliente: true, loghi: { include: { logo: true } }, materiali: { include: { materiale: true } } },
+    });
+    return NextResponse.json(scheda);
+  } catch (error) {
+    // P2002: vincolo di unicità (il codice scelto è già di un'altra scheda)
+    if ((error as { code?: string }).code === "P2002")
+      return NextResponse.json({ error: `Il codice ${String(data.codice ?? "")} è già usato da un'altra scheda` }, { status: 409 });
+    console.error("Errore salvataggio scheda:", error);
+    return NextResponse.json({ error: "Salvataggio non riuscito" }, { status: 500 });
+  }
 }
 
 export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {

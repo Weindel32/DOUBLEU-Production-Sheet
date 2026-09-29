@@ -1,35 +1,60 @@
 @import "tailwindcss";
 
 :root {
-  --bg-main:        #0d1b2e;
-  --bg-card:        #112240;
-  --bg-card-hover:  #162a4e;
-  --bg-elevated:    #1a3060;
-  --sidebar-bg:     #0a1628;
-  --sidebar-hover:  #112240;
-  --sidebar-active: #1e3a6e;
-  --border:         rgba(255,255,255,0.07);
-  --border-strong:  rgba(255,255,255,0.12);
-  --accent:         #2563eb;
-  --accent-hover:   #1d4ed8;
-  --text-primary:   #e8edf4;
-  --text-secondary: #8ba3c7;
-  --text-muted:     #4e6585;
+  --bg-main:        #F6F4EF;
+  --bg-card:        #FFFFFF;
+  --bg-card-hover:  #FBFAF7;
+  --bg-elevated:    #FFFFFF;
+  --bg-sunken:      #EEEBE3;
+  --sidebar-bg:     #0E1B2C;
+  --sidebar-hover:  #16263D;
+  --sidebar-active: #1F3A68;
+  --border:         #E4E0D6;
+  --border-strong:  #D6D1C4;
+  --accent:         #1F3A68;
+  --accent-hover:   #0E1B2C;
+  --ink:            #0E1B2C;
+  --cost:           #A8461F;
+  --positive:       #1D6B4A;
+  --text-primary:   #0E1B2C;
+  --text-secondary: #4A5566;
+  --text-muted:     #5F6878;
+}
+
+@theme {
+  --font-sans: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: "Archivo", "IBM Plex Sans", -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-sans);
   background-color: var(--bg-main);
   color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 { font-family: var(--font-display); }
+
+/* Numeri allineati in colonna ovunque (costi, quantità, misure) */
+.tabular, table td, input[inputmode="decimal"], input[inputmode="numeric"] {
+  font-variant-numeric: tabular-nums;
 }
 
 /* ─── Sidebar ─────────────────────────────────────────── */
+/* Su iPad (sotto 1280px) la sidebar è una colonna di icone: più spazio alla scheda. */
 .sidebar {
-  background: linear-gradient(180deg, var(--sidebar-bg) 0%, #0d1e36 100%);
+  background: var(--sidebar-bg);
   min-height: 100vh;
-  width: 220px;
+  width: 76px;
   flex-shrink: 0;
-  border-right: 1px solid var(--border);
+}
+.sidebar .sidebar-label { display: none; }
+.sidebar .sidebar-link { justify-content: center; padding: 0; }
+@media (min-width: 1280px) {
+  .sidebar { width: 220px; }
+  .sidebar .sidebar-label { display: inline; }
+  .sidebar .sidebar-link { justify-content: flex-start; padding: 9px 14px; }
 }
 
 .sidebar-link {
@@ -37,9 +62,10 @@ body {
   align-items: center;
   gap: 10px;
   padding: 9px 14px;
-  color: var(--text-secondary);
+  color: #9FB0C8;
   border-radius: 8px;
-  font-size: 13.5px;
+  font-size: 14px;
+  min-height: 44px;
   transition: all 0.15s;
   cursor: pointer;
   text-decoration: none;
@@ -48,24 +74,22 @@ body {
 
 .sidebar-link:hover {
   background-color: var(--sidebar-hover);
-  color: var(--text-primary);
-  border-left-color: rgba(59,130,246,0.3);
+  color: #FFFFFF;
 }
 
 .sidebar-link.active {
-  background: linear-gradient(90deg, rgba(37,99,235,0.22) 0%, rgba(37,99,235,0.06) 100%);
-  color: #93c5fd;
-  border-left-color: #3b82f6;
+  background: var(--sidebar-active);
+  color: #FFFFFF;
+  border-left-color: #E8A27E;
   font-weight: 600;
 }
 
 /* ─── Cards ───────────────────────────────────────────── */
 .card {
   background: var(--bg-card);
-  border-radius: 12px;
+  border-radius: 16px;
   border: 1px solid var(--border);
   padding: 20px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.25);
 }
 
 /* ─── Badges ──────────────────────────────────────────── */
@@ -81,18 +105,20 @@ body {
   border: 1px solid transparent;
 }
 
-.badge-bozza     { background: rgba(148,163,184,0.15); color: #94a3b8; border-color: rgba(148,163,184,0.25); }
-.badge-esecutiva { background: rgba(251,146,60,0.15);  color: #fb923c; border-color: rgba(251,146,60,0.3); }
+.badge-bozza      { background: #F3EBD7; color: #7A5B12; border-color: #E6D6AE; }
+.badge-esecutiva  { background: #DDEFE5; color: #1D6B4A; border-color: #BFDFCC; }
+.badge-preventivo { background: #FBEDE5; color: #A8461F; border-color: #F2D2C1; }
+.badge-produzione { background: #E3E9F3; color: #1F3A68; border-color: #C9D5E8; }
 
 /* ─── Tables ──────────────────────────────────────────── */
 .tab-active {
-  border-bottom: 2px solid #3b82f6;
-  color: #93c5fd;
+  border-bottom: 2px solid var(--accent);
+  color: var(--accent);
   font-weight: 600;
 }
 
 table thead tr {
-  background: rgba(255,255,255,0.03);
+  background: var(--bg-card-hover);
 }
 
 table thead th {
@@ -109,7 +135,7 @@ table tbody tr {
 }
 
 table tbody tr:hover {
-  background: rgba(255,255,255,0.03);
+  background: var(--bg-card-hover);
 }
 
 /* ─── Pipeline ────────────────────────────────────────── */
@@ -120,8 +146,8 @@ table tbody tr:hover {
   font-size: 12px;
 }
 
-.pipeline-step.done    { color: #4ade80; }
-.pipeline-step.current { color: #60a5fa; font-weight: 600; }
+.pipeline-step.done    { color: var(--positive); }
+.pipeline-step.current { color: var(--accent); font-weight: 600; }
 .pipeline-step.pending { color: var(--text-muted); }
 
 /* ─── Section titles ──────────────────────────────────── */
@@ -149,15 +175,29 @@ input::placeholder, textarea::placeholder {
 }
 
 input:focus, textarea:focus, select:focus {
-  box-shadow: 0 0 0 2px rgba(59,130,246,0.25);
-  border-color: rgba(59,130,246,0.5);
+  box-shadow: 0 0 0 3px rgba(31,58,104,0.18);
+  border-color: var(--accent);
 }
+
+/* Focus visibile da tastiera su tutti i controlli */
+button:focus-visible, a:focus-visible, [role="radio"]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Su iPad 16px evita lo zoom automatico di Safari quando si tocca un campo */
+@media (pointer: coarse) {
+  input, textarea, select { font-size: 16px !important; }
+}
+
+/* Salto alle sezioni della scheda: lascia spazio sopra il titolo */
+.scheda-section { scroll-margin-top: 16px; }
 
 /* ─── Scrollbar ───────────────────────────────────────── */
 ::-webkit-scrollbar       { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+::-webkit-scrollbar-thumb { background: rgba(14,27,44,0.15); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(14,27,44,0.3); }
 
 /* ─── Print / PDF ─────────────────────────────────────── */
 @media print {

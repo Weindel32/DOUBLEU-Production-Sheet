@@ -49,8 +49,8 @@ function FilterTabs({
           onClick={() => onChange(tab.value)}
           className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
             value === tab.value
-              ? "bg-blue-600 text-white"
-              : "text-[#8ba3c7] hover:text-white hover:bg-white/5"
+              ? "bg-[#0E1B2C] text-white"
+              : "text-[#4A5566] hover:text-[#0E1B2C] hover:bg-[#0E1B2C]/5"
           }`}
         >
           {tab.label}
@@ -64,14 +64,14 @@ function ArticoloTooltip({ active, payload }: { active?: boolean; payload?: Arra
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
   return (
-    <div className="bg-[#1a2332] border border-white/10 rounded-lg p-3 text-sm shadow-xl">
-      <p className="text-white font-semibold">{d.codice}</p>
-      <p className="text-[#8ba3c7] text-xs mb-2">{d.nomeArticolo}</p>
-      <p className="text-white">
+    <div className="bg-[#FFFFFF] border border-[#E4E0D6] rounded-lg p-3 text-sm shadow-xl">
+      <p className="text-[#0E1B2C] font-semibold">{d.codice}</p>
+      <p className="text-[#4A5566] text-xs mb-2">{d.nomeArticolo}</p>
+      <p className="text-[#0E1B2C]">
         {d.totalePezzi.toLocaleString("it-IT")}{" "}
-        <span className="text-[#8ba3c7]">pz</span>
+        <span className="text-[#4A5566]">pz</span>
       </p>
-      <p className="text-[#8ba3c7] text-xs">{d.percentuale}% del totale</p>
+      <p className="text-[#4A5566] text-xs">{d.percentuale}% del totale</p>
     </div>
   );
 }
@@ -80,13 +80,13 @@ function TagliaTooltip({ active, payload }: { active?: boolean; payload?: Array<
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
   return (
-    <div className="bg-[#1a2332] border border-white/10 rounded-lg p-3 text-sm shadow-xl">
-      <p className="text-white font-semibold">Taglia {d.taglia}</p>
-      <p className="text-white">
+    <div className="bg-[#FFFFFF] border border-[#E4E0D6] rounded-lg p-3 text-sm shadow-xl">
+      <p className="text-[#0E1B2C] font-semibold">Taglia {d.taglia}</p>
+      <p className="text-[#0E1B2C]">
         {d.pezzi.toLocaleString("it-IT")}{" "}
-        <span className="text-[#8ba3c7]">pz</span>
+        <span className="text-[#4A5566]">pz</span>
       </p>
-      <p className="text-[#8ba3c7] text-xs">{d.percentuale}% del totale</p>
+      <p className="text-[#4A5566] text-xs">{d.percentuale}% del totale</p>
     </div>
   );
 }
@@ -140,14 +140,14 @@ export default function AnalyticsClient({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Analytics Produzione</h1>
-          <p className="text-sm text-[#8ba3c7] mt-0.5">
+          <h1 className="text-2xl font-bold text-[#0E1B2C]">Analytics Produzione</h1>
+          <p className="text-sm text-[#4A5566] mt-0.5">
             Solo schede in stato esecutiva
           </p>
         </div>
         <button
           onClick={() => window.print()}
-          className="print:hidden flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-[#8ba3c7] hover:text-white hover:bg-white/5 border border-white/10 transition-colors"
+          className="print:hidden flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-[#4A5566] hover:text-[#0E1B2C] hover:bg-[#0E1B2C]/5 border border-[#E4E0D6] transition-colors"
         >
           <Printer size={15} />
           Stampa / PDF
@@ -157,13 +157,13 @@ export default function AnalyticsClient({
       {/* KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         <div className="card py-4 text-center sm:col-span-1 col-span-2">
-          <div className="text-3xl font-bold text-white">
+          <div className="text-3xl font-bold text-[#0E1B2C]">
             {totali.totPezzi.toLocaleString("it-IT")}
           </div>
-          <div className="text-[10px] text-[#8ba3c7] uppercase tracking-wider mt-1">
+          <div className="text-[10px] text-[#4A5566] uppercase tracking-wider mt-1">
             Pezzi totali
           </div>
-          <div className="text-xs text-[#4e6585] mt-0.5">
+          <div className="text-xs text-[#5F6878] mt-0.5">
             {totali.totSchede} schede
           </div>
         </div>
@@ -175,10 +175,10 @@ export default function AnalyticsClient({
             >
               {(totali.perGenere[g] || 0).toLocaleString("it-IT")}
             </div>
-            <div className="text-[10px] text-[#8ba3c7] uppercase tracking-wider mt-1">
+            <div className="text-[10px] text-[#4A5566] uppercase tracking-wider mt-1">
               {g.charAt(0).toUpperCase() + g.slice(1)}
             </div>
-            <div className="text-xs text-[#4e6585] mt-0.5">
+            <div className="text-xs text-[#5F6878] mt-0.5">
               {totali.totPezzi > 0
                 ? Math.round(
                     ((totali.perGenere[g] || 0) / totali.totPezzi) * 100
@@ -193,14 +193,14 @@ export default function AnalyticsClient({
       {/* Articles Section */}
       <div className="card p-5 space-y-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold text-white">
+          <h2 className="text-lg font-semibold text-[#0E1B2C]">
             Top Articoli per Produzione
           </h2>
           <FilterTabs value={filtroArticoli} onChange={setFiltroArticoli} />
         </div>
 
         {articoliFiltrati.length === 0 ? (
-          <div className="text-center py-16 text-[#4e6585]">
+          <div className="text-center py-16 text-[#5F6878]">
             Nessun dato disponibile
           </div>
         ) : (
@@ -219,7 +219,7 @@ export default function AnalyticsClient({
                   />
                   <XAxis
                     type="number"
-                    tick={{ fill: "#8ba3c7", fontSize: 11 }}
+                    tick={{ fill: "#4A5566", fontSize: 11 }}
                     axisLine={{ stroke: "rgba(255,255,255,0.1)" }}
                     tickLine={false}
                     tickFormatter={(v) => v.toLocaleString("it-IT")}
@@ -227,7 +227,7 @@ export default function AnalyticsClient({
                   <YAxis
                     type="category"
                     dataKey="codice"
-                    tick={{ fill: "#8ba3c7", fontSize: 11 }}
+                    tick={{ fill: "#4A5566", fontSize: 11 }}
                     axisLine={false}
                     tickLine={false}
                     width={80}
@@ -240,7 +240,7 @@ export default function AnalyticsClient({
                     onMouseLeave={() => setActiveArticoloIndex(null)}
                     label={{
                       position: "right",
-                      fill: "#8ba3c7",
+                      fill: "#4A5566",
                       fontSize: 11,
                       formatter: (v: unknown) =>
                         `${Number(v).toLocaleString("it-IT")} pz`,
@@ -274,7 +274,7 @@ export default function AnalyticsClient({
                     className="w-2.5 h-2.5 rounded-sm"
                     style={{ backgroundColor: color, opacity: 0.9 }}
                   />
-                  <span className="text-xs text-[#8ba3c7] capitalize">{g}</span>
+                  <span className="text-xs text-[#4A5566] capitalize">{g}</span>
                 </div>
               ))}
             </div>
@@ -283,12 +283,12 @@ export default function AnalyticsClient({
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-white/10">
+                  <tr className="border-b border-[#E4E0D6]">
                     {["#", "Codice", "Articolo", "Genere", "Pezzi", "%"].map(
                       (h, i) => (
                         <th
                           key={h}
-                          className={`py-2 px-3 text-[#8ba3c7] text-xs font-medium uppercase tracking-wider ${
+                          className={`py-2 px-3 text-[#4A5566] text-xs font-medium uppercase tracking-wider ${
                             i >= 4 ? "text-right" : "text-left"
                           }`}
                         >
@@ -302,15 +302,15 @@ export default function AnalyticsClient({
                   {articoliFiltrati.map((a, i) => (
                     <tr
                       key={a.codice}
-                      className="border-b border-white/5 hover:bg-white/[0.02] transition-colors"
+                      className="border-b border-[#E4E0D6] hover:bg-[#0E1B2C]/[0.02] transition-colors"
                     >
-                      <td className="py-2.5 px-3 text-[#4e6585] text-xs">
+                      <td className="py-2.5 px-3 text-[#5F6878] text-xs">
                         {i + 1}
                       </td>
-                      <td className="py-2.5 px-3 font-mono text-xs text-[#8ba3c7]">
+                      <td className="py-2.5 px-3 font-mono text-xs text-[#4A5566]">
                         {a.codice}
                       </td>
-                      <td className="py-2.5 px-3 text-white">{a.nomeArticolo}</td>
+                      <td className="py-2.5 px-3 text-[#0E1B2C]">{a.nomeArticolo}</td>
                       <td className="py-2.5 px-3">
                         <span
                           className="text-xs px-2 py-0.5 rounded-full"
@@ -318,16 +318,16 @@ export default function AnalyticsClient({
                             backgroundColor: `${GENERE_COLORS[(a.genere || "").toLowerCase()]}25`,
                             color:
                               GENERE_COLORS[(a.genere || "").toLowerCase()] ||
-                              "#8ba3c7",
+                              "#4A5566",
                           }}
                         >
                           {a.genere || "—"}
                         </span>
                       </td>
-                      <td className="py-2.5 px-3 text-right text-white font-medium">
+                      <td className="py-2.5 px-3 text-right text-[#0E1B2C] font-medium">
                         {a.totalePezzi.toLocaleString("it-IT")}
                       </td>
-                      <td className="py-2.5 px-3 text-right text-[#8ba3c7]">
+                      <td className="py-2.5 px-3 text-right text-[#4A5566]">
                         {a.percentuale}%
                       </td>
                     </tr>
@@ -342,14 +342,14 @@ export default function AnalyticsClient({
       {/* Sizes Section */}
       <div className="card p-5 space-y-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold text-white">
+          <h2 className="text-lg font-semibold text-[#0E1B2C]">
             Distribuzione Taglie
           </h2>
           <FilterTabs value={filtroTaglie} onChange={setFiltroTaglie} />
         </div>
 
         {taglieData.length === 0 ? (
-          <div className="text-center py-16 text-[#4e6585]">
+          <div className="text-center py-16 text-[#5F6878]">
             Nessun dato disponibile
           </div>
         ) : (
@@ -367,12 +367,12 @@ export default function AnalyticsClient({
                   />
                   <XAxis
                     dataKey="taglia"
-                    tick={{ fill: "#8ba3c7", fontSize: 12 }}
+                    tick={{ fill: "#4A5566", fontSize: 12 }}
                     axisLine={{ stroke: "rgba(255,255,255,0.1)" }}
                     tickLine={false}
                   />
                   <YAxis
-                    tick={{ fill: "#8ba3c7", fontSize: 11 }}
+                    tick={{ fill: "#4A5566", fontSize: 11 }}
                     axisLine={false}
                     tickLine={false}
                     tickFormatter={(v) => v.toLocaleString("it-IT")}
@@ -385,7 +385,7 @@ export default function AnalyticsClient({
                     onMouseLeave={() => setActiveTagliaIndex(null)}
                     label={{
                       position: "top",
-                      fill: "#8ba3c7",
+                      fill: "#4A5566",
                       fontSize: 10,
                       formatter: (v: unknown) => Number(v).toLocaleString("it-IT"),
                     }}
@@ -411,17 +411,17 @@ export default function AnalyticsClient({
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-white/10">
-                    <th className="text-left py-2 px-3 text-[#8ba3c7] text-xs font-medium uppercase tracking-wider">
+                  <tr className="border-b border-[#E4E0D6]">
+                    <th className="text-left py-2 px-3 text-[#4A5566] text-xs font-medium uppercase tracking-wider">
                       Taglia
                     </th>
-                    <th className="text-right py-2 px-3 text-[#8ba3c7] text-xs font-medium uppercase tracking-wider">
+                    <th className="text-right py-2 px-3 text-[#4A5566] text-xs font-medium uppercase tracking-wider">
                       Pezzi
                     </th>
-                    <th className="text-right py-2 px-3 text-[#8ba3c7] text-xs font-medium uppercase tracking-wider">
+                    <th className="text-right py-2 px-3 text-[#4A5566] text-xs font-medium uppercase tracking-wider">
                       %
                     </th>
-                    <th className="py-2 px-3 text-[#8ba3c7] text-xs font-medium uppercase tracking-wider">
+                    <th className="py-2 px-3 text-[#4A5566] text-xs font-medium uppercase tracking-wider">
                       Distribuzione
                     </th>
                   </tr>
@@ -430,20 +430,20 @@ export default function AnalyticsClient({
                   {taglieData.map((t) => (
                     <tr
                       key={t.taglia}
-                      className="border-b border-white/5 hover:bg-white/[0.02] transition-colors"
+                      className="border-b border-[#E4E0D6] hover:bg-[#0E1B2C]/[0.02] transition-colors"
                     >
-                      <td className="py-2.5 px-3 font-medium text-white">
+                      <td className="py-2.5 px-3 font-medium text-[#0E1B2C]">
                         {t.taglia}
                       </td>
-                      <td className="py-2.5 px-3 text-right text-white">
+                      <td className="py-2.5 px-3 text-right text-[#0E1B2C]">
                         {t.pezzi.toLocaleString("it-IT")}
                       </td>
-                      <td className="py-2.5 px-3 text-right text-[#8ba3c7]">
+                      <td className="py-2.5 px-3 text-right text-[#4A5566]">
                         {t.percentuale}%
                       </td>
                       <td className="py-2.5 px-3 min-w-[120px]">
                         <div className="flex items-center gap-2">
-                          <div className="flex-1 bg-white/10 rounded-full h-1.5">
+                          <div className="flex-1 bg-[#0E1B2C]/10 rounded-full h-1.5">
                             <div
                               className="h-1.5 rounded-full bg-blue-500 transition-all"
                               style={{ width: `${t.percentuale}%` }}

@@ -72,7 +72,7 @@ export default function SchedaRowMenu({ id, nome, statoCorrente }: Props) {
       <button
         ref={btnRef}
         onClick={toggle}
-        className="p-1.5 rounded hover:bg-white/[0.05] text-[#4e6585] hover:text-[#8ba3c7] transition-colors"
+        className="p-1.5 rounded hover:bg-[#0E1B2C]/[0.05] text-[#5F6878] hover:text-[#4A5566] transition-colors"
       >
         <MoreHorizontal size={16} />
       </button>
@@ -80,35 +80,35 @@ export default function SchedaRowMenu({ id, nome, statoCorrente }: Props) {
         <div
           ref={menuRef}
           style={{ position: "fixed", top: pos.top, right: pos.right, zIndex: 50 }}
-          className="w-40 bg-[#112240] border border-white/10 rounded-lg shadow-xl overflow-hidden"
+          className="w-40 bg-[#FFFFFF] border border-[#E4E0D6] rounded-lg shadow-xl overflow-hidden"
         >
           <button
             onClick={() => router.push(`/schede/${id}`)}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#e8edf4] hover:bg-white/[0.03]"
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0E1B2C] hover:bg-[#0E1B2C]/[0.03]"
           >
             <ExternalLink size={14} /> Apri
           </button>
-          <div className="border-t border-white/8 my-0.5" />
+          <div className="border-t border-[#E4E0D6] my-0.5" />
           {STATI_SCHEDA.filter((s) => s.value !== statoCorrente).map((s) => (
             <button
               key={s.value}
               onClick={() => cambiaStato(s.value)}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#e8edf4] hover:bg-white/[0.03]"
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0E1B2C] hover:bg-[#0E1B2C]/[0.03]"
             >
-              {s.value === "esecutiva" ? <CheckCircle size={14} className="text-green-400" /> : <FileEdit size={14} className="text-gray-400" />}
+              {s.value === "esecutiva" ? <CheckCircle size={14} className="text-[#1D6B4A]" /> : <FileEdit size={14} className="text-gray-400" />}
               Segna come {s.label}
             </button>
           ))}
-          <div className="border-t border-white/8 my-0.5" />
+          <div className="border-t border-[#E4E0D6] my-0.5" />
           <button
             onClick={duplica}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#e8edf4] hover:bg-white/[0.03]"
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0E1B2C] hover:bg-[#0E1B2C]/[0.03]"
           >
             <Copy size={14} /> Duplica
           </button>
           <button
             onClick={elimina}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-red-500/10"
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-700 hover:bg-red-500/10"
           >
             <Trash2 size={14} /> Elimina
           </button>

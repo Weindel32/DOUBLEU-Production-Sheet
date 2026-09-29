@@ -2,8 +2,9 @@
 
 import { useState, useRef, forwardRef, useImperativeHandle } from "react";
 import Link from "next/link";
-import { Upload, X, ExternalLink, Loader2 } from "lucide-react";
+import { Upload, X, ExternalLink, Loader2, Camera } from "lucide-react";
 import { CATEGORIE, parseGrammaturaCommerciale } from "@/lib/utils";
+import { Field, ChipGroup, Segmented, SectionCard, inputCls, textareaCls } from "@/components/ui/Form";
 import type { SchedaCompleta } from "@/types";
 import ColorPickerNamed from "@/components/ui/ColorPickerNamed";
 
@@ -12,6 +13,31 @@ interface Props {
   onSave: (data: Partial<SchedaCompleta>) => Promise<void>;
   clienti: { id: string; nome: string }[];
   materiali: { id: string; nome: string; tipo: string; costoMetro: number | null; peso: string | null; unitaPeso: string | null; larghezza: string | null }[];
+  /** Nome, codice e categoria vivono anche nell'intestazione della scheda. */
+  onMetaChange?: (meta: { nomeArticolo?: string; codice?: string; categoria?: string }) => void;
+}
+
+const GENERI = ["Unisex", "Uomo", "Donna", "Junior"].map((v) => ({ value: v, label: v }));
+const VESTIBILITA = [
+  { value: "Regular Fit", label: "Regular" }, { value: "Slim Fit", label: "Slim" },
+  { value: "Loose Fit", label: "Loose" }, { value: "Athletic Fit", label: "Athletic" },
+];
+const STAGIONI = ["Primavera / Estate", "Autunno / Inverno", "Tutto l'anno"];
+const UTILIZZI = ["Training / Warm-up", "Gara", "Casual", "Allenamento"];
+const COLLI = ["Girocollo", "V-neck", "Polo", "Zip", "Cappuccio", "Collo alto"];
+const MANICHE = ["Corte", "Lunghe", "Senza maniche", "3/4", "Raglan", "Giro Manica"];
+
+function SelectField({ label, value, options, onChange, className }: {
+  label: string; value: string; options: string[]; onChange: (v: string) => void; className?: string;
+}) {
+  return (
+    <Field label={label} className={className}>
+      <select value={value} onChange={(e) => onChange(e.target.value)} className={inputCls}>
+        <option value="">—</option>
+        {options.map((o) => <option key={o} value={o}>{o}</option>)}
+      </select>
+    </Field>
+  );
 }
 
 export interface TabArticoloHandle {
@@ -50,7 +76,7 @@ async function preparaImmagine(file: File): Promise<File> {
   }
 }
 
-const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ scheda, onSave, clienti, materiali }, ref) {
+const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ scheda, onSave, clienti, materiali, onMetaChange }, ref) {
   const [immagini, setImmagini] = useState<string[]>(scheda.immagini || []);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -58,6 +84,7 @@ const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ 
 
   const [values, setValues] = useState({
     nomeArticolo: scheda.nomeArticolo,
+    codice: scheda.codice,
     categoria: scheda.categoria || "",
     vestibilita: scheda.vestibilita || "",
     genere: scheda.genere || "",
@@ -83,8 +110,14 @@ const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ 
   const mostraColloManiche = !CATEGORIE_SENZA_COLLO_MANICHE.includes(values.categoria);
   const mostraCostina = CATEGORIE_COSTINA.includes(values.categoria);
 
+  // Nome e codice sono obbligatori: vuoti non si salvano (resta il valore precedente).
   const salvaAll = async () => {
-    await onSave(values);
+    const { nomeArticolo, codice, ...resto } = values;
+    await onSave({
+      ...resto,
+      ...(nomeArticolo.trim() ? { nomeArticolo: nomeArticolo.trim() } : {}),
+      ...(codice.trim() ? { codice: codice.trim() } : {}),
+    });
   };
 
   useImperativeHandle(ref, () => ({ save: salvaAll }));
@@ -139,8 +172,28 @@ const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ 
     setValues((v) => ({ ...v, [field]: value }));
 
   const handleBlur = async (field: keyof typeof values) => {
+    if (field === "nomeArticolo" || field === "codice") {
+      const v = values[field].trim();
+      if (!v) { set(field, field === "codice" ? scheda.codice : scheda.nomeArticolo); return; }
+      onMetaChange?.({ [field]: v });
+      await onSave({ [field]: v });
+      return;
+    }
     await onSave({ [field]: values[field] || null });
   };
+
+  // Scelta immediata (chip, segmentati, select): stato + salvataggio nello stesso gesto.
+  const scegli = (field: keyof typeof values, value: string) => {
+    set(field, value);
+    if (field === "categoria") onMetaChange?.({ categoria: value });
+    onSave({ [field]: value || null });
+  };
+
+  const text = (field: keyof typeof values) => ({
+    value: values[field],
+    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => set(field, e.target.value),
+    onBlur: () => handleBlur(field),
+  });
 
   const handleTessutoPrincipaleChange = (nome: string) => {
     const mat = materiali.find((m) => m.nome === nome);
@@ -166,195 +219,138 @@ const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ 
     onSave({ tessutoSecondario: nome || null, ...(peso ? { pesoTessutoSecondario: peso } : {}) });
   };
 
-  // Campo sempre editabile: niente più click-per-modificare, solo label + input/select diretti.
-  const FieldInput = ({ label, field, options, placeholder }: {
-    label: string; field: keyof typeof values; options?: string[]; placeholder?: string;
-  }) => (
-    <div>
-      <label className="text-xs text-[#4e6585] block mb-1">{label}</label>
-      {options ? (
-        <select
-          value={values[field]}
-          onChange={(e) => { set(field, e.target.value); onSave({ [field]: e.target.value || null }); }}
-          className="w-full text-sm text-[#e8edf4] border border-white/10 rounded-lg px-3 py-2 bg-[#1a3060] focus:border-blue-500/50 outline-none"
-        >
-          <option value="">—</option>
-          {options.map((o) => <option key={o} value={o}>{o}</option>)}
-        </select>
-      ) : (
-        <input
-          type="text"
-          value={values[field]}
-          onChange={(e) => set(field, e.target.value)}
-          onBlur={() => handleBlur(field)}
-          placeholder={placeholder}
-          className="w-full text-sm text-[#e8edf4] border border-white/10 rounded-lg px-3 py-2 focus:border-blue-500/50 outline-none"
-        />
-      )}
-    </div>
-  );
-
   const tessutoOptions = materiali.length > 0
     ? materiali.map((m) => m.nome)
     : ["Poliammide + Elastane", "100% Poliestere", "100% Cotone", "60% Cotone + 40% Poliestere"];
 
+  const grammatura = parseGrammaturaCommerciale(values.pesoTessuto, values.altezzaTessuto);
+
   return (
-    <div className="space-y-5">
-      <div className="grid grid-cols-2 gap-5">
-
-        {/* Informazioni generali */}
-        <div className="card">
-          <h3 className="section-title mb-3">Informazioni generali</h3>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="col-span-2">
-              <FieldInput label="Nome articolo" field="nomeArticolo" placeholder="es. Hoodie Tecnico Pro" />
-            </div>
-            <FieldInput label="Categoria" field="categoria" options={CATEGORIE} />
-            <FieldInput label="Vestibilità" field="vestibilita" options={["Regular Fit", "Slim Fit", "Loose Fit", "Athletic Fit"]} />
-            <FieldInput label="Genere" field="genere" options={["Unisex", "Uomo", "Donna", "Junior"]} />
-            <FieldInput label="Stagione" field="stagione" options={["Primavera / Estate", "Autunno / Inverno", "Tutto l'anno"]} />
-            <FieldInput label="Utilizzo" field="utilizzo" options={["Training / Warm-up", "Gara", "Casual", "Allenamento"]} />
-            <FieldInput label="Collezione" field="collezione" placeholder="es. SS26" />
-            <div className="col-span-2">
-              <label className="text-xs text-[#4e6585] block mb-1">Cliente</label>
-              <div className="flex items-center gap-2">
-                <select value={values.clienteId}
-                  onChange={async (e) => {
-                    setValues((v) => ({ ...v, clienteId: e.target.value }));
-                    await onSave({ clienteId: e.target.value || null });
-                  }}
-                  className="flex-1 text-sm text-[#e8edf4] border border-white/10 rounded-lg px-3 py-2 bg-[#1a3060] focus:border-blue-500/50 outline-none">
-                  <option value="">Nessun cliente</option>
-                  {clienti.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
-                </select>
-                <Link href="/clienti/nuovo" target="_blank" title="Crea nuovo cliente"
-                  className="text-[#4e6585] hover:text-blue-500 transition-colors flex-shrink-0">
-                  <ExternalLink size={15} />
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Specifiche prodotto */}
-        <div className="card">
-          <h3 className="section-title mb-3">Specifiche prodotto</h3>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="col-span-2">
-              <label className="text-xs text-[#4e6585] block mb-1">Tessuto principale</label>
-              <select value={values.tessutoPrincipale} onChange={(e) => handleTessutoPrincipaleChange(e.target.value)}
-                className="w-full text-sm text-[#e8edf4] border border-white/10 rounded-lg px-3 py-2 bg-[#1a3060] focus:border-blue-500/50 outline-none">
-                <option value="">—</option>
-                {tessutoOptions.map((o) => <option key={o} value={o}>{o}</option>)}
-              </select>
-            </div>
-            <FieldInput label="Peso tessuto (da scheda tecnica)" field="pesoTessuto" placeholder="es. 260 g/m²" />
-            <FieldInput label="Altezza tessuto" field="altezzaTessuto" placeholder="es. 150 cm" />
-            <div className="col-span-2">
-              <label className="text-xs text-[#4e6585] block mb-1">Grammatura commerciale</label>
-              {(() => {
-                const grammatura = parseGrammaturaCommerciale(values.pesoTessuto, values.altezzaTessuto);
-                return (
-                  <div className="text-sm text-blue-300 border border-white/10 rounded-lg px-3 py-2 bg-[#1a3060]/50">
-                    {grammatura !== null
-                      ? `${grammatura.toFixed(0)} g/m²`
-                      : <span className="text-[#4e6585] italic">Inserisci peso (con unità g/m o g/m²) e altezza tessuto</span>}
-                  </div>
-                );
-              })()}
-            </div>
-
-            {mostraCostina && (
-              <>
-                <div className="col-span-2">
-                  <label className="text-xs text-[#4e6585] block mb-1">Costina</label>
-                  <select value={values.tessutoSecondario} onChange={(e) => handleTessutoSecondarioChange(e.target.value)}
-                    className="w-full text-sm text-[#e8edf4] border border-white/10 rounded-lg px-3 py-2 bg-[#1a3060] focus:border-blue-500/50 outline-none">
-                    <option value="">—</option>
-                    {materiali.length > 0
-                      ? materiali.map((m) => <option key={m.nome} value={m.nome}>{m.nome}</option>)
-                      : ["Costina 1x1", "Costina 2x2", "Ribbed Knit"].map((o) => <option key={o} value={o}>{o}</option>)
-                    }
-                  </select>
-                </div>
-                <FieldInput label="Peso costina" field="pesoTessutoSecondario" placeholder="es. 220 g/m²" />
-              </>
-            )}
-
-            <div>
-              <label className="text-xs text-[#4e6585] block mb-1">Colore base</label>
-              <ColorPickerNamed
-                value={values.coloreBase}
-                onChange={(val) => { set("coloreBase", val); onSave({ coloreBase: val || null }); }}
-                placeholder="es. Blu royal"
-              />
-            </div>
-            <div>
-              <label className="text-xs text-[#4e6585] block mb-1">Colori secondari</label>
-              <ColorPickerNamed
-                value={values.coloriSecondari}
-                onChange={(val) => { set("coloriSecondari", val); onSave({ coloriSecondari: val || null }); }}
-                placeholder="es. Blu navy"
-              />
-            </div>
-
-            {mostraColloManiche && (
-              <>
-                <FieldInput label="Collo" field="collo" options={["Girocollo", "V-neck", "Polo", "Zip", "Cappuccio"]} />
-                <FieldInput label="Maniche" field="maniche" options={["Corte", "Lunghe", "Senza maniche", "3/4", "Raglan", "Giro Manica"]} />
-              </>
-            )}
-
-            <div className="col-span-2">
-              <label className="text-xs text-[#4e6585] block mb-1">Note</label>
-              <textarea value={values.noteSpecifiche}
-                onChange={(e) => set("noteSpecifiche", e.target.value)}
-                onBlur={() => handleBlur("noteSpecifiche")} rows={2}
-                className="w-full text-sm text-[#e8edf4] border border-white/10 rounded-lg px-3 py-2 resize-none focus:border-blue-500/50 outline-none" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Immagini prodotto — riga a piena larghezza per dare più spazio alle anteprime */}
-      <div className="card">
-        <h3 className="section-title mb-3">Immagini prodotto</h3>
-        <div className="grid grid-cols-6 gap-3 mb-3">
-          {immagini.length === 0 ? (
-            <div className="col-span-6 h-32 bg-white/[0.03] rounded-lg flex items-center justify-center text-[#4e6585] text-sm">Nessuna immagine</div>
-          ) : immagini.map((img, i) => (
-            <div key={i} className="relative group">
-              <img src={img} alt={`Immagine ${i + 1}`} className="w-full h-28 object-contain rounded-lg bg-white/[0.03]" />
-              <button onClick={() => rimuoviImmagine(i)}
-                className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 transition-opacity">
-                <X size={12} />
+    <div className="space-y-4">
+      {/* Immagini prodotto: prima cosa della scheda, la prima foto fa da copertina */}
+      <SectionCard title="Immagini prodotto" action={<span className="text-xs text-[#5F6878]">La prima è la copertina</span>}>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          {immagini.map((img, i) => (
+            <div key={img + i} className="relative group h-32 rounded-xl bg-[#EEEBE3] overflow-hidden">
+              <img src={img} alt={`Immagine ${i + 1}`} className="w-full h-full object-contain" />
+              {i === 0 && (
+                <span className="absolute left-2 bottom-2 text-[11px] font-semibold bg-[#0E1B2C] text-white px-2 py-0.5 rounded-md">Copertina</span>
+              )}
+              <button type="button" onClick={() => rimuoviImmagine(i)} aria-label={`Rimuovi immagine ${i + 1}`}
+                className="absolute top-1.5 right-1.5 w-8 h-8 rounded-full bg-white/95 text-[#0E1B2C] shadow flex items-center justify-center hover:bg-red-600 hover:text-white transition-colors">
+                <X size={14} />
               </button>
             </div>
           ))}
+          <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploading}
+            className={`h-32 rounded-xl border-2 border-dashed border-[#C9C3B5] bg-[#FBFAF7] text-[#1F3A68] flex flex-col items-center justify-center gap-1.5 text-sm font-semibold hover:border-[#1F3A68] transition-colors disabled:opacity-60 ${immagini.length === 0 ? "col-span-2 sm:col-span-3 lg:col-span-5" : ""}`}>
+            {uploading ? <Loader2 size={22} className="animate-spin" /> : <span className="flex gap-2"><Camera size={20} /><Upload size={20} /></span>}
+            {uploading ? "Caricamento…" : "Scatta o carica foto"}
+            {!uploading && <span className="text-xs font-normal text-[#5F6878]">Fotocamera o galleria · JPG, PNG, HEIC</span>}
+          </button>
         </div>
         <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleUpload} />
-        <button onClick={() => fileInputRef.current?.click()} disabled={uploading}
-          className="w-full border-2 border-dashed border-white/10 rounded-lg py-3 flex items-center justify-center gap-2 text-sm text-[#4e6585] hover:border-blue-500/40 hover:text-blue-500 transition-colors disabled:opacity-50">
-          {uploading ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} />}
-          {uploading ? "Caricamento..." : "Carica immagini"}
-          {!uploading && <span className="text-xs">PNG, JPG, HEIC</span>}
-        </button>
-        {uploadError && <p className="mt-2 text-xs text-red-400">{uploadError}</p>}
-      </div>
+        {uploadError && <p role="alert" className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{uploadError}</p>}
+      </SectionCard>
 
-      {/* Fornitori & Referenti */}
-      <div className="card">
-        <h3 className="section-title mb-3">Fornitori & Referenti</h3>
-        <div className="grid grid-cols-3 gap-6">
-          {[
-            { label: "Modellista", field: "modellista" as const, placeholder: "Nome modellista..." },
-            { label: "Fornitore tessuto", field: "fornitoreTessuto" as const, placeholder: "Nome fornitore..." },
-            { label: "Produttore / Fasonista", field: "produttore" as const, placeholder: "Nome produttore..." },
-          ].map(({ label, field, placeholder }) => (
-            <FieldInput key={field} label={label} field={field} placeholder={placeholder} />
-          ))}
+      <SectionCard title="Articolo">
+        <div className="space-y-5">
+          <div className="grid grid-cols-3 gap-3">
+            <Field label="Nome articolo" className="col-span-2">
+              <input type="text" {...text("nomeArticolo")} placeholder="es. Hoodie Tecnico Pro" className={inputCls} />
+            </Field>
+            <Field label="Codice">
+              <input type="text" {...text("codice")} autoCapitalize="characters" className={`${inputCls} font-mono`} />
+            </Field>
+          </div>
+
+          <ChipGroup label="Categoria" options={CATEGORIE} value={values.categoria} onChange={(v) => scegli("categoria", v)} />
+
+          <div className="grid grid-cols-2 gap-4">
+            <Segmented label="Genere" options={GENERI} value={values.genere} onChange={(v) => scegli("genere", v)} />
+            <Segmented label="Vestibilità" options={VESTIBILITA} value={values.vestibilita} onChange={(v) => scegli("vestibilita", v)} />
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <SelectField label="Stagione" value={values.stagione} options={STAGIONI} onChange={(v) => scegli("stagione", v)} />
+            <SelectField label="Utilizzo" value={values.utilizzo} options={UTILIZZI} onChange={(v) => scegli("utilizzo", v)} />
+            <Field label="Collezione">
+              <input type="text" {...text("collezione")} placeholder="es. SS26" className={inputCls} />
+            </Field>
+          </div>
+
+          <Field label="Cliente / club" group>
+            <div className="flex items-center gap-2">
+              <select value={values.clienteId} onChange={(e) => scegli("clienteId", e.target.value)} aria-label="Cliente" className={inputCls}>
+                <option value="">Nessun cliente</option>
+                {clienti.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
+              </select>
+              <Link href="/clienti/nuovo" target="_blank" aria-label="Crea nuovo cliente"
+                className="w-11 h-11 flex-shrink-0 rounded-[10px] border border-[#D6D1C4] bg-white text-[#1F3A68] flex items-center justify-center hover:border-[#1F3A68]">
+                <ExternalLink size={16} />
+              </Link>
+            </div>
+          </Field>
         </div>
-      </div>
+      </SectionCard>
+
+      <SectionCard title="Tessuto e dettagli">
+        <div className="grid grid-cols-3 gap-3">
+          <SelectField label="Tessuto principale" value={values.tessutoPrincipale} options={tessutoOptions}
+            onChange={handleTessutoPrincipaleChange} />
+          <Field label="Peso (da scheda tecnica)">
+            <input type="text" {...text("pesoTessuto")} placeholder="es. 260 g/m²" className={inputCls} />
+          </Field>
+          <Field label="Altezza tessuto">
+            <input type="text" {...text("altezzaTessuto")} placeholder="es. 150 cm" className={inputCls} />
+          </Field>
+          <div className="col-span-3 flex items-center justify-between rounded-[10px] bg-[#EEF2F8] px-4 h-11 text-[15px]">
+            <span className="text-[#4A5566] text-[13px]">Grammatura commerciale</span>
+            {grammatura !== null
+              ? <span className="font-mono text-[#1F3A68] font-medium">{grammatura.toFixed(0)} g/m²</span>
+              : <span className="text-[#5F6878] text-[13px]">Serve peso (g/m o g/m²) e altezza</span>}
+          </div>
+
+          {mostraCostina && (
+            <>
+              <SelectField label="Costina" value={values.tessutoSecondario} className="col-span-2"
+                options={materiali.length > 0 ? materiali.map((m) => m.nome) : ["Costina 1x1", "Costina 2x2", "Ribbed Knit"]}
+                onChange={handleTessutoSecondarioChange} />
+              <Field label="Peso costina">
+                <input type="text" {...text("pesoTessutoSecondario")} placeholder="es. 220 g/m²" className={inputCls} />
+              </Field>
+            </>
+          )}
+
+          <div className="col-span-3 grid grid-cols-2 gap-3">
+            <Field label="Colore base" group>
+              <ColorPickerNamed value={values.coloreBase} onChange={(val) => scegli("coloreBase", val)} placeholder="es. Blu royal" />
+            </Field>
+            <Field label="Colori secondari" group>
+              <ColorPickerNamed value={values.coloriSecondari} onChange={(val) => scegli("coloriSecondari", val)} placeholder="es. Blu navy" />
+            </Field>
+          </div>
+
+          {mostraColloManiche && (
+            <>
+              <ChipGroup label="Collo" options={COLLI} value={values.collo} onChange={(v) => scegli("collo", v)} className="col-span-3" />
+              <ChipGroup label="Maniche" options={MANICHE} value={values.maniche} onChange={(v) => scegli("maniche", v)} className="col-span-3" />
+            </>
+          )}
+
+          <Field label="Note sull'articolo" className="col-span-3">
+            <textarea {...text("noteSpecifiche")} rows={2} className={textareaCls} />
+          </Field>
+        </div>
+      </SectionCard>
+
+      <SectionCard title="Fornitori e referenti">
+        <div className="grid grid-cols-3 gap-3">
+          <Field label="Modellista"><input type="text" {...text("modellista")} className={inputCls} /></Field>
+          <Field label="Fornitore tessuto"><input type="text" {...text("fornitoreTessuto")} className={inputCls} /></Field>
+          <Field label="Produttore / fasonista"><input type="text" {...text("produttore")} className={inputCls} /></Field>
+        </div>
+      </SectionCard>
     </div>
   );
 });

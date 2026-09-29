@@ -125,10 +125,10 @@ const CATALOGO: Categoria[] = [
 ];
 
 const FASCIA_STYLE: Record<string, string> = {
-  Adulto: "bg-blue-500/15 text-blue-300 border border-blue-500/20",
-  Uomo:   "bg-indigo-500/15 text-indigo-300 border border-indigo-500/20",
+  Adulto: "bg-blue-500/15 text-[#1F3A68] border border-blue-500/20",
+  Uomo:   "bg-indigo-500/15 text-indigo-700 border border-indigo-500/20",
   Donna:  "bg-pink-500/15 text-pink-300 border border-pink-500/20",
-  Kids:   "bg-orange-500/15 text-orange-300 border border-orange-500/20",
+  Kids:   "bg-orange-500/15 text-[#A8461F] border border-orange-500/20",
 };
 
 export default function ModelliPage() {
@@ -149,8 +149,8 @@ export default function ModelliPage() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">Modelli base</h1>
-        <p className="text-sm text-[#8ba3c7] mt-0.5">
+        <h1 className="text-2xl font-bold text-[#0E1B2C]">Modelli base</h1>
+        <p className="text-sm text-[#4A5566] mt-0.5">
           Catalogo DUSP — {totale} articoli · Rev. Aprile 2026
         </p>
       </div>
@@ -158,32 +158,32 @@ export default function ModelliPage() {
       <div className="space-y-4">
         {CATALOGO.map((cat) => (
           <div key={cat.nome} className="card p-0 overflow-hidden">
-            <div className="px-4 py-3 border-b border-white/7 bg-white/[0.03]">
-              <h2 className="font-semibold text-sm uppercase tracking-wider text-[#8ba3c7]">{cat.nome}</h2>
+            <div className="px-4 py-3 border-b border-[#E4E0D6] bg-[#0E1B2C]/[0.03]">
+              <h2 className="font-semibold text-sm uppercase tracking-wider text-[#4A5566]">{cat.nome}</h2>
             </div>
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-white/5">
-                  <th className="text-left px-4 py-2 text-xs font-semibold text-[#4e6585] uppercase tracking-wide">Codice</th>
-                  <th className="text-left px-4 py-2 text-xs font-semibold text-[#4e6585] uppercase tracking-wide">Descrizione</th>
-                  <th className="text-left px-4 py-2 text-xs font-semibold text-[#4e6585] uppercase tracking-wide">Fascia</th>
+                <tr className="border-b border-[#E4E0D6]">
+                  <th className="text-left px-4 py-2 text-xs font-semibold text-[#5F6878] uppercase tracking-wide">Codice</th>
+                  <th className="text-left px-4 py-2 text-xs font-semibold text-[#5F6878] uppercase tracking-wide">Descrizione</th>
+                  <th className="text-left px-4 py-2 text-xs font-semibold text-[#5F6878] uppercase tracking-wide">Fascia</th>
                   <th className="px-4 py-2" />
                 </tr>
               </thead>
               <tbody>
                 {cat.articoli.map((m) => (
-                  <tr key={m.codice} className="border-b border-white/5 hover:bg-white/[0.03] group transition-colors">
-                    <td className="px-4 py-2.5 font-mono text-xs font-semibold text-[#8ba3c7]">{m.codice}</td>
-                    <td className="px-4 py-2.5 text-white">{m.descrizione}</td>
+                  <tr key={m.codice} className="border-b border-[#E4E0D6] hover:bg-[#0E1B2C]/[0.03] group transition-colors">
+                    <td className="px-4 py-2.5 font-mono text-xs font-semibold text-[#4A5566]">{m.codice}</td>
+                    <td className="px-4 py-2.5 text-[#0E1B2C]">{m.descrizione}</td>
                     <td className="px-4 py-2.5">
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${FASCIA_STYLE[m.fascia] ?? "bg-white/10 text-[#8ba3c7]"}`}>
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${FASCIA_STYLE[m.fascia] ?? "bg-[#0E1B2C]/10 text-[#4A5566]"}`}>
                         {m.fascia}
                       </span>
                     </td>
                     <td className="px-4 py-2.5 text-right">
                       <button
                         onClick={() => creaScheda(m, cat.nome)}
-                        className="text-xs text-blue-400 font-medium transition-opacity hover:text-blue-300 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100"
+                        className="text-xs text-[#1F3A68] font-medium transition-opacity hover:text-[#1F3A68] [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100"
                       >
                         Usa modello →
                       </button>

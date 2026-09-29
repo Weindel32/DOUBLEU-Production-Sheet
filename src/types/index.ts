@@ -44,6 +44,7 @@ export interface SchedaCompleta {
   codice: string;
   nomeArticolo: string;
   stato: string;
+  tipo?: string;
   versione: string;
   collezione?: string;
   cliente?: { id: string; nome: string } | null;

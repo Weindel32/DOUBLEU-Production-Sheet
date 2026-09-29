@@ -7,6 +7,8 @@ import type { SchedaCompleta, TabellaTaglie, QuantitaTaglia, ElasticoSpecs, Misu
 interface Props {
   scheda: SchedaCompleta;
   onSave: (data: Partial<SchedaCompleta>) => Promise<void>;
+  /** Per il riepilogo della pagina (totale ordine) mentre si scrivono le quantità. */
+  onQuantitaChange?: (q: QuantitaTaglia) => void;
 }
 
 export interface TabMisureHandle {
@@ -51,7 +53,7 @@ const COLONNE_ELASTICO = [
   { key: "altezzaElastico", label: "Altezza (cm)" },
 ];
 
-const TabMisure = forwardRef<TabMisureHandle, Props>(function TabMisure({ scheda, onSave }, ref) {
+const TabMisure = forwardRef<TabMisureHandle, Props>(function TabMisure({ scheda, onSave, onQuantitaChange }, ref) {
   const isElastico = CATEGORIE_ELASTICO.includes(scheda.categoria || "");
   const colonne = isElastico ? COLONNE_ELASTICO : COLONNE_STANDARD;
 
@@ -89,7 +91,9 @@ const TabMisure = forwardRef<TabMisureHandle, Props>(function TabMisure({ scheda
   };
 
   const aggiornaQuantita = (taglia: string, valore: string) => {
-    setQuantitaTaglia((prev) => ({ ...prev, [taglia]: valore ? Number(valore) : 0 }));
+    const nuove = { ...quantitaTaglia, [taglia]: valore ? Number(valore) : 0 };
+    setQuantitaTaglia(nuove);
+    onQuantitaChange?.(nuove);
   };
 
   const salva = async () => {
@@ -131,7 +135,7 @@ const TabMisure = forwardRef<TabMisureHandle, Props>(function TabMisure({ scheda
         </div>
         <div className="space-y-2">
           <div>
-            <p className="text-xs text-[#4e6585] mb-1.5 font-medium">ADULTO</p>
+            <p className="text-xs text-[#5F6878] mb-1.5 font-medium">ADULTO</p>
             <div className="flex gap-2 flex-wrap">
               {TAGLIE_ADULTO.map((t) => (
                 <button
@@ -139,8 +143,8 @@ const TabMisure = forwardRef<TabMisureHandle, Props>(function TabMisure({ scheda
                   onClick={() => toggleTaglia(t)}
                   className={`px-3 py-1 rounded-full text-sm font-medium border transition-colors ${
                     tagliAttive.includes(t)
-                      ? "bg-blue-600 text-white border-blue-700"
-                      : "bg-[#1a3060] text-[#8ba3c7] border-white/15 hover:border-blue-500/50"
+                      ? "bg-[#0E1B2C] text-white border-blue-700"
+                      : "bg-[#FFFFFF] text-[#4A5566] border-[#D6D1C4] hover:border-blue-500/50"
                   }`}
                 >
                   {t}
@@ -149,7 +153,7 @@ const TabMisure = forwardRef<TabMisureHandle, Props>(function TabMisure({ scheda
             </div>
           </div>
           <div>
-            <p className="text-xs text-[#4e6585] mb-1.5 font-medium">KIDS</p>
+            <p className="text-xs text-[#5F6878] mb-1.5 font-medium">KIDS</p>
             <div className="flex gap-2 flex-wrap">
               {TAGLIE_KIDS.map((t) => (
                 <button
@@ -158,7 +162,7 @@ const TabMisure = forwardRef<TabMisureHandle, Props>(function TabMisure({ scheda
                   className={`px-3 py-1 rounded-full text-sm font-medium border transition-colors ${
                     tagliAttive.includes(t)
                       ? "bg-orange-500 text-white border-orange-500"
-                      : "bg-[#1a3060] text-[#8ba3c7] border-white/15 hover:border-orange-300"
+                      : "bg-[#FFFFFF] text-[#4A5566] border-[#D6D1C4] hover:border-orange-300"
                   }`}
                 >
                   {t}
@@ -183,14 +187,14 @@ const TabMisure = forwardRef<TabMisureHandle, Props>(function TabMisure({ scheda
               { key: "applicazione",label: "Applicazione",          placeholder: "es. con leggera tensione per stabilità" },
             ].map(({ key, label, placeholder }) => (
               <div key={key} className="flex flex-col">
-                <label className="text-xs text-[#8ba3c7] mb-1 whitespace-nowrap">{label}</label>
+                <label className="text-xs text-[#4A5566] mb-1 whitespace-nowrap">{label}</label>
                 <input
                   type="text"
                   value={specsElastico[key as keyof ElasticoSpecs] ?? ""}
                   onChange={(e) => aggiornaSpec(key as keyof ElasticoSpecs, e.target.value)}
                   onBlur={salva}
                   placeholder={placeholder}
-                  className="w-full border border-white/15 rounded-lg px-3 py-2 text-sm focus:border-blue-500/50 outline-none bg-[#1a3060]"
+                  className="w-full border border-[#D6D1C4] rounded-lg px-3 py-2 text-sm focus:border-blue-500/50 outline-none bg-[#FFFFFF]"
                 />
               </div>
             ))}
@@ -201,7 +205,7 @@ const TabMisure = forwardRef<TabMisureHandle, Props>(function TabMisure({ scheda
       <div className="grid grid-cols-2 gap-5">
         {/* Tabella misure */}
         <div className="card p-0 overflow-hidden">
-          <div className="px-4 py-3 border-b border-white/8">
+          <div className="px-4 py-3 border-b border-[#E4E0D6]">
             <h3 className="section-title">
               {isElastico ? "Tabella elastico per taglia" : "Tabella misure (cm)"}
             </h3>
@@ -209,10 +213,10 @@ const TabMisure = forwardRef<TabMisureHandle, Props>(function TabMisure({ scheda
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-[#1a3060]/[0.03]">
-                  <th className="text-left px-3 py-2 text-[#8ba3c7] font-medium text-xs">Taglia</th>
+                <tr className="bg-[#0E1B2C]/[0.03]">
+                  <th className="text-left px-3 py-2 text-[#4A5566] font-medium text-xs">Taglia</th>
                   {colonne.map((c) => (
-                    <th key={c.key} className="text-right px-2 py-2 text-[#8ba3c7] font-medium text-xs whitespace-nowrap">
+                    <th key={c.key} className="text-right px-2 py-2 text-[#4A5566] font-medium text-xs whitespace-nowrap">
                       {c.label}
                     </th>
                   ))}
@@ -220,8 +224,8 @@ const TabMisure = forwardRef<TabMisureHandle, Props>(function TabMisure({ scheda
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {tagliAttive.map((taglia) => (
-                  <tr key={taglia} className="hover:bg-[#1a3060]/[0.03]">
-                    <td className="px-3 py-1.5 font-semibold text-[#e8edf4] text-xs">{taglia}</td>
+                  <tr key={taglia} className="hover:bg-[#0E1B2C]/[0.03]">
+                    <td className="px-3 py-1.5 font-semibold text-[#0E1B2C] text-xs">{taglia}</td>
                     {colonne.map((c) => (
                       <td key={c.key} className="px-2 py-1 text-right">
                         <input
@@ -230,7 +234,7 @@ const TabMisure = forwardRef<TabMisureHandle, Props>(function TabMisure({ scheda
                           value={(tabellaMisure[taglia] as MisureTaglia)?.[c.key as keyof MisureTaglia] ?? ""}
                           onChange={(e) => aggiornaMisura(taglia, c.key, e.target.value)}
                           onBlur={salva}
-                          className="w-full text-right text-xs text-[#e8edf4] border border-transparent focus:border-blue-300 rounded px-1 py-0.5 outline-none"
+                          className="w-full text-right text-xs text-[#0E1B2C] border border-transparent focus:border-blue-300 rounded px-1 py-0.5 outline-none"
                           placeholder="—"
                         />
                       </td>
@@ -240,23 +244,23 @@ const TabMisure = forwardRef<TabMisureHandle, Props>(function TabMisure({ scheda
               </tbody>
             </table>
           </div>
-          <div className="px-4 py-2 text-xs text-[#4e6585] italic">Clicca sui valori per modificarli</div>
+          <div className="px-4 py-2 text-xs text-[#5F6878] italic">Clicca sui valori per modificarli</div>
         </div>
 
         {/* Quantità per taglia */}
         <div className="card p-0 overflow-hidden">
-          <div className="px-4 py-3 border-b border-white/8 flex items-center justify-between">
+          <div className="px-4 py-3 border-b border-[#E4E0D6] flex items-center justify-between">
             <h3 className="section-title">Quantità per taglia</h3>
-            <span className="text-xs text-blue-400 font-semibold">Totale: {totale} pz</span>
+            <span className="text-xs text-[#1F3A68] font-semibold">Totale: {totale} pz</span>
           </div>
           <div className="overflow-x-auto px-4 py-4">
             <table className="text-sm">
               <thead>
                 <tr>
                   {tagliAttive.map((t) => (
-                    <th key={t} className="text-center px-3 py-1 text-xs font-semibold text-[#8ba3c7] min-w-[52px]">{t}</th>
+                    <th key={t} className="text-center px-3 py-1 text-xs font-semibold text-[#4A5566] min-w-[52px]">{t}</th>
                   ))}
-                  <th className="text-center px-3 py-1 text-xs font-semibold text-blue-400 min-w-[52px]">TOT</th>
+                  <th className="text-center px-3 py-1 text-xs font-semibold text-[#1F3A68] min-w-[52px]">TOT</th>
                 </tr>
               </thead>
               <tbody>
@@ -269,12 +273,12 @@ const TabMisure = forwardRef<TabMisureHandle, Props>(function TabMisure({ scheda
                         value={quantitaTaglia[taglia] ?? ""}
                         onChange={(e) => aggiornaQuantita(taglia, e.target.value.replace(/\D/g, ""))}
                         onBlur={salva}
-                        className="w-12 text-center text-sm font-medium text-[#e8edf4] border border-white/10 focus:border-blue-500/50 rounded-lg px-1 py-1 outline-none"
+                        className="w-12 text-center text-sm font-medium text-[#0E1B2C] border border-[#E4E0D6] focus:border-blue-500/50 rounded-lg px-1 py-1 outline-none"
                         placeholder="0"
                       />
                     </td>
                   ))}
-                  <td className="text-center px-3 py-1 font-bold text-blue-400 text-sm">{totale}</td>
+                  <td className="text-center px-3 py-1 font-bold text-[#1F3A68] text-sm">{totale}</td>
                 </tr>
               </tbody>
             </table>

@@ -1,9 +1,13 @@
 "use client";
 
-import { useState, forwardRef, useImperativeHandle } from "react";
-import { PlusCircle, Trash2, Upload, Info } from "lucide-react";
+import { useState, useEffect, forwardRef, useImperativeHandle } from "react";
+import { Plus, Trash2, Upload, Lock } from "lucide-react";
 import type { SchedaCompleta, ConsumoMateriale, Accessorio } from "@/types";
-import { calcolaTotaleQuantita, parseNumIt, calcolaKgPerMetroLineare, calcolaCostoUnitarioConsumo } from "@/lib/utils";
+import {
+  calcolaTotaleQuantita, parseNumIt, calcolaKgPerMetroLineare, calcolaCostoUnitarioConsumo,
+  calcolaRiepilogoCosti, prezzoDaMargine, formatEuro, type RiepilogoCosti,
+} from "@/lib/utils";
+import { Field, SectionCard, inputCls, textareaCls } from "@/components/ui/Form";
 
 interface MaterialeDisp {
   id: string;
@@ -21,6 +25,10 @@ interface Props {
   scheda: SchedaCompleta;
   onSave: (data: Partial<SchedaCompleta>) => Promise<void>;
   materialiDisponibili: MaterialeDisp[];
+  /** Preventivo di costo: solo costi, niente note di produzione, tolleranze e allegati. */
+  soloCosti?: boolean;
+  /** Il riepilogo vive nel riquadro fisso della pagina: gli passo i numeri a ogni modifica. */
+  onRiepilogoChange?: (r: RiepilogoCosti) => void;
 }
 
 export interface TabProduzioneHandle {
@@ -28,14 +36,40 @@ export interface TabProduzioneHandle {
 }
 
 const parseNum = parseNumIt;
-const calcolaKgPerMetro = calcolaKgPerMetroLineare;
 
-// costoMetro è sempre €/m anche per i tessuti acquistati al kg: non va riconvertito.
-function calcolaCostoMateriale(c: ConsumoMateriale, mat: MaterialeDisp | undefined): number {
-  return (c.consumoPerCapo || 0) * calcolaCostoUnitarioConsumo(mat);
+const ACCESSORI_RAPIDI = ["Zip", "Laccio", "Etichetta", "Puntali", "Bottone", "Elastico"];
+const MARGINI_OBIETTIVO = [35, 45, 55];
+
+// Numeri mostrati nei campi con la virgola, come si scrivono.
+const numStr = (n: number | null | undefined) => (n === null || n === undefined ? "" : String(n).replace(".", ","));
+
+// Colonne condivise da intestazione e righe di materiali e accessori.
+const RIGA_COLS = "grid grid-cols-[minmax(0,2.4fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_44px] gap-2.5 items-center";
+
+function EuroInput({ id, value, onChange, onBlur, label, big }: {
+  id?: string; value: string; onChange: (v: string) => void; onBlur: () => void; label: string; big?: boolean;
+}) {
+  return (
+    <span className={`flex items-center gap-1.5 border border-[#D6D1C4] rounded-[10px] bg-white px-3 ${big ? "h-12" : "h-11"} focus-within:border-[#1F3A68] focus-within:shadow-[0_0_0_3px_rgba(31,58,104,0.18)]`}>
+      <span className="text-[#5F6878]">€</span>
+      <input
+        id={id}
+        type="text"
+        inputMode="decimal"
+        aria-label={label}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
+        placeholder="0,00"
+        className={`w-full min-w-0 border-0 !shadow-none bg-transparent text-right font-mono ${big ? "text-lg" : "text-[15px]"} p-0`}
+      />
+    </span>
+  );
 }
 
-const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzione({ scheda, onSave, materialiDisponibili }, ref) {
+const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzione(
+  { scheda, onSave, materialiDisponibili, soloCosti, onRiepilogoChange }, ref,
+) {
   const [noteProduzione, setNoteProduzione] = useState(scheda.noteProduzione || "");
   const [tolleranzaTaglio, setTolleranzaTaglio] = useState(scheda.tolleranzaTaglio || "");
   const [tolleranzaCucitura, setTolleranzaCucitura] = useState(scheda.tolleranzaCucitura || "");
@@ -47,44 +81,84 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
     (scheda.consumoMateriale as ConsumoMateriale[]) || []
   );
   const [consumiStr, setConsumiStr] = useState<string[]>(
-    ((scheda.consumoMateriale as ConsumoMateriale[]) || []).map((c) => c.consumoPerCapo?.toString() ?? "")
+    ((scheda.consumoMateriale as ConsumoMateriale[]) || []).map((c) => numStr(c.consumoPerCapo))
   );
   const [accessori, setAccessori] = useState<Accessorio[]>((scheda.accessori as Accessorio[]) || []);
   const [accessoriStr, setAccessoriStr] = useState<{ quantita: string; prezzo: string }[]>(
-    ((scheda.accessori as Accessorio[]) || []).map((a) => ({ quantita: a.quantita?.toString() ?? "", prezzo: a.prezzoUnitario?.toString() ?? "" }))
+    ((scheda.accessori as Accessorio[]) || []).map((a) => ({ quantita: numStr(a.quantita), prezzo: numStr(a.prezzoUnitario) }))
   );
-  const [costoTaglio, setCostoTaglio] = useState(scheda.costoTaglio?.toString() || "");
-  const [costoCucitura, setCostoCucitura] = useState(scheda.costoCucitura?.toString() || "");
-  const [costoStampa, setCostoStampa] = useState(scheda.costoStampa?.toString() || "");
-  const [costoRicamo, setCostoRicamo] = useState(scheda.costoRicamo?.toString() || "");
-  const [prezzoVendita, setPrezzoVendita] = useState(scheda.prezzoVendita?.toString() || "");
+  const [costoTaglio, setCostoTaglio] = useState(numStr(scheda.costoTaglio));
+  const [costoCucitura, setCostoCucitura] = useState(numStr(scheda.costoCucitura));
+  const [costoStampa, setCostoStampa] = useState(numStr(scheda.costoStampa));
+  const [costoRicamo, setCostoRicamo] = useState(numStr(scheda.costoRicamo));
+  const [prezzoVendita, setPrezzoVendita] = useState(numStr(scheda.prezzoVendita));
+  const [margineObiettivo, setMargineObiettivo] = useState(45);
+  const [focusAcc, setFocusAcc] = useState<string | null>(null);
 
   const quantitaTaglia = (scheda.quantitaTaglia as Record<string, number>) || {};
-  const totalePezzi = calcolaTotaleQuantita(quantitaTaglia);
+  const totalePezzi = soloCosti ? 0 : calcolaTotaleQuantita(quantitaTaglia);
 
+  // Dopo "+ Zip" il cursore va dritto sul prezzo (l'unico dato che manca); dopo "Altro" sul nome.
+  useEffect(() => {
+    if (focusAcc) document.getElementById(focusAcc)?.focus();
+  }, [focusAcc]);
+
+  /**
+   * Salva tutto. Le liste appena modificate si passano esplicitamente: lo stato React
+   * si aggiorna solo al render successivo, e salvare quello vecchio rimetterebbe
+   * in scheda una riga appena eliminata.
+   */
+  const salva = async (over: { consumi?: ConsumoMateriale[]; accessori?: Accessorio[]; prezzoVendita?: string } = {}) => {
+    const lav = [costoTaglio, costoCucitura, costoStampa, costoRicamo].map((v) => parseNum(v) ?? 0);
+    const costoLavorazione = lav.reduce((a, b) => a + b, 0);
+
+    const consumiAggiornati = (over.consumi ?? consumi).map((c) => {
+      const mat = materialiDisponibili.find((m) => m.id === c.materialeId);
+      return { ...c, costoUnitario: calcolaCostoUnitarioConsumo(mat) };
+    });
+
+    await onSave({
+      noteProduzione, tolleranzaTaglio, tolleranzaCucitura, tolleranzaColore,
+      tolleranzaStampa, controlloQualita, packaging,
+      consumoMateriale: consumiAggiornati,
+      accessori: over.accessori ?? accessori,
+      costoTaglio: parseNum(costoTaglio),
+      costoCucitura: parseNum(costoCucitura),
+      costoStampa: parseNum(costoStampa),
+      costoRicamo: parseNum(costoRicamo),
+      costoLavorazione: costoLavorazione || null,
+      prezzoVendita: parseNum(over.prezzoVendita ?? prezzoVendita),
+    });
+  };
+
+  useImperativeHandle(ref, () => ({ save: () => salva() }));
+
+  // ── Materiali ────────────────────────────────────────────
   const aggiungiConsumo = () => {
     if (materialiDisponibili.length === 0) return;
     const m = materialiDisponibili[0];
     setConsumi((prev) => [...prev, {
-      materialeId: m.id, nomeM: m.nome, consumoPerCapo: 0, unita: "m", costoUnitario: calcolaCostoUnitarioConsumo(m),
+      materialeId: m.id, nomeM: m.nome, consumoPerCapo: 0, unita: m.unitaMisura === "pz" ? "pz" : "m",
+      costoUnitario: calcolaCostoUnitarioConsumo(m),
     }]);
     setConsumiStr((prev) => [...prev, ""]);
   };
 
   const rimuoviConsumo = (idx: number) => {
-    setConsumi((prev) => prev.filter((_, i) => i !== idx));
+    const nuovi = consumi.filter((_, i) => i !== idx);
+    setConsumi(nuovi);
     setConsumiStr((prev) => prev.filter((_, i) => i !== idx));
+    salva({ consumi: nuovi });
   };
 
-  const aggiornaConsumo = (idx: number, field: keyof ConsumoMateriale, value: string | number) => {
-    setConsumi((prev) => prev.map((c, i) => {
-      if (i !== idx) return c;
-      if (field === "materialeId") {
-        const m = materialiDisponibili.find((x) => x.id === value);
-        return { ...c, materialeId: value as string, nomeM: m?.nome || "", costoUnitario: calcolaCostoUnitarioConsumo(m) };
-      }
-      return { ...c, [field]: value };
-    }));
+  const cambiaMateriale = (idx: number, materialeId: string) => {
+    const m = materialiDisponibili.find((x) => x.id === materialeId);
+    const nuovi = consumi.map((c, i) => i !== idx ? c : {
+      ...c, materialeId, nomeM: m?.nome || "", unita: m?.unitaMisura === "pz" ? "pz" : "m",
+      costoUnitario: calcolaCostoUnitarioConsumo(m),
+    });
+    setConsumi(nuovi);
+    salva({ consumi: nuovi });
   };
 
   const aggiornaConsumoStr = (idx: number, raw: string) => {
@@ -93,15 +167,19 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
     setConsumi((prev) => prev.map((c, i) => i === idx ? { ...c, consumoPerCapo: n ?? 0 } : c));
   };
 
-  const aggiungiAccessorio = () => {
-    setAccessori((prev) => [...prev, { nome: "", quantita: 1, prezzoUnitario: 0 }]);
+  // ── Accessori ────────────────────────────────────────────
+  const aggiungiAccessorio = (nome = "") => {
+    const idx = accessori.length;
+    setAccessori((prev) => [...prev, { nome, quantita: 1, prezzoUnitario: 0 }]);
     setAccessoriStr((prev) => [...prev, { quantita: "1", prezzo: "" }]);
+    setFocusAcc(nome ? `acc-prezzo-${idx}` : `acc-nome-${idx}`);
   };
 
   const rimuoviAccessorio = (idx: number) => {
     const nuovi = accessori.filter((_, i) => i !== idx);
     setAccessori(nuovi);
     setAccessoriStr((prev) => prev.filter((_, i) => i !== idx));
+    setFocusAcc(null);
     salva({ accessori: nuovi });
   };
 
@@ -114,352 +192,261 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
     aggiornaAccessorio(idx, field === "quantita" ? { quantita: n } : { prezzoUnitario: n });
   };
 
-  const salva = async (extra?: Partial<SchedaCompleta>) => {
-    const pTaglio = parseNum(costoTaglio) ?? 0;
-    const pCucitura = parseNum(costoCucitura) ?? 0;
-    const pStampa = parseNum(costoStampa) ?? 0;
-    const pRicamo = parseNum(costoRicamo) ?? 0;
-    const costoLavorazione = pTaglio + pCucitura + pStampa + pRicamo;
+  const lasciaAccessorio = () => { setFocusAcc(null); salva(); };
 
-    const consumiAggiornati = consumi.map((c) => {
-      const mat = materialiDisponibili.find((m) => m.id === c.materialeId);
-      return { ...c, costoUnitario: calcolaCostoUnitarioConsumo(mat) };
-    });
-    setConsumi(consumiAggiornati);
-
-    await onSave({
-      noteProduzione, tolleranzaTaglio, tolleranzaCucitura, tolleranzaColore,
-      tolleranzaStampa, controlloQualita, packaging,
-      consumoMateriale: consumiAggiornati,
+  // ── Riepilogo ────────────────────────────────────────────
+  const riepilogo = calcolaRiepilogoCosti(
+    {
+      consumi,
       accessori,
-      costoTaglio: parseNum(costoTaglio),
-      costoCucitura: parseNum(costoCucitura),
-      costoStampa: parseNum(costoStampa),
-      costoRicamo: parseNum(costoRicamo),
-      costoLavorazione: costoLavorazione || null,
+      lavorazioni: [costoTaglio, costoCucitura, costoStampa, costoRicamo].map((v) => parseNum(v)),
       prezzoVendita: parseNum(prezzoVendita),
-      ...extra,
-    });
+    },
+    materialiDisponibili,
+  );
+
+  useEffect(() => {
+    onRiepilogoChange?.(riepilogo);
+    // Dipendo dai numeri, non dall'oggetto (nuovo a ogni render).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [riepilogo.materiali, riepilogo.accessori, riepilogo.lavorazioni, riepilogo.prezzoVendita]);
+
+  const prezzoSuggerito = riepilogo.totale > 0 ? prezzoDaMargine(riepilogo.totale, margineObiettivo) : 0;
+
+  const usaPrezzoSuggerito = () => {
+    const v = prezzoSuggerito.toFixed(2).replace(".", ",");
+    setPrezzoVendita(v);
+    salva({ prezzoVendita: v });
   };
 
-  const salvaAll = async () => {
-    await salva();
-  };
+  const margineColore = riepilogo.margine === null ? "text-[#5F6878]"
+    : riepilogo.margine >= 40 ? "text-[#1D6B4A]" : riepilogo.margine >= 30 ? "text-[#7A5B12]" : "text-[#A8461F]";
 
-  useImperativeHandle(ref, () => ({ save: salvaAll }));
+  const lavorazioni = [
+    { label: "Taglio", value: costoTaglio, set: setCostoTaglio },
+    { label: "Cucitura", value: costoCucitura, set: setCostoCucitura },
+    { label: "Stampa", value: costoStampa, set: setCostoStampa },
+    { label: "Ricamo", value: costoRicamo, set: setCostoRicamo },
+  ];
 
-  // Cost calculations
-  const costoMaterialePerCapo = consumi.reduce((sum, c) => {
-    const mat = materialiDisponibili.find((m) => m.id === c.materialeId);
-    return sum + calcolaCostoMateriale(c, mat);
-  }, 0);
-
-  const costoAccessoriPerCapo = accessori.reduce((sum, a) => sum + (a.quantita || 0) * (a.prezzoUnitario || 0), 0);
-
-  const lavorazionePerCapo =
-    (parseNum(costoTaglio) ?? 0) +
-    (parseNum(costoCucitura) ?? 0) +
-    (parseNum(costoStampa) ?? 0) +
-    (parseNum(costoRicamo) ?? 0);
-
-  const costoTotalePerCapo = costoMaterialePerCapo + costoAccessoriPerCapo + lavorazionePerCapo;
-  const costoTotaleOrdine = costoTotalePerCapo * totalePezzi;
-  const vendita = parseNum(prezzoVendita) ?? 0;
-  const margine = vendita > 0 && costoTotalePerCapo > 0
-    ? ((vendita - costoTotalePerCapo) / vendita * 100)
-    : null;
+  const subtotale = (n: number) => (
+    <span className="font-mono text-[15px] font-semibold text-[#A8461F]">{formatEuro(n)} / capo</span>
+  );
 
   return (
-    <div className="space-y-5">
-      {/* Costi interni — in cima e a piena larghezza: sono i numeri che contano di più */}
-      <div className="card border-2 border-orange-500/20">
-        <div className="flex items-center gap-2 mb-4">
-          <h3 className="section-title">Costi interni</h3>
-          <div className="flex items-center gap-1 text-xs text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded-full">
-            <Info size={11} />
-            Solo PDF interno
-          </div>
+    <div className="space-y-4">
+      {/* ── Costi interni ───────────────────────────────── */}
+      <div id="sez-costi" className="scheda-section space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="font-display text-xl font-bold text-[#0E1B2C]">Costi interni</h2>
+          <span className="flex items-center gap-1.5 text-[13px] text-[#A8461F] bg-[#FBEDE5] px-3 py-1.5 rounded-lg">
+            <Lock size={14} /> Mai nel PDF produttore
+          </span>
         </div>
 
-        <div className="grid grid-cols-[1.3fr_1fr] gap-6">
-          {/* Colonna sinistra: consumo materiali + lavorazione */}
-          <div className="space-y-4">
-            <div>
-              <div className="text-xs font-medium text-[#8ba3c7] mb-2">Consumo materiale</div>
-              <div className="space-y-2">
-                {consumi.map((c, i) => {
-                  const mat = materialiDisponibili.find((m) => m.id === c.materialeId);
-                  const isKg = mat?.unitaMisura === "kg";
-                  const kgPerM = mat ? calcolaKgPerMetro(mat) : null;
-                  const costoRiga = calcolaCostoMateriale(c, mat);
-                  return (
-                    <div key={i} className="bg-[#1a3060]/[0.03] rounded-lg px-3 py-2.5 space-y-2">
-                      {/* Riga 1: materiale + consumo + elimina */}
-                      <div className="flex items-center gap-2">
-                        <select
-                          value={c.materialeId}
-                          onChange={(e) => aggiornaConsumo(i, "materialeId", e.target.value)}
-                          onBlur={() => salva()}
-                          className="flex-1 min-w-0 text-xs border border-white/10 rounded-lg px-2.5 py-1.5 bg-[#1a3060]"
-                        >
-                          {materialiDisponibili.map((m) => (
-                            <option key={m.id} value={m.id}>{m.nome}</option>
-                          ))}
-                        </select>
-                        <div className="flex items-center flex-shrink-0 border border-white/10 rounded-lg px-2.5 py-1.5 w-24 bg-[#1a3060]">
-                          <input
-                            type="text"
-                            inputMode="decimal"
-                            value={consumiStr[i] ?? ""}
-                            onChange={(e) => aggiornaConsumoStr(i, e.target.value)}
-                            onBlur={() => salva()}
-                            className="w-full text-xs text-right outline-none bg-[#1a3060]"
-                            placeholder="0"
-                          />
-                          <span className="text-xs text-[#4e6585] ml-1 flex-shrink-0">m</span>
-                        </div>
-                        <button onClick={() => { rimuoviConsumo(i); salva(); }} className="text-[#4e6585] hover:text-red-400 flex-shrink-0">
-                          <Trash2 size={13} />
-                        </button>
-                      </div>
-                      {/* Riga 2: risultati */}
-                      {c.consumoPerCapo > 0 && !!(mat?.costoMetro || mat?.prezzoKg) && (
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-semibold text-orange-400">€ {costoRiga.toFixed(2)}/capo</span>
-                            {isKg && kgPerM !== null && totalePezzi > 0 && (
-                              <span className="text-xs text-[#4e6585]">· {(totalePezzi * c.consumoPerCapo * kgPerM).toFixed(1)} kg ordine</span>
-                            )}
-                          </div>
-                          {isKg && kgPerM === null && (
-                            <span className="text-xs text-orange-400">Inserire peso nel materiale</span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-              <button
-                onClick={aggiungiConsumo}
-                disabled={materialiDisponibili.length === 0}
-                className="mt-2 flex items-center gap-1 text-xs text-blue-400 hover:text-blue-400 disabled:opacity-40"
-              >
-                <PlusCircle size={12} />
-                Aggiungi materiale
-              </button>
-            </div>
-
-            <div>
-              <div className="text-xs font-medium text-[#8ba3c7] mb-2">Accessori / capo</div>
-              <div className="space-y-2">
-                {accessori.map((a, i) => (
-                  <div key={i} className="bg-[#1a3060]/[0.03] rounded-lg px-3 py-2.5 flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={a.nome}
-                      onChange={(e) => aggiornaAccessorio(i, { nome: e.target.value })}
-                      onBlur={() => salva()}
-                      placeholder="es. Laccio, Zip, Etichetta"
-                      className="flex-1 min-w-0 text-xs border border-white/10 rounded-lg px-2.5 py-1.5 bg-[#1a3060] outline-none"
-                    />
-                    <div className="flex items-center flex-shrink-0 border border-white/10 rounded-lg px-2.5 py-1.5 w-20 bg-[#1a3060]">
-                      <input
-                        type="text"
-                        inputMode="decimal"
-                        value={accessoriStr[i]?.quantita ?? ""}
-                        onChange={(e) => aggiornaAccessorioStr(i, "quantita", e.target.value)}
-                        onBlur={() => salva()}
-                        className="w-full text-xs text-right outline-none bg-transparent"
-                        placeholder="1"
-                      />
-                      <span className="text-xs text-[#4e6585] ml-1 flex-shrink-0">pz</span>
-                    </div>
-                    <div className="flex items-center flex-shrink-0 border border-white/10 rounded-lg px-2.5 py-1.5 w-24 bg-[#1a3060]">
-                      <span className="text-xs text-[#4e6585]">€</span>
-                      <input
-                        type="text"
-                        inputMode="decimal"
-                        value={accessoriStr[i]?.prezzo ?? ""}
-                        onChange={(e) => aggiornaAccessorioStr(i, "prezzo", e.target.value)}
-                        onBlur={() => salva()}
-                        className="w-full text-xs text-right outline-none bg-transparent"
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <span className="text-xs font-semibold text-orange-400 w-16 text-right flex-shrink-0">
-                      € {((a.quantita || 0) * (a.prezzoUnitario || 0)).toFixed(2)}
-                    </span>
-                    <button onClick={() => rimuoviAccessorio(i)} className="text-[#4e6585] hover:text-red-400 flex-shrink-0">
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-              <button onClick={aggiungiAccessorio} className="mt-2 flex items-center gap-1 text-xs text-blue-400 hover:text-blue-400">
-                <PlusCircle size={12} />
-                Aggiungi accessorio
-              </button>
-            </div>
-
-            <div>
-              <div className="text-xs font-medium text-[#8ba3c7] mb-2">Costi lavorazione / capo</div>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { label: "Taglio", value: costoTaglio, set: setCostoTaglio },
-                  { label: "Cucitura", value: costoCucitura, set: setCostoCucitura },
-                  { label: "Stampa", value: costoStampa, set: setCostoStampa },
-                  { label: "Ricamo", value: costoRicamo, set: setCostoRicamo },
-                ].map(({ label, value, set }) => (
-                  <div key={label}>
-                    <label className="text-xs text-[#4e6585] block mb-1">{label}</label>
-                    <div className="flex items-center border border-white/10 rounded-lg px-2.5 py-1.5 bg-[#1a3060]">
-                      <span className="text-xs text-[#4e6585]">€</span>
-                      <input
-                        type="text"
-                        inputMode="decimal"
-                        value={value}
-                        onChange={(e) => set(e.target.value)}
-                        onBlur={() => salva()}
-                        className="w-full text-xs text-right outline-none bg-transparent"
-                        placeholder="0.00"
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="text-xs font-medium text-[#8ba3c7] block mb-2">Prezzo vendita</label>
-              <div className="flex items-center border border-white/10 rounded-lg px-3 py-2 max-w-[180px] bg-[#1a3060]">
-                <span className="text-sm text-[#4e6585]">€</span>
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  value={prezzoVendita}
-                  onChange={(e) => setPrezzoVendita(e.target.value)}
-                  onBlur={() => salva()}
-                  className="flex-1 text-sm text-right outline-none bg-transparent"
-                  placeholder="0.00"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Colonna destra: riepilogo costi, ben visibile */}
-          <div className="bg-[#1a3060]/[0.06] rounded-lg p-4 space-y-1.5 text-sm self-start">
-            <div className="text-xs font-semibold text-[#8ba3c7] uppercase tracking-wide mb-2">Riepilogo</div>
-            {costoMaterialePerCapo > 0 && (
-              <div className="flex justify-between text-[#8ba3c7]">
-                <span>Materiali/capo</span>
-                <span>€ {costoMaterialePerCapo.toFixed(2)}</span>
-              </div>
-            )}
-            {costoAccessoriPerCapo > 0 && (
-              <div className="flex justify-between text-[#8ba3c7]">
-                <span>Accessori/capo</span>
-                <span>€ {costoAccessoriPerCapo.toFixed(2)}</span>
-              </div>
-            )}
-            {lavorazionePerCapo > 0 && (
-              <div className="flex justify-between text-[#8ba3c7]">
-                <span>Lavorazione/capo</span>
-                <span>€ {lavorazionePerCapo.toFixed(2)}</span>
-              </div>
-            )}
-            <div className="flex justify-between font-bold text-[#e8edf4] border-t border-white/10 pt-1.5 text-base">
-              <span>Costo totale/capo</span>
-              <span>€ {costoTotalePerCapo.toFixed(2)}</span>
-            </div>
-            {totalePezzi > 0 && (
-              <div className="flex justify-between text-[#8ba3c7]">
-                <span>Totale ordine ({totalePezzi} pz)</span>
-                <span>€ {costoTotaleOrdine.toFixed(2)}</span>
-              </div>
-            )}
-            {vendita > 0 && (
-              <div className="flex justify-between text-[#8ba3c7]">
-                <span>Prezzo vendita/capo</span>
-                <span>€ {vendita.toFixed(2)}</span>
-              </div>
-            )}
-            {margine !== null && (
-              <div className={`flex justify-between font-bold border-t border-white/10 pt-1.5 text-base ${margine >= 30 ? "text-green-400" : margine >= 0 ? "text-yellow-400" : "text-red-400"}`}>
-                <span>Margine</span>
-                <span>{margine.toFixed(1)}%</span>
-              </div>
-            )}
-            {costoTotalePerCapo === 0 && (
-              <div className="text-xs text-[#4e6585] italic">Aggiungi materiali, accessori o costi lavorazione per vedere il riepilogo</div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-3 gap-5">
-        {/* Note di produzione */}
-        <div className="card">
-          <h3 className="section-title">Note di produzione</h3>
-          <div>
-            <label className="text-xs text-[#4e6585] block mb-1">Note generali</label>
-            <textarea
-              value={noteProduzione}
-              onChange={(e) => setNoteProduzione(e.target.value)}
-              onBlur={() => salva()}
-              rows={3}
-              placeholder="Note per il produttore..."
-              className="w-full text-sm text-[#e8edf4] border border-white/10 rounded-lg p-2 resize-none focus:border-blue-500/50 outline-none"
-            />
-          </div>
-        </div>
-
-        {/* Tolleranze */}
-        <div className="card">
-          <h3 className="section-title">Tolleranze</h3>
-          <div className="space-y-2.5">
-            {[
-              { label: "Taglio", value: tolleranzaTaglio, set: setTolleranzaTaglio },
-              { label: "Cucitura", value: tolleranzaCucitura, set: setTolleranzaCucitura },
-              { label: "Colore", value: tolleranzaColore, set: setTolleranzaColore },
-              { label: "Stampa / Ricamo", value: tolleranzaStampa, set: setTolleranzaStampa },
-              { label: "Controllo qualità", value: controlloQualita, set: setControlloQualita },
-              { label: "Packaging", value: packaging, set: setPackaging },
-            ].map(({ label, value, set }) => (
-              <div key={label}>
-                <label className="text-xs text-[#4e6585] block mb-0.5">{label}</label>
-                <textarea
-                  value={value}
-                  onChange={(e) => set(e.target.value)}
-                  onBlur={() => salva()}
-                  rows={2}
-                  className="w-full text-xs text-[#e8edf4] border border-white/10 rounded-lg px-2 py-1.5 resize-none focus:border-blue-500/50 outline-none"
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Allegati */}
-        <div className="card">
-          <h3 className="section-title">Allegati</h3>
-          <div className="space-y-2 mb-3">
-            {(scheda.allegati || []).map((a, i) => (
-              <div key={i} className="flex items-center gap-2 p-2 bg-[#1a3060]/[0.03] rounded-lg text-xs text-[#8ba3c7]">
-                <div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center text-blue-400 text-xs font-bold">
-                  {a.split(".").pop()?.toUpperCase()}
+        {/* Prezzo e margine a destra solo su schermi molto larghi; su iPad vanno sotto, affiancati */}
+        <div className="grid gap-4 items-start min-[1600px]:grid-cols-[minmax(0,1fr)_280px]">
+          <div className="space-y-4 min-w-0">
+            {/* Materiali */}
+            <SectionCard title="Materiali" action={subtotale(riepilogo.materiali)}>
+              {consumi.length > 0 && (
+                <div className={`${RIGA_COLS} text-xs text-[#5F6878] pb-1.5`}>
+                  <span>Materiale</span><span className="text-right">Consumo</span><span className="text-right">Prezzo</span><span className="text-right">€ / capo</span><span />
                 </div>
-                <span className="flex-1 truncate">{a}</span>
+              )}
+              {consumi.map((c, i) => {
+                const mat = materialiDisponibili.find((m) => m.id === c.materialeId);
+                const unitario = calcolaCostoUnitarioConsumo(mat);
+                const isPz = mat?.unitaMisura === "pz";
+                const isKg = mat?.unitaMisura === "kg";
+                const kgPerM = mat ? calcolaKgPerMetroLineare(mat) : null;
+                return (
+                  <div key={i} className="border-t border-[#EFEBE2] py-1.5">
+                    <div className={RIGA_COLS}>
+                      <select value={c.materialeId} onChange={(e) => cambiaMateriale(i, e.target.value)} aria-label="Materiale" className={inputCls}>
+                        {materialiDisponibili.map((m) => <option key={m.id} value={m.id}>{m.nome}{m.unitaMisura === "kg" ? " · al kg" : ""}</option>)}
+                      </select>
+                      <span className="flex items-center gap-1 h-11 border border-[#D6D1C4] rounded-[10px] bg-white px-3 focus-within:border-[#1F3A68]">
+                        <input
+                          type="text" inputMode="decimal" aria-label={`Consumo per capo in ${isPz ? "pezzi" : "metri"}`}
+                          value={consumiStr[i] ?? ""} onChange={(e) => aggiornaConsumoStr(i, e.target.value)} onBlur={() => salva()}
+                          placeholder="0" className="w-full min-w-0 border-0 !shadow-none bg-transparent p-0 text-right font-mono text-[15px]"
+                        />
+                        <span className="text-[#5F6878] text-sm">{isPz ? "pz" : "m"}</span>
+                      </span>
+                      <span className="text-right font-mono text-sm text-[#4A5566]">
+                        {unitario > 0 ? `${formatEuro(unitario)}/${isPz ? "pz" : "m"}` : <span className="text-[#A8461F]">manca</span>}
+                      </span>
+                      <span className="text-right font-mono text-[15px] font-semibold">{formatEuro((c.consumoPerCapo || 0) * unitario)}</span>
+                      <button type="button" onClick={() => rimuoviConsumo(i)} aria-label={`Rimuovi ${c.nomeM || "materiale"}`}
+                        className="w-11 h-11 rounded-[10px] text-[#5F6878] hover:text-red-700 hover:bg-red-50 flex items-center justify-center">
+                        <Trash2 size={17} />
+                      </button>
+                    </div>
+                    {isKg && c.consumoPerCapo > 0 && (
+                      <div className="text-xs text-[#5F6878] mt-1">
+                        {kgPerM === null
+                          ? <span className="text-[#A8461F]">Inserisci peso e altezza nel materiale per il costo al metro</span>
+                          : totalePezzi > 0 && `${(totalePezzi * c.consumoPerCapo * kgPerM).toFixed(1)} kg per l'ordine`}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              <button type="button" onClick={aggiungiConsumo} disabled={materialiDisponibili.length === 0}
+                className="mt-1 h-11 px-2 flex items-center gap-1.5 text-sm font-semibold text-[#1F3A68] disabled:opacity-40">
+                <Plus size={16} /> Aggiungi materiale
+              </button>
+              {materialiDisponibili.length === 0 && (
+                <p className="text-sm text-[#5F6878]">Nessun materiale in anagrafica: aggiungilo da Materiali.</p>
+              )}
+            </SectionCard>
+
+            {/* Accessori */}
+            <SectionCard title="Accessori" action={subtotale(riepilogo.accessori)}>
+              <div className="flex flex-wrap items-center gap-2 mb-3">
+                <span className="text-xs text-[#5F6878] mr-1">Rapidi</span>
+                {ACCESSORI_RAPIDI.map((nome) => (
+                  <button key={nome} type="button" onClick={() => aggiungiAccessorio(nome)}
+                    className="h-9 px-3 rounded-full border border-[#D6D1C4] bg-[#FBFAF7] text-[13px] text-[#0E1B2C] hover:border-[#0E1B2C]/40">
+                    + {nome}
+                  </button>
+                ))}
               </div>
-            ))}
+              {accessori.length > 0 && (
+                <div className={`${RIGA_COLS} text-xs text-[#5F6878] pb-1.5`}>
+                  <span>Accessorio</span><span className="text-right">Pz / capo</span><span className="text-right">€ unitario</span><span className="text-right">€ / capo</span><span />
+                </div>
+              )}
+              {accessori.map((a, i) => (
+                <div key={i} className={`${RIGA_COLS} border-t border-[#EFEBE2] py-1.5`}>
+                  <input id={`acc-nome-${i}`} type="text" value={a.nome} aria-label="Nome accessorio"
+                    onChange={(e) => aggiornaAccessorio(i, { nome: e.target.value })} onBlur={lasciaAccessorio}
+                    placeholder="es. Zip YKK 60 cm" className={inputCls} />
+                  <input type="text" inputMode="decimal" aria-label="Pezzi per capo" value={accessoriStr[i]?.quantita ?? ""}
+                    onChange={(e) => aggiornaAccessorioStr(i, "quantita", e.target.value)} onBlur={lasciaAccessorio}
+                    placeholder="1" className={`${inputCls} text-right font-mono`} />
+                  <EuroInput id={`acc-prezzo-${i}`} label="Prezzo unitario" value={accessoriStr[i]?.prezzo ?? ""}
+                    onChange={(v) => aggiornaAccessorioStr(i, "prezzo", v)} onBlur={lasciaAccessorio} />
+                  <span className="text-right font-mono text-[15px] font-semibold">{formatEuro((a.quantita || 0) * (a.prezzoUnitario || 0))}</span>
+                  <button type="button" onClick={() => rimuoviAccessorio(i)} aria-label={`Rimuovi ${a.nome || "accessorio"}`}
+                    className="w-11 h-11 rounded-[10px] text-[#5F6878] hover:text-red-700 hover:bg-red-50 flex items-center justify-center">
+                    <Trash2 size={17} />
+                  </button>
+                </div>
+              ))}
+              <button type="button" onClick={() => aggiungiAccessorio()}
+                className="mt-1 h-11 px-2 flex items-center gap-1.5 text-sm font-semibold text-[#1F3A68]">
+                <Plus size={16} /> Altro accessorio
+              </button>
+            </SectionCard>
+
+            {/* Lavorazioni */}
+            <SectionCard title="Lavorazioni" action={subtotale(riepilogo.lavorazioni)}>
+              <div className="grid grid-cols-4 gap-3">
+                {lavorazioni.map(({ label, value, set }) => (
+                  <div key={label} className="flex flex-col gap-1.5 text-[13px] text-[#4A5566]">
+                    <span>{label}</span>
+                    <EuroInput label={`Costo ${label.toLowerCase()} per capo`} value={value} onChange={set} onBlur={() => salva()} />
+                  </div>
+                ))}
+              </div>
+            </SectionCard>
           </div>
-          <button className="w-full border-2 border-dashed border-white/10 rounded-lg py-2.5 flex items-center justify-center gap-2 text-sm text-[#4e6585] hover:border-blue-500/40 hover:text-blue-500 transition-colors">
-            <Upload size={14} />
-            Aggiungi allegato
-            <span className="text-xs">PDF, JPG, PNG</span>
-          </button>
+
+          {/* Prezzo e margine */}
+          <div className="grid grid-cols-2 gap-4 items-start min-[1600px]:grid-cols-1">
+            <SectionCard title="Prezzo e margine">
+              <div className="space-y-4">
+                <div className="flex flex-col gap-1.5 text-[13px] text-[#4A5566]">
+                  <span>Prezzo vendita / capo</span>
+                  <EuroInput big label="Prezzo vendita per capo" value={prezzoVendita} onChange={setPrezzoVendita} onBlur={() => salva()} />
+                </div>
+                <div className="flex items-baseline justify-between">
+                  <span className="text-sm text-[#4A5566]">Margine</span>
+                  <span className={`font-mono text-[28px] font-semibold ${margineColore}`}>
+                    {riepilogo.margine === null ? "—" : `${riepilogo.margine.toFixed(1).replace(".", ",")}%`}
+                  </span>
+                </div>
+                {riepilogo.margine !== null && (
+                  <div aria-hidden className="relative h-2 rounded bg-[linear-gradient(90deg,#EFD2C3_0_50%,#EFE4C4_50%_66.6%,#CFE5D8_66.6%_100%)]">
+                    <div className="absolute -top-1 w-1 h-4 rounded bg-[#0E1B2C]"
+                      style={{ left: `calc(${Math.max(0, Math.min(60, riepilogo.margine)) / 60 * 100}% - 2px)` }} />
+                  </div>
+                )}
+              </div>
+            </SectionCard>
+
+            <SectionCard title="Prezzo da margine">
+              <div className="space-y-3">
+                <div role="group" aria-label="Margine obiettivo" className="flex gap-1.5">
+                  {MARGINI_OBIETTIVO.map((m) => (
+                    <button key={m} type="button" aria-pressed={m === margineObiettivo} onClick={() => setMargineObiettivo(m)}
+                      className={`flex-1 h-10 rounded-lg border text-sm ${m === margineObiettivo ? "bg-[#0E1B2C] border-[#0E1B2C] text-white font-semibold" : "bg-white border-[#D6D1C4] text-[#0E1B2C]"}`}>
+                      {m}%
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-[#4A5566]">Prezzo suggerito</span>
+                  <span className="font-mono text-xl font-semibold">{prezzoSuggerito > 0 ? formatEuro(prezzoSuggerito) : "—"}</span>
+                </div>
+                <button type="button" onClick={usaPrezzoSuggerito} disabled={prezzoSuggerito <= 0}
+                  className="w-full h-11 rounded-[10px] border border-[#0E1B2C] bg-white text-sm font-semibold text-[#0E1B2C] hover:bg-[#0E1B2C] hover:text-white transition-colors disabled:opacity-40 disabled:hover:bg-white disabled:hover:text-[#0E1B2C]">
+                  Usa questo prezzo
+                </button>
+              </div>
+            </SectionCard>
+          </div>
         </div>
       </div>
+
+      {/* ── Produzione ─────────────────────────────────── */}
+      {!soloCosti && (
+        <div id="sez-produzione" className="scheda-section space-y-4">
+          <h2 className="font-display text-xl font-bold text-[#0E1B2C] pt-2">Produzione</h2>
+          <div className="grid grid-cols-2 gap-4">
+            <SectionCard title="Note per il produttore">
+              <textarea value={noteProduzione} onChange={(e) => setNoteProduzione(e.target.value)} onBlur={() => salva()}
+                rows={6} placeholder="Istruzioni, attenzioni, riferimenti…" aria-label="Note per il produttore" className={textareaCls} />
+            </SectionCard>
+
+            <SectionCard title="Allegati">
+              <div className="space-y-2 mb-3">
+                {(scheda.allegati || []).map((a, i) => (
+                  <div key={i} className="flex items-center gap-2 p-2 bg-[#FBFAF7] rounded-lg text-sm text-[#4A5566]">
+                    <div className="w-9 h-9 bg-[#E3E9F3] rounded flex items-center justify-center text-[#1F3A68] text-xs font-bold">
+                      {a.split(".").pop()?.toUpperCase()}
+                    </div>
+                    <span className="flex-1 truncate">{a}</span>
+                  </div>
+                ))}
+                {(scheda.allegati || []).length === 0 && <p className="text-sm text-[#5F6878]">Nessun allegato.</p>}
+              </div>
+              <button type="button" className="w-full h-11 border-2 border-dashed border-[#D6D1C4] rounded-[10px] flex items-center justify-center gap-2 text-sm text-[#5F6878] hover:border-[#1F3A68] hover:text-[#1F3A68] transition-colors">
+                <Upload size={15} /> Aggiungi allegato
+              </button>
+            </SectionCard>
+
+            <SectionCard title="Tolleranze e controllo" className="col-span-2">
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { label: "Taglio", value: tolleranzaTaglio, set: setTolleranzaTaglio },
+                  { label: "Cucitura", value: tolleranzaCucitura, set: setTolleranzaCucitura },
+                  { label: "Colore", value: tolleranzaColore, set: setTolleranzaColore },
+                  { label: "Stampa / ricamo", value: tolleranzaStampa, set: setTolleranzaStampa },
+                  { label: "Controllo qualità", value: controlloQualita, set: setControlloQualita },
+                  { label: "Packaging", value: packaging, set: setPackaging },
+                ].map(({ label, value, set }) => (
+                  <Field key={label} label={label}>
+                    <textarea value={value} onChange={(e) => set(e.target.value)} onBlur={() => salva()} rows={2} className={textareaCls} />
+                  </Field>
+                ))}
+              </div>
+            </SectionCard>
+          </div>
+        </div>
+      )}
     </div>
   );
 });

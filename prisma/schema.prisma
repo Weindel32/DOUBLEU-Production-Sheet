@@ -50,6 +50,7 @@ model Scheda {
   codice       String   @unique
   nomeArticolo String
   stato        String   @default("bozza")
+  tipo         String   @default("produzione") // "produzione" | "preventivo"
   versione     String   @default("1.0")
   collezione   String?
   clienteId    String?
