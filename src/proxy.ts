@@ -4,7 +4,7 @@ import { COOKIE_SESSIONE, sessioneValida, basicAuthValida } from "@/lib/auth";
 // Raggiungibili senza sessione: la pagina di accesso e la sua API.
 const PUBBLICI = ["/login", "/api/login"];
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
   if (PUBBLICI.includes(pathname)) return NextResponse.next();
 
