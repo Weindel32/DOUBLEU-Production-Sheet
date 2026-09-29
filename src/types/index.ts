@@ -39,9 +39,25 @@ export interface Accessorio {
   prezzoUnitario: number;
 }
 
+export interface VoceCampione {
+  descrizione: string;
+  importo: number;
+}
+
+/** Costo di sviluppo di un campione: non entra mai nel costo per capo di produzione. */
+export interface Campione {
+  id: string;
+  nome: string;
+  data: string; // yyyy-mm-dd
+  voci: VoceCampione[];
+  note?: string;
+}
+
 export interface SchedaCompleta {
   id: string;
   codice: string;
+  origineId?: string | null;
+  campioni?: Campione[] | null;
   nomeArticolo: string;
   stato: string;
   tipo?: string;

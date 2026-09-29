@@ -4,11 +4,11 @@ import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Check, ArrowRight } from "lucide-react";
 import Link from "next/link";
-import { CATEGORIE, TIPI_SCHEDA, type TipoScheda } from "@/lib/utils";
+import { CATEGORIE, TIPI_SCHEDA, normalizzaTipo, baseScheda, type TipoScheda } from "@/lib/utils";
 import { Field, ChipGroup, Segmented, inputCls } from "@/components/ui/Form";
 
 const DESCRIZIONE_TIPO: Record<TipoScheda, string> = {
-  preventivo: "Solo articolo e costi: materiali, accessori, lavorazioni, prezzo. Niente misure né quantità.",
+  costo: "Il costo per capo di un articolo, da usare per preventivi e ordini. Qui registri anche i campioni.",
   produzione: "Scheda completa per il produttore: misure, quantità per taglia, personalizzazioni, PDF.",
 };
 
@@ -30,7 +30,7 @@ function NuovaSchedaForm() {
     const nome = searchParams.get("nome");
     const fascia = searchParams.get("fascia");
     return {
-      tipo: (searchParams.get("tipo") === "preventivo" ? "preventivo" : "produzione") as TipoScheda,
+      tipo: normalizzaTipo(searchParams.get("tipo")),
       codice: "",
       nomeArticolo: nome ? (codice ? `${codice} – ${nome}` : nome) : "",
       categoria: searchParams.get("categoria") || "",
@@ -58,8 +58,8 @@ function NuovaSchedaForm() {
         setLoading(false);
         return;
       }
-      // Un preventivo si apre direttamente sui costi: è il motivo per cui lo si crea.
-      router.push(`/schede/${scheda.id}${form.tipo === "preventivo" ? "#sez-costi" : ""}`);
+      // Un articolo di costo si apre direttamente sui costi: è il motivo per cui lo si crea.
+      router.push(`${baseScheda(form.tipo)}/${scheda.id}${form.tipo === "costo" ? "#sez-costi" : ""}`);
     } catch {
       setError("Errore di rete. Controlla la connessione e riprova.");
       setLoading(false);
@@ -68,8 +68,8 @@ function NuovaSchedaForm() {
 
   return (
     <div className="p-6 lg:p-10 max-w-3xl">
-      <Link href="/schede" className="inline-flex items-center gap-2 h-11 text-sm text-[#4A5566] hover:text-[#0E1B2C] mb-2">
-        <ArrowLeft size={16} /> Schede
+      <Link href={baseScheda(form.tipo)} className="inline-flex items-center gap-2 h-11 text-sm text-[#4A5566] hover:text-[#0E1B2C] mb-2">
+        <ArrowLeft size={16} /> {form.tipo === "costo" ? "Articoli e costi" : "Schede produzione"}
       </Link>
 
       <h1 className="font-display text-3xl font-extrabold tracking-tight text-[#0E1B2C]">Nuova scheda</h1>
@@ -131,7 +131,7 @@ function NuovaSchedaForm() {
             </Link>
             <button type="submit" disabled={loading || !form.nomeArticolo.trim()}
               className="h-12 px-6 rounded-xl bg-[#0E1B2C] hover:bg-[#1F3A68] text-white text-[15px] font-semibold inline-flex items-center gap-2 disabled:opacity-50">
-              {loading ? "Creazione…" : form.tipo === "preventivo" ? "Crea e vai ai costi" : "Crea scheda"}
+              {loading ? "Creazione…" : form.tipo === "costo" ? "Crea e vai ai costi" : "Crea scheda"}
               {!loading && <ArrowRight size={18} />}
             </button>
           </div>

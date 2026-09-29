@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-import { CATEGORIE_ELASTICO, calcolaCostoUnitarioConsumo } from "@/lib/utils";
-import type { ConsumoMateriale } from "@/types";
+import { CATEGORIE_ELASTICO, calcolaCostoUnitarioConsumo, normalizzaTipo, totaleCampione, totaleSviluppo } from "@/lib/utils";
+import type { ConsumoMateriale, Campione } from "@/types";
 
 const PALETTE_HEX: Record<string, string> = {
   "Nero": "#000000", "Bianco": "#ffffff", "Grigio chiaro": "#d1d5db",
@@ -212,6 +212,30 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       '</div></div>'
     : '';
 
+  // ── Campioni: costo di sviluppo, separato e fuori dal costo per capo ─────
+  const campioni: Campione[] = scheda.campioni ? JSON.parse(scheda.campioni) : [];
+  const dataIt = (d: string) => (/^\d{4}-\d{2}-\d{2}$/.test(d) ? d.split('-').reverse().join('/') : escHtml(d || ''));
+  const euro = (n: number) => '&euro; ' + n.toFixed(2).replace('.', ',');
+  const totaleSviluppoCampioni = totaleSviluppo(campioni);
+
+  const sezioneCampioni = isInterno && campioni.length > 0
+    ? '<div class="section">' +
+      '<div class="section-title">Campioni e sviluppo &mdash; totale ' + euro(totaleSviluppoCampioni) + '</div>' +
+      '<div style="font-size:10px;color:#555;margin-bottom:8px;">Costo una tantum di sviluppo dell&rsquo;articolo: <strong>non incluso</strong> nel costo per capo n&eacute; nel margine.</div>' +
+      '<div class="dev-table">' +
+      campioni.map(function(c) {
+        return '<div class="dev-block">' +
+          '<div class="cost-row" style="font-weight:700;"><span>' + escHtml(c.nome || 'Campione') + ' &middot; ' + dataIt(c.data) + '</span><span>' + euro(totaleCampione(c)) + '</span></div>' +
+          c.voci.map(function(v) {
+            return '<div class="cost-row" style="padding-left:10px;"><span>' + escHtml(v.descrizione || 'Voce') + '</span><span>' + euro(v.importo || 0) + '</span></div>';
+          }).join('') +
+          (c.note ? '<div style="font-size:10px;color:#555;padding:2px 0 0 10px;">' + escHtml(c.note) + '</div>' : '') +
+          '</div>';
+      }).join('') +
+      (campioni.length > 1 ? '<div class="cost-row cost-total" style="border-top-color:#bfdbfe;"><span>TOTALE SVILUPPO (' + campioni.length + ' campioni)</span><span>' + euro(totaleSviluppoCampioni) + '</span></div>' : '') +
+      '</div></div>'
+    : '';
+
   // ── Specifiche prodotto ──────────────────────────────────────────────────
   const specsCampi = [
     ['Tessuto principale', scheda.tessutoPrincipale],
@@ -271,6 +295,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   .cost-table { background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; padding: 10px; }
   .cost-row { display: flex; justify-content: space-between; padding: 3px 0; }
   .cost-total { font-weight: 700; border-top: 1px solid #fde68a; padding-top: 4px; margin-top: 4px; }
+  .dev-table { background: #eff4fb; border: 1px solid #bfdbfe; border-radius: 6px; padding: 10px; }
+  .dev-block { padding: 4px 0 6px; border-bottom: 1px dashed #c7d6ea; margin-bottom: 4px; page-break-inside: avoid; }
+  .dev-block:last-of-type { border-bottom: 0; margin-bottom: 0; }
   .footer { margin-top: 20px; padding-top: 10px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; color: #999; font-size: 9px; }
   .img-grid { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
   .img-grid img { max-height: 220px; max-width: 220px; object-fit: contain; border: 1px solid #e5e7eb; border-radius: 6px; background: #f9fafb; }
@@ -295,7 +322,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 </div>
 
 <div style="margin-bottom:16px;">
-  <div style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:1px;">Scheda produzione</div>
+  <div style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:1px;">${normalizzaTipo(scheda.tipo) === "costo" ? "Costo articolo" : "Scheda produzione"}</div>
   <div style="display:flex;align-items:center;gap:10px;margin:4px 0;">
     <h2>${scheda.nomeArticolo.toUpperCase()}</h2>
     <span class="badge badge-${scheda.stato === "esecutiva" ? "esecutiva" : "bozza"}">${scheda.stato === "esecutiva" ? "ESECUTIVA" : "BOZZA"}</span>
@@ -339,6 +366,7 @@ ${sezioneColori}
 
 ${sezioneProduzione}
 ${sezioneCosti}
+${sezioneCampioni}
 
 <div class="footer">
   <span>Double U &ndash; Handcrafted in Italy &middot; Scheda ${isInterno ? "Interna" : "Tecnica"} &middot; ${scheda.codice} &middot; v${scheda.versione}</span>

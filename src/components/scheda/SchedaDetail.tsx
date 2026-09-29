@@ -3,23 +3,36 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, FileDown, Copy, CheckCircle, Trash2, Loader2, Save, AlertCircle, ArrowRightLeft } from "lucide-react";
+import { ArrowLeft, FileDown, Copy, CheckCircle, Trash2, Loader2, Save, AlertCircle, PackagePlus, ArrowUpRight } from "lucide-react";
 import {
-  STATI_SCHEDA, StatoScheda, TIPI_SCHEDA, TipoScheda, formatData, formatOra, formatEuro,
-  calcolaTotaleQuantita, type RiepilogoCosti,
+  STATI_SCHEDA, StatoScheda, TIPI_SCHEDA, normalizzaTipo, baseScheda, formatData, formatOra, formatEuro,
+  calcolaTotaleQuantita, totaleSviluppo, type RiepilogoCosti,
 } from "@/lib/utils";
 import TabArticolo, { type TabArticoloHandle } from "./TabArticolo";
 import TabPersonalizzazione, { type TabPersonalizzazioneHandle } from "./TabPersonalizzazione";
 import TabMisure, { type TabMisureHandle } from "./TabMisure";
 import TabProduzione, { type TabProduzioneHandle } from "./TabProduzione";
+import TabCampioni from "./TabCampioni";
 import { Segmented } from "@/components/ui/Form";
-import type { SchedaCompleta, QuantitaTaglia } from "@/types";
+import type { SchedaCompleta, QuantitaTaglia, Campione } from "@/types";
+
+export interface SchedaCollegata {
+  id: string;
+  codice: string;
+  nomeArticolo: string;
+  stato: string;
+  cliente?: string | null;
+}
 
 interface Props {
   scheda: SchedaCompleta;
   clientiDisponibili: { id: string; nome: string }[];
   loghiDisponibili: { id: string; nome: string; file: string; tipo: string }[];
   materialiDisponibili: { id: string; nome: string; tipo: string; costoMetro: number | null; prezzoKg: number | null; unitaMisura: string | null; peso: string | null; unitaPeso: string | null; larghezza: string | null }[];
+  /** Ordine nato da un articolo di costo: l'articolo di partenza. */
+  origine?: SchedaCollegata | null;
+  /** Articolo di costo: gli ordini creati da lui. */
+  ordiniCollegati?: SchedaCollegata[];
 }
 
 const SEZIONI = [
@@ -28,24 +41,34 @@ const SEZIONI = [
   { id: "sez-misure", label: "Misure e quantità", soloOrdine: true },
   { id: "sez-costi", label: "Costi", soloOrdine: false },
   { id: "sez-produzione", label: "Produzione", soloOrdine: true },
+  { id: "sez-campioni", label: "Campioni", soloOrdine: false },
 ];
 
 const STATI_OPZIONI = STATI_SCHEDA.map((s) => ({ value: s.value, label: s.label }));
 
 const RIEPILOGO_VUOTO: RiepilogoCosti = { materiali: 0, accessori: 0, lavorazioni: 0, totale: 0, prezzoVendita: 0, margine: null };
 
-export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponibili, materialiDisponibili }: Props) {
+export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponibili, materialiDisponibili, origine, ordiniCollegati = [] }: Props) {
   const router = useRouter();
+  const tipo = normalizzaTipo(scheda.tipo);
+  const isCosto = tipo === "costo";
+  const base = baseScheda(tipo);
+  const tipoInfo = TIPI_SCHEDA.find((t) => t.value === tipo)!;
+
   const [statoCorrente, setStatoCorrente] = useState<StatoScheda>(scheda.stato as StatoScheda);
-  const [tipo, setTipo] = useState<TipoScheda>(scheda.tipo === "preventivo" ? "preventivo" : "produzione");
   const [meta, setMeta] = useState({ nomeArticolo: scheda.nomeArticolo, codice: scheda.codice, categoria: scheda.categoria || "" });
   const [savedAt, setSavedAt] = useState(formatOra(scheda.updatedAt));
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [noteRapide, setNoteRapide] = useState(scheda.noteRapide || "");
   const [riepilogo, setRiepilogo] = useState<RiepilogoCosti>(RIEPILOGO_VUOTO);
+  const [sviluppo, setSviluppo] = useState(() => {
+    const c = (scheda.campioni as Campione[]) || [];
+    return { totale: totaleSviluppo(c), numero: c.length };
+  });
   const [quantita, setQuantita] = useState<QuantitaTaglia>((scheda.quantitaTaglia as QuantitaTaglia) || {});
   const [sezioneAttiva, setSezioneAttiva] = useState("sez-articolo");
+  const [creandoOrdine, setCreandoOrdine] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const tabArticoloRef = useRef<TabArticoloHandle>(null);
@@ -53,10 +76,8 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
   const tabMisureRef = useRef<TabMisureHandle>(null);
   const tabProduzioneRef = useRef<TabProduzioneHandle>(null);
 
-  const isPreventivo = tipo === "preventivo";
-  const sezioni = SEZIONI.filter((s) => !s.soloOrdine || !isPreventivo);
-  const totalePezzi = isPreventivo ? 0 : calcolaTotaleQuantita(quantita);
-  const tipoInfo = TIPI_SCHEDA.find((t) => t.value === tipo)!;
+  const sezioni = SEZIONI.filter((s) => !s.soloOrdine || !isCosto);
+  const totalePezzi = isCosto ? 0 : calcolaTotaleQuantita(quantita);
 
   // Evidenzia nell'indice la sezione che si sta leggendo.
   useEffect(() => {
@@ -71,9 +92,9 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
     );
     sezioni.forEach((s) => { const el = document.getElementById(s.id); if (el) obs.observe(el); });
     return () => obs.disconnect();
-  }, [isPreventivo]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Link diretto a una sezione (es. nuovo preventivo → #sez-costi).
+  // Link diretto a una sezione (es. nuovo articolo di costo → #sez-costi).
   useEffect(() => {
     const id = window.location.hash.slice(1);
     if (id.startsWith("sez-")) setTimeout(() => document.getElementById(id)?.scrollIntoView({ block: "start" }), 50);
@@ -120,31 +141,35 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
     await handleSave({ stato: nuovo });
   };
 
-  const cambiaTipo = async () => {
-    const nuovo: TipoScheda = isPreventivo ? "produzione" : "preventivo";
-    if (nuovo === "preventivo" && !confirm("Trasformare in preventivo di costo? Misure, quantità e personalizzazioni restano salvate ma vengono nascoste.")) return;
-    setTipo(nuovo);
-    await handleSave({ tipo: nuovo });
-  };
-
   const handleElimina = async () => {
-    if (!confirm(`Eliminare definitivamente la scheda "${meta.nomeArticolo}"? L'operazione non è reversibile.`)) return;
+    const avviso = ordiniCollegati.length > 0
+      ? ` Gli ${ordiniCollegati.length} ordini creati da questo articolo restano, ma perdono il collegamento.`
+      : "";
+    if (!confirm(`Eliminare definitivamente "${meta.nomeArticolo}"? L'operazione non è reversibile.${avviso}`)) return;
     await fetch(`/api/schede/${scheda.id}`, { method: "DELETE" });
-    router.push("/schede");
+    router.push(base);
   };
 
-  const handleDuplica = async () => {
+  // Copia lato server dallo stato salvato: prima salvo tutto, così la copia include le ultime modifiche.
+  const copia = async (modo: "ordine" | "duplica") => {
     await handleGlobalSave();
-    const { codice: _codice, id: _id, ...resto } = scheda; // eslint-disable-line @typescript-eslint/no-unused-vars
-    const res = await fetch("/api/schede", {
+    const res = await fetch(`/api/schede/${scheda.id}/copia`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      // Il codice lo genera il server: "-COPIA" ripetuto collide con il vincolo di unicità.
-      body: JSON.stringify({ ...resto, tipo, nomeArticolo: `${meta.nomeArticolo} (copia)`, stato: "bozza", versione: "1.0" }),
+      body: JSON.stringify({ modo }),
     });
-    const nuova = await res.json();
-    if (!res.ok || !nuova.id) { setSaveError(nuova.error || "Duplicazione non riuscita"); return; }
-    window.location.href = `/schede/${nuova.id}`;
+    const nuova = await res.json().catch(() => ({}));
+    if (!res.ok || !nuova.id) {
+      setSaveError(nuova.error || (modo === "ordine" ? "Creazione ordine non riuscita" : "Duplicazione non riuscita"));
+      return false;
+    }
+    window.location.href = `${baseScheda(nuova.tipo)}/${nuova.id}`;
+    return true;
+  };
+
+  const creaOrdine = async () => {
+    setCreandoOrdine(true);
+    if (!(await copia("ordine"))) setCreandoOrdine(false);
   };
 
   const margineColore = riepilogo.margine === null ? "text-[#B7C4D8]"
@@ -161,7 +186,7 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
 
       {/* ── Intestazione ─────────────────────────────────── */}
       <header className="flex-shrink-0 bg-[#FBFAF7] border-b border-[#E4E0D6] px-6 py-3 flex flex-wrap lg:flex-nowrap items-center gap-3 xl:gap-4">
-        <Link href="/schede" aria-label="Torna alle schede"
+        <Link href={base} aria-label={isCosto ? "Torna ad articoli e costi" : "Torna alle schede produzione"}
           className="w-11 h-11 rounded-[10px] border border-[#D6D1C4] bg-white flex items-center justify-center text-[#0E1B2C] hover:border-[#0E1B2C]/40">
           <ArrowLeft size={18} />
         </Link>
@@ -191,7 +216,7 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
           className="h-11 px-3 xl:px-4 flex-shrink-0 rounded-[10px] border border-[#D6D1C4] bg-white text-sm font-medium text-[#0E1B2C] flex items-center gap-2 hover:border-[#0E1B2C]/40 disabled:opacity-50">
           <Save size={16} /> <span className="hidden xl:inline">Salva</span>
         </button>
-        {!isPreventivo && (
+        {!isCosto && (
           <a href={`/api/schede/${scheda.id}/pdf?tipo=tecnico`} target="_blank" rel="noreferrer"
             className="h-11 px-3 xl:px-4 flex-shrink-0 rounded-[10px] border border-[#D6D1C4] bg-white text-sm font-medium text-[#0E1B2C] flex items-center gap-2 hover:border-[#0E1B2C]/40">
             <FileDown size={16} /> <span><span className="hidden xl:inline">PDF </span>Produttore</span>
@@ -226,7 +251,7 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
 
           {/* Indice verticale: schermi larghi */}
           <nav aria-label="Sezioni della scheda" className="hidden 2xl:flex sticky top-6 w-48 flex-shrink-0 flex-col gap-1">
-            <div className="text-[11px] font-semibold tracking-wider uppercase text-[#5F6878] mb-2 ml-3">Scheda</div>
+            <div className="text-[11px] font-semibold tracking-wider uppercase text-[#5F6878] mb-2 ml-3">{isCosto ? "Articolo" : "Scheda"}</div>
             {sezioni.map((s) => (
               <button key={s.id} type="button" onClick={() => vaiA(s.id)} aria-current={sezioneAttiva === s.id ? "location" : undefined}
                 className={`h-11 px-3 rounded-[10px] text-left text-sm transition-colors ${sezioneAttiva === s.id ? "bg-white text-[#0E1B2C] font-semibold shadow-[0_1px_2px_rgba(14,27,44,0.08)]" : "text-[#4A5566] hover:bg-[#0E1B2C]/5"}`}>
@@ -237,24 +262,42 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
 
           {/* Sezioni */}
           <div className="flex-1 min-w-0 space-y-10 pb-24">
+            {origine && (
+              <Link href={`/articoli/${origine.id}`}
+                className="flex items-center justify-between gap-3 bg-[#FBEDE5] border border-[#F2D2C1] rounded-2xl px-5 py-3 text-sm text-[#0E1B2C] hover:border-[#A8461F]/40">
+                <span>
+                  Ordine creato dall&apos;articolo di costo{" "}
+                  <span className="font-mono">{origine.codice}</span> · <span className="font-semibold">{origine.nomeArticolo}</span>
+                </span>
+                <span className="flex items-center gap-1 font-semibold text-[#A8461F]">Apri articolo <ArrowUpRight size={15} /></span>
+              </Link>
+            )}
+
             <section id="sez-articolo" className="scheda-section">
               <TabArticolo ref={tabArticoloRef} scheda={scheda} onSave={handleSave} clienti={clientiDisponibili}
                 materiali={materialiDisponibili} onMetaChange={(m) => setMeta((prev) => ({ ...prev, ...m }))} />
             </section>
 
-            {/* Montate anche per i preventivi (nascoste): cambiando tipo non si perde lo stato */}
-            <section id="sez-personalizzazione" className="scheda-section space-y-4" hidden={isPreventivo}>
-              <h2 className="font-display text-xl font-bold text-[#0E1B2C]">Personalizzazione</h2>
-              <TabPersonalizzazione ref={tabPersonalizzazioneRef} scheda={scheda} onSave={handleSave} loghiDisponibili={loghiDisponibili} />
-            </section>
+            {!isCosto && (
+              <>
+                <section id="sez-personalizzazione" className="scheda-section space-y-4">
+                  <h2 className="font-display text-xl font-bold text-[#0E1B2C]">Personalizzazione</h2>
+                  <TabPersonalizzazione ref={tabPersonalizzazioneRef} scheda={scheda} onSave={handleSave} loghiDisponibili={loghiDisponibili} />
+                </section>
 
-            <section id="sez-misure" className="scheda-section space-y-4" hidden={isPreventivo}>
-              <h2 className="font-display text-xl font-bold text-[#0E1B2C]">Misure e quantità</h2>
-              <TabMisure ref={tabMisureRef} scheda={scheda} onSave={handleSave} onQuantitaChange={setQuantita} />
-            </section>
+                <section id="sez-misure" className="scheda-section space-y-4">
+                  <h2 className="font-display text-xl font-bold text-[#0E1B2C]">Misure e quantità</h2>
+                  <TabMisure ref={tabMisureRef} scheda={scheda} onSave={handleSave} onQuantitaChange={setQuantita} />
+                </section>
+              </>
+            )}
 
             <TabProduzione ref={tabProduzioneRef} scheda={scheda} onSave={handleSave} materialiDisponibili={materialiDisponibili}
-              soloCosti={isPreventivo} onRiepilogoChange={setRiepilogo} />
+              soloCosti={isCosto} onRiepilogoChange={setRiepilogo} />
+
+            <section id="sez-campioni" className="scheda-section">
+              <TabCampioni scheda={scheda} onSave={handleSave} onTotaleChange={(totale, numero) => setSviluppo({ totale, numero })} />
+            </section>
           </div>
 
           {/* ── Riepilogo fisso ─────────────────────────── */}
@@ -303,17 +346,48 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
               </button>
             </div>
 
-            <div className="bg-white border border-[#E4E0D6] rounded-2xl p-4 flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-semibold tracking-wider uppercase text-[#5F6878]">Tipo</span>
-                <span className={`badge badge-${tipo}`}>{tipoInfo.breve}</span>
+            {/* Sviluppo: separato e fuori dal costo per capo */}
+            <button type="button" onClick={() => vaiA("sez-campioni")}
+              className="text-left bg-white border border-[#E4E0D6] rounded-2xl p-4 flex flex-col gap-1.5 hover:border-[#1F3A68]/40">
+              <span className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold tracking-wider uppercase text-[#5F6878]">Sviluppo campioni</span>
+                <span className="text-[11px] text-[#5F6878]">fuori dal costo/capo</span>
+              </span>
+              <span className="font-mono text-2xl font-semibold text-[#1F3A68]">{formatEuro(sviluppo.totale)}</span>
+              <span className="text-xs text-[#5F6878]">
+                {sviluppo.numero === 0 ? "Nessun campione registrato" : `${sviluppo.numero} ${sviluppo.numero === 1 ? "campione" : "campioni"}`}
+              </span>
+            </button>
+
+            {isCosto && (
+              <div className="bg-white border border-[#E4E0D6] rounded-2xl p-4 flex flex-col gap-3">
+                <button type="button" onClick={creaOrdine} disabled={creandoOrdine}
+                  className="h-12 rounded-[10px] bg-[#0E1B2C] hover:bg-[#1F3A68] text-white text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-60">
+                  {creandoOrdine ? <Loader2 size={16} className="animate-spin" /> : <PackagePlus size={16} />}
+                  Crea ordine da questo articolo
+                </button>
+                <p className="text-xs text-[#5F6878] leading-snug">
+                  Nuova scheda di produzione con tessuto, costi e foto già compilati. L&apos;articolo resta qui.
+                </p>
+                {ordiniCollegati.length > 0 && (
+                  <div className="border-t border-[#EFEBE2] pt-3 flex flex-col gap-1">
+                    <span className="text-[11px] font-semibold tracking-wider uppercase text-[#5F6878] mb-1">
+                      Ordini da questo articolo · {ordiniCollegati.length}
+                    </span>
+                    {ordiniCollegati.map((o) => (
+                      <Link key={o.id} href={`/schede/${o.id}`}
+                        className="flex items-center justify-between gap-2 min-h-11 px-2 -mx-2 rounded-lg text-sm hover:bg-[#FBFAF7]">
+                        <span className="min-w-0">
+                          <span className="font-mono text-xs text-[#0E1B2C]">{o.codice}</span>
+                          <span className="block text-[#4A5566] truncate">{o.cliente || "Senza cliente"}</span>
+                        </span>
+                        <span className={`badge badge-${o.stato} flex-shrink-0`}>{STATI_SCHEDA.find((s) => s.value === o.stato)?.label ?? o.stato}</span>
+                      </Link>
+                    ))}
+                  </div>
+                )}
               </div>
-              <button type="button" onClick={cambiaTipo}
-                className="h-11 rounded-[10px] border border-[#D6D1C4] text-sm font-medium text-[#0E1B2C] flex items-center justify-center gap-2 hover:border-[#0E1B2C]/40">
-                <ArrowRightLeft size={15} />
-                {isPreventivo ? "Trasforma in ordine" : "Trasforma in preventivo"}
-              </button>
-            </div>
+            )}
 
             <label className="bg-white border border-[#E4E0D6] rounded-2xl p-4 flex flex-col gap-2">
               <span className="text-[11px] font-semibold tracking-wider uppercase text-[#5F6878]">Note rapide</span>
@@ -326,7 +400,7 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
               <span>Creata da {scheda.createdBy} · {formatData(scheda.createdAt)}</span>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <button type="button" onClick={handleDuplica}
+              <button type="button" onClick={() => copia("duplica")}
                 className="h-11 rounded-[10px] border border-[#D6D1C4] bg-white text-sm font-medium text-[#0E1B2C] flex items-center justify-center gap-2 hover:border-[#0E1B2C]/40">
                 <Copy size={15} /> Duplica
               </button>
@@ -356,6 +430,12 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
           </div>
         )}
         <div className="flex-1" />
+        {isCosto && (
+          <button type="button" onClick={creaOrdine} disabled={creandoOrdine}
+            className="h-11 px-4 rounded-[10px] border border-white/40 text-white text-sm font-semibold flex items-center gap-2 disabled:opacity-60">
+            <PackagePlus size={16} /> Crea ordine
+          </button>
+        )}
         <button type="button" onClick={() => vaiA("sez-costi")} className="h-11 px-4 rounded-[10px] bg-white text-[#0E1B2C] text-sm font-semibold">
           Costi
         </button>

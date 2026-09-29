@@ -9,9 +9,11 @@ interface Props {
   id: string;
   nome: string;
   statoCorrente: string;
+  /** Elenco a cui appartiene la scheda: "/schede" (ordini) o "/articoli" (costi). */
+  base?: string;
 }
 
-export default function SchedaRowMenu({ id, nome, statoCorrente }: Props) {
+export default function SchedaRowMenu({ id, nome, statoCorrente, base = "/schede" }: Props) {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState({ top: 0, right: 0 });
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -55,15 +57,19 @@ export default function SchedaRowMenu({ id, nome, statoCorrente }: Props) {
     router.refresh();
   };
 
+  // Copia lato server: codice nuovo, campi JSON intatti, campioni esclusi.
   const duplica = async () => {
     setOpen(false);
-    const res = await fetch(`/api/schede/${id}`);
-    const scheda = await res.json();
-    await fetch("/api/schede", {
+    const res = await fetch(`/api/schede/${id}/copia`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...scheda, nomeArticolo: `${scheda.nomeArticolo} (Copia)`, stato: "bozza" }),
+      body: JSON.stringify({ modo: "duplica" }),
     });
+    if (!res.ok) {
+      const body = await res.json().catch(() => null);
+      alert(body?.error || "Duplicazione non riuscita");
+      return;
+    }
     router.refresh();
   };
 
@@ -72,9 +78,11 @@ export default function SchedaRowMenu({ id, nome, statoCorrente }: Props) {
       <button
         ref={btnRef}
         onClick={toggle}
-        className="p-1.5 rounded hover:bg-[#0E1B2C]/[0.05] text-[#5F6878] hover:text-[#4A5566] transition-colors"
+        aria-label={`Azioni per ${nome}`}
+        aria-expanded={open}
+        className="w-11 h-11 inline-flex items-center justify-center rounded-lg hover:bg-[#0E1B2C]/[0.05] text-[#5F6878] hover:text-[#0E1B2C] transition-colors"
       >
-        <MoreHorizontal size={16} />
+        <MoreHorizontal size={18} />
       </button>
       {open && (
         <div
@@ -83,7 +91,7 @@ export default function SchedaRowMenu({ id, nome, statoCorrente }: Props) {
           className="w-40 bg-[#FFFFFF] border border-[#E4E0D6] rounded-lg shadow-xl overflow-hidden"
         >
           <button
-            onClick={() => router.push(`/schede/${id}`)}
+            onClick={() => router.push(`${base}/${id}`)}
             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#0E1B2C] hover:bg-[#0E1B2C]/[0.03]"
           >
             <ExternalLink size={14} /> Apri

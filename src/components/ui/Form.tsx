@@ -93,6 +93,31 @@ export function Segmented({ label, options, value, onChange, className }: {
   );
 }
 
+/** Numeri mostrati nei campi con la virgola, come si scrivono. */
+export const numStr = (n: number | null | undefined) => (n === null || n === undefined ? "" : String(n).replace(".", ","));
+
+/** Campo importo in euro: tastiera numerica su iPad, cifre allineate a destra. */
+export function EuroInput({ id, value, onChange, onBlur, label, big }: {
+  id?: string; value: string; onChange: (v: string) => void; onBlur: () => void; label: string; big?: boolean;
+}) {
+  return (
+    <span className={`flex items-center gap-1.5 border border-[#D6D1C4] rounded-[10px] bg-white px-3 ${big ? "h-12" : "h-11"} focus-within:border-[#1F3A68] focus-within:shadow-[0_0_0_3px_rgba(31,58,104,0.18)]`}>
+      <span className="text-[#5F6878]">€</span>
+      <input
+        id={id}
+        type="text"
+        inputMode="decimal"
+        aria-label={label}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
+        placeholder="0,00"
+        className={`w-full min-w-0 border-0 !shadow-none bg-transparent text-right font-mono ${big ? "text-lg" : "text-[15px]"} p-0`}
+      />
+    </span>
+  );
+}
+
 export function SectionCard({ title, children, action, className }: {
   title: string; children: ReactNode; action?: ReactNode; className?: string;
 }) {
