@@ -328,6 +328,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     <span class="badge badge-${scheda.stato === "esecutiva" ? "esecutiva" : "bozza"}">${scheda.stato === "esecutiva" ? "ESECUTIVA" : "BOZZA"}</span>
   </div>
   <div class="meta">
+    ${scheda.codiceModello ? `<div class="meta-item"><div class="meta-label">Modello</div><div class="meta-value">${escHtml(scheda.codiceModello)}</div></div>` : ""}
     <div class="meta-item"><div class="meta-label">Codice scheda</div><div class="meta-value">${scheda.codice}</div></div>
     <div class="meta-item"><div class="meta-label">Cliente / Club</div><div class="meta-value">${scheda.cliente?.nome || "&mdash;"}</div></div>
     <div class="meta-item"><div class="meta-label">Collezione</div><div class="meta-value">${scheda.collezione || "&mdash;"}</div></div>

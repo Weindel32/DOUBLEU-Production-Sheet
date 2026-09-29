@@ -85,7 +85,7 @@ export default async function ListaSchede({ vista, searchParams }: {
     (!filtri.stato || s.stato === filtri.stato) &&
     (filtri.margine !== "basso" || (costi.margine !== null && costi.margine < SOGLIA_MARGINE)) &&
     (filtri.campioni !== "si" || nCampioni > 0) &&
-    (!q || [s.codice, s.nomeArticolo, s.cliente?.nome, s.categoria, s.collezione].some((v) => v?.toLowerCase().includes(q))),
+    (!q || [s.codice, s.codiceModello, s.nomeArticolo, s.cliente?.nome, s.categoria, s.collezione].some((v) => v?.toLowerCase().includes(q))),
   );
 
   const chip = (label: string, cambio: Filtri, attivo: boolean) => (
@@ -150,7 +150,7 @@ export default async function ListaSchede({ vista, searchParams }: {
             <thead>
               <tr className="border-b border-[#E4E0D6] text-left">
                 <th className="pl-4 pr-2 py-3 w-[72px]"><span className="sr-only">Foto</span></th>
-                <th className={cella}>Codice</th>
+                <th className={cella}>Modello / codice</th>
                 <th className={cella}>Articolo</th>
                 {!isArticoli && <th className={cella}>Cliente</th>}
                 <th className={`${cella} text-right`}>Costo / capo</th>
@@ -175,7 +175,11 @@ export default async function ListaSchede({ vista, searchParams }: {
                         {copertina && <img src={copertina} alt="" className="w-full h-full object-cover" />}
                       </Link>
                     </td>
-                    <td className={`${cella} font-mono text-sm text-[#0E1B2C] whitespace-nowrap`}>{s.codice}</td>
+                    <td className={`${cella} font-mono text-sm whitespace-nowrap`}>
+                      {s.codiceModello
+                        ? <><span className="font-semibold text-[#0E1B2C]">{s.codiceModello}</span><div className="text-xs text-[#5F6878]">{s.codice}</div></>
+                        : <span className="text-[#0E1B2C]">{s.codice}</span>}
+                    </td>
                     <td className={cella}>
                       <Link href={href} className="font-semibold text-[#0E1B2C] hover:text-[#1F3A68] hover:underline underline-offset-2">
                         {s.nomeArticolo}
