@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   FileText,
@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const BUILD = 11;
+const BUILD = 12;
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -36,16 +36,17 @@ const navItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const router = useRouter();
 
+  // Cancella il cookie di sessione. L'header Basic finto sostituisce eventuali credenziali del
+  // vecchio popup salvate dal browser, che altrimenti farebbero rientrare senza password.
   const handleLogout = async () => {
     try {
       await fetch("/api/logout", {
+        method: "POST",
         headers: { Authorization: "Basic " + btoa("logout:logout") },
       });
     } catch {}
-    router.refresh();
-    window.location.href = "/";
+    window.location.href = "/login";
   };
 
   return (

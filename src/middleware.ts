@@ -1,30 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
+import { COOKIE_SESSIONE, sessioneValida, basicAuthValida } from "@/lib/auth";
 
-export function middleware(req: NextRequest) {
-  const user = process.env.AUTH_USER || "admin";
-  const pass = process.env.AUTH_PASSWORD || "";
+// Raggiungibili senza sessione: la pagina di accesso e la sua API.
+const PUBBLICI = ["/login", "/api/login"];
 
-  const auth = req.headers.get("authorization");
+export async function middleware(req: NextRequest) {
+  const { pathname, search } = req.nextUrl;
+  if (PUBBLICI.includes(pathname)) return NextResponse.next();
 
-  if (auth) {
-    const [scheme, encoded] = auth.split(" ");
-    if (scheme === "Basic" && encoded) {
-      const decoded = Buffer.from(encoded, "base64").toString("utf-8");
-      const [u, p] = decoded.split(":");
-      if (u === user && p === pass) {
-        return NextResponse.next();
-      }
-    }
-  }
+  if (await sessioneValida(req.cookies.get(COOKIE_SESSIONE)?.value)) return NextResponse.next();
+  if (basicAuthValida(req.headers.get("authorization"))) return NextResponse.next();
 
-  return new NextResponse("Accesso non autorizzato", {
-    status: 401,
-    headers: {
-      "WWW-Authenticate": 'Basic realm="Double U Production Sheet"',
-    },
-  });
+  // Le API rispondono 401 (le chiama il codice, non una persona); le pagine portano al login.
+  if (pathname.startsWith("/api/"))
+    return NextResponse.json({ error: "Sessione scaduta: accedi di nuovo" }, { status: 401 });
+
+  const login = new URL("/login", req.url);
+  if (pathname !== "/") login.searchParams.set("next", pathname + search);
+  return NextResponse.redirect(login);
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|manifest.json|icon-).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|manifest.json|icon-|apple-touch-icon).*)"],
 };
