@@ -2,7 +2,7 @@
 
 import { useState, forwardRef, useImperativeHandle } from "react";
 import { PlusCircle, Trash2, Upload, Info } from "lucide-react";
-import type { SchedaCompleta, ConsumoMateriale } from "@/types";
+import type { SchedaCompleta, ConsumoMateriale, Accessorio } from "@/types";
 import { calcolaTotaleQuantita, parseNumIt, calcolaKgPerMetroLineare, calcolaCostoUnitarioConsumo } from "@/lib/utils";
 
 interface MaterialeDisp {
@@ -49,6 +49,10 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
   const [consumiStr, setConsumiStr] = useState<string[]>(
     ((scheda.consumoMateriale as ConsumoMateriale[]) || []).map((c) => c.consumoPerCapo?.toString() ?? "")
   );
+  const [accessori, setAccessori] = useState<Accessorio[]>((scheda.accessori as Accessorio[]) || []);
+  const [accessoriStr, setAccessoriStr] = useState<{ quantita: string; prezzo: string }[]>(
+    ((scheda.accessori as Accessorio[]) || []).map((a) => ({ quantita: a.quantita?.toString() ?? "", prezzo: a.prezzoUnitario?.toString() ?? "" }))
+  );
   const [costoTaglio, setCostoTaglio] = useState(scheda.costoTaglio?.toString() || "");
   const [costoCucitura, setCostoCucitura] = useState(scheda.costoCucitura?.toString() || "");
   const [costoStampa, setCostoStampa] = useState(scheda.costoStampa?.toString() || "");
@@ -89,6 +93,27 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
     setConsumi((prev) => prev.map((c, i) => i === idx ? { ...c, consumoPerCapo: n ?? 0 } : c));
   };
 
+  const aggiungiAccessorio = () => {
+    setAccessori((prev) => [...prev, { nome: "", quantita: 1, prezzoUnitario: 0 }]);
+    setAccessoriStr((prev) => [...prev, { quantita: "1", prezzo: "" }]);
+  };
+
+  const rimuoviAccessorio = (idx: number) => {
+    const nuovi = accessori.filter((_, i) => i !== idx);
+    setAccessori(nuovi);
+    setAccessoriStr((prev) => prev.filter((_, i) => i !== idx));
+    salva({ accessori: nuovi });
+  };
+
+  const aggiornaAccessorio = (idx: number, patch: Partial<Accessorio>) =>
+    setAccessori((prev) => prev.map((a, i) => (i === idx ? { ...a, ...patch } : a)));
+
+  const aggiornaAccessorioStr = (idx: number, field: "quantita" | "prezzo", raw: string) => {
+    setAccessoriStr((prev) => prev.map((s, i) => (i === idx ? { ...s, [field]: raw } : s)));
+    const n = parseNum(raw) ?? 0;
+    aggiornaAccessorio(idx, field === "quantita" ? { quantita: n } : { prezzoUnitario: n });
+  };
+
   const salva = async (extra?: Partial<SchedaCompleta>) => {
     const pTaglio = parseNum(costoTaglio) ?? 0;
     const pCucitura = parseNum(costoCucitura) ?? 0;
@@ -106,6 +131,7 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
       noteProduzione, tolleranzaTaglio, tolleranzaCucitura, tolleranzaColore,
       tolleranzaStampa, controlloQualita, packaging,
       consumoMateriale: consumiAggiornati,
+      accessori,
       costoTaglio: parseNum(costoTaglio),
       costoCucitura: parseNum(costoCucitura),
       costoStampa: parseNum(costoStampa),
@@ -128,13 +154,15 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
     return sum + calcolaCostoMateriale(c, mat);
   }, 0);
 
+  const costoAccessoriPerCapo = accessori.reduce((sum, a) => sum + (a.quantita || 0) * (a.prezzoUnitario || 0), 0);
+
   const lavorazionePerCapo =
     (parseNum(costoTaglio) ?? 0) +
     (parseNum(costoCucitura) ?? 0) +
     (parseNum(costoStampa) ?? 0) +
     (parseNum(costoRicamo) ?? 0);
 
-  const costoTotalePerCapo = costoMaterialePerCapo + lavorazionePerCapo;
+  const costoTotalePerCapo = costoMaterialePerCapo + costoAccessoriPerCapo + lavorazionePerCapo;
   const costoTotaleOrdine = costoTotalePerCapo * totalePezzi;
   const vendita = parseNum(prezzoVendita) ?? 0;
   const margine = vendita > 0 && costoTotalePerCapo > 0
@@ -223,6 +251,58 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
             </div>
 
             <div>
+              <div className="text-xs font-medium text-[#8ba3c7] mb-2">Accessori / capo</div>
+              <div className="space-y-2">
+                {accessori.map((a, i) => (
+                  <div key={i} className="bg-[#1a3060]/[0.03] rounded-lg px-3 py-2.5 flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={a.nome}
+                      onChange={(e) => aggiornaAccessorio(i, { nome: e.target.value })}
+                      onBlur={() => salva()}
+                      placeholder="es. Laccio, Zip, Etichetta"
+                      className="flex-1 min-w-0 text-xs border border-white/10 rounded-lg px-2.5 py-1.5 bg-[#1a3060] outline-none"
+                    />
+                    <div className="flex items-center flex-shrink-0 border border-white/10 rounded-lg px-2.5 py-1.5 w-20 bg-[#1a3060]">
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={accessoriStr[i]?.quantita ?? ""}
+                        onChange={(e) => aggiornaAccessorioStr(i, "quantita", e.target.value)}
+                        onBlur={() => salva()}
+                        className="w-full text-xs text-right outline-none bg-transparent"
+                        placeholder="1"
+                      />
+                      <span className="text-xs text-[#4e6585] ml-1 flex-shrink-0">pz</span>
+                    </div>
+                    <div className="flex items-center flex-shrink-0 border border-white/10 rounded-lg px-2.5 py-1.5 w-24 bg-[#1a3060]">
+                      <span className="text-xs text-[#4e6585]">€</span>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={accessoriStr[i]?.prezzo ?? ""}
+                        onChange={(e) => aggiornaAccessorioStr(i, "prezzo", e.target.value)}
+                        onBlur={() => salva()}
+                        className="w-full text-xs text-right outline-none bg-transparent"
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <span className="text-xs font-semibold text-orange-400 w-16 text-right flex-shrink-0">
+                      € {((a.quantita || 0) * (a.prezzoUnitario || 0)).toFixed(2)}
+                    </span>
+                    <button onClick={() => rimuoviAccessorio(i)} className="text-[#4e6585] hover:text-red-400 flex-shrink-0">
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <button onClick={aggiungiAccessorio} className="mt-2 flex items-center gap-1 text-xs text-blue-400 hover:text-blue-400">
+                <PlusCircle size={12} />
+                Aggiungi accessorio
+              </button>
+            </div>
+
+            <div>
               <div className="text-xs font-medium text-[#8ba3c7] mb-2">Costi lavorazione / capo</div>
               <div className="grid grid-cols-2 gap-2">
                 {[
@@ -276,6 +356,12 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
                 <span>€ {costoMaterialePerCapo.toFixed(2)}</span>
               </div>
             )}
+            {costoAccessoriPerCapo > 0 && (
+              <div className="flex justify-between text-[#8ba3c7]">
+                <span>Accessori/capo</span>
+                <span>€ {costoAccessoriPerCapo.toFixed(2)}</span>
+              </div>
+            )}
             {lavorazionePerCapo > 0 && (
               <div className="flex justify-between text-[#8ba3c7]">
                 <span>Lavorazione/capo</span>
@@ -305,7 +391,7 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
               </div>
             )}
             {costoTotalePerCapo === 0 && (
-              <div className="text-xs text-[#4e6585] italic">Aggiungi consumo materiali o costi lavorazione per vedere il riepilogo</div>
+              <div className="text-xs text-[#4e6585] italic">Aggiungi materiali, accessori o costi lavorazione per vedere il riepilogo</div>
             )}
           </div>
         </div>

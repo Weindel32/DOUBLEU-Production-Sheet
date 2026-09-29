@@ -33,6 +33,12 @@ export interface ConsumoMateriale {
   costoUnitario?: number;
 }
 
+export interface Accessorio {
+  nome: string;
+  quantita: number;
+  prezzoUnitario: number;
+}
+
 export interface SchedaCompleta {
   id: string;
   codice: string;
@@ -75,6 +81,7 @@ export interface SchedaCompleta {
   packaging?: string | null;
   allegati?: string[] | null;
   consumoMateriale?: ConsumoMateriale[] | null;
+  accessori?: Accessorio[] | null;
   costoLavorazione?: number | null;
   costoTaglio?: number | null;
   costoCucitura?: number | null;
