@@ -90,12 +90,12 @@ export default function LoghiClient({ loghiIniziali }: Props) {
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Libreria Loghi</h1>
-          <p className="text-sm text-[#8ba3c7] mt-0.5">{loghi.length} loghi disponibili</p>
+          <h1 className="text-2xl font-bold text-[#0E1B2C]">Libreria Loghi</h1>
+          <p className="text-sm text-[#4A5566] mt-0.5">{loghi.length} loghi disponibili</p>
         </div>
         <Link
           href="/loghi/nuovo"
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+          className="flex items-center gap-2 bg-[#0E1B2C] hover:bg-[#1F3A68] text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
         >
           <PlusCircle size={16} />
           Aggiungi logo
@@ -112,12 +112,12 @@ export default function LoghiClient({ loghiIniziali }: Props) {
 
       {loghi.length === 0 ? (
         <div className="card text-center py-16">
-          <Image size={48} className="mx-auto mb-4 text-[#4e6585]" />
-          <h2 className="text-[#8ba3c7] font-medium mb-2">Nessun logo</h2>
-          <p className="text-[#4e6585] text-sm mb-4">Carica i loghi da usare nelle schede</p>
+          <Image size={48} className="mx-auto mb-4 text-[#5F6878]" />
+          <h2 className="text-[#4A5566] font-medium mb-2">Nessun logo</h2>
+          <p className="text-[#5F6878] text-sm mb-4">Carica i loghi da usare nelle schede</p>
           <Link
             href="/loghi/nuovo"
-            className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-500 transition-colors"
+            className="inline-flex items-center gap-2 bg-[#0E1B2C] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#1F3A68] transition-colors"
           >
             <PlusCircle size={16} />
             Aggiungi logo
@@ -126,9 +126,9 @@ export default function LoghiClient({ loghiIniziali }: Props) {
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {loghi.map((l) => (
-            <div key={l.id} className="card hover:bg-[#162a4e] transition-colors">
+            <div key={l.id} className="card hover:bg-[#FBFAF7] transition-colors">
               <div
-                className="relative w-full aspect-square bg-[#1a3060] rounded-xl mb-3 flex items-center justify-center cursor-pointer group overflow-hidden"
+                className="relative w-full aspect-square bg-[#FFFFFF] rounded-xl mb-3 flex items-center justify-center cursor-pointer group overflow-hidden"
                 onClick={() => apriPreview(l)}
               >
                 {l.file ? (
@@ -138,22 +138,22 @@ export default function LoghiClient({ loghiIniziali }: Props) {
                     className="w-full h-full object-contain p-4"
                   />
                 ) : (
-                  <Image size={28} className="text-[#4e6585]" />
+                  <Image size={28} className="text-[#5F6878]" />
                 )}
                 <div className="absolute inset-0 bg-black/40 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <ZoomIn size={22} className="text-white" />
+                  <ZoomIn size={22} className="text-[#0E1B2C]" />
                 </div>
               </div>
 
-              <div className="font-medium text-white text-sm truncate">{l.nome}</div>
-              <div className="text-xs text-[#8ba3c7] mt-0.5">{l.tipo}</div>
-              <div className="text-xs text-[#4e6585] mt-0.5">{formatData(l.createdAt)}</div>
+              <div className="font-medium text-[#0E1B2C] text-sm truncate">{l.nome}</div>
+              <div className="text-xs text-[#4A5566] mt-0.5">{l.tipo}</div>
+              <div className="text-xs text-[#5F6878] mt-0.5">{formatData(l.createdAt)}</div>
 
               <div className="flex gap-2 mt-3">
                 <button
                   onClick={() => avviaReplacement(l.id)}
                   disabled={uploading && replacingId === l.id}
-                  className="flex-1 flex items-center justify-center gap-1 border border-white/10 rounded-lg py-1.5 text-xs text-[#8ba3c7] hover:border-blue-500/40 hover:text-blue-400 transition-colors disabled:opacity-50"
+                  className="flex-1 flex items-center justify-center gap-1 border border-[#E4E0D6] rounded-lg py-1.5 text-xs text-[#4A5566] hover:border-blue-500/40 hover:text-[#1F3A68] transition-colors disabled:opacity-50"
                 >
                   {uploading && replacingId === l.id ? (
                     <Loader2 size={12} className="animate-spin" />
@@ -164,7 +164,7 @@ export default function LoghiClient({ loghiIniziali }: Props) {
                 </button>
                 <button
                   onClick={() => { setDeletingId(l.id); setErrore(null); }}
-                  className="p-1.5 border border-white/10 rounded-lg text-[#4e6585] hover:border-red-500/30 hover:text-red-400 transition-colors"
+                  className="p-1.5 border border-[#E4E0D6] rounded-lg text-[#5F6878] hover:border-red-500/30 hover:text-red-700 transition-colors"
                 >
                   <Trash2 size={13} />
                 </button>
@@ -181,16 +181,16 @@ export default function LoghiClient({ loghiIniziali }: Props) {
           onClick={chiudiPreview}
         >
           <div
-            className="bg-[#112240] border border-white/10 rounded-2xl shadow-2xl p-6 max-w-lg w-full mx-4 relative"
+            className="bg-[#FFFFFF] border border-[#E4E0D6] rounded-2xl shadow-2xl p-6 max-w-lg w-full mx-4 relative"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={chiudiPreview}
-              className="absolute top-4 right-4 text-[#4e6585] hover:text-white transition-colors"
+              className="absolute top-4 right-4 text-[#5F6878] hover:text-[#0E1B2C] transition-colors"
             >
               <X size={20} />
             </button>
-            <div className="flex items-center justify-center bg-[#1a3060] rounded-xl p-8 mb-4 min-h-48">
+            <div className="flex items-center justify-center bg-[#FFFFFF] rounded-xl p-8 mb-4 min-h-48">
               {previewLogo.file ? (
                 <img
                   src={previewLogo.file}
@@ -198,17 +198,17 @@ export default function LoghiClient({ loghiIniziali }: Props) {
                   className="max-h-64 max-w-full object-contain"
                 />
               ) : (
-                <Image size={48} className="text-[#4e6585]" />
+                <Image size={48} className="text-[#5F6878]" />
               )}
             </div>
-            <div className="font-semibold text-white">{previewLogo.nome}</div>
-            <div className="text-sm text-[#8ba3c7] mt-0.5">{previewLogo.tipo}</div>
-            <div className="text-xs text-[#4e6585] mt-1">{formatData(previewLogo.createdAt)}</div>
+            <div className="font-semibold text-[#0E1B2C]">{previewLogo.nome}</div>
+            <div className="text-sm text-[#4A5566] mt-0.5">{previewLogo.tipo}</div>
+            <div className="text-xs text-[#5F6878] mt-1">{formatData(previewLogo.createdAt)}</div>
             <div className="flex gap-3 mt-4">
               <button
                 onClick={() => avviaReplacement(previewLogo.id)}
                 disabled={uploading}
-                className="flex-1 flex items-center justify-center gap-2 border border-white/10 rounded-lg py-2 text-sm text-[#8ba3c7] hover:border-blue-500/40 hover:text-blue-400 transition-colors disabled:opacity-50"
+                className="flex-1 flex items-center justify-center gap-2 border border-[#E4E0D6] rounded-lg py-2 text-sm text-[#4A5566] hover:border-blue-500/40 hover:text-[#1F3A68] transition-colors disabled:opacity-50"
               >
                 {uploading && replacingId === previewLogo.id ? (
                   <Loader2 size={14} className="animate-spin" />
@@ -219,7 +219,7 @@ export default function LoghiClient({ loghiIniziali }: Props) {
               </button>
               <button
                 onClick={() => { setDeletingId(previewLogo.id); chiudiPreview(); setErrore(null); }}
-                className="flex items-center justify-center gap-2 border border-red-500/30 rounded-lg py-2 px-4 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
+                className="flex items-center justify-center gap-2 border border-red-500/30 rounded-lg py-2 px-4 text-sm text-red-700 hover:bg-red-500/10 transition-colors"
               >
                 <Trash2 size={14} />
                 Elimina
@@ -232,24 +232,24 @@ export default function LoghiClient({ loghiIniziali }: Props) {
       {/* Dialog eliminazione */}
       {deletingId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="bg-[#112240] border border-white/10 rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6">
+          <div className="bg-[#FFFFFF] border border-[#E4E0D6] rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-red-500/15 rounded-xl flex items-center justify-center">
-                <Trash2 size={18} className="text-red-400" />
+                <Trash2 size={18} className="text-red-700" />
               </div>
               <div>
-                <h2 className="font-bold text-white">Elimina logo</h2>
-                <p className="text-sm text-[#8ba3c7]">
+                <h2 className="font-bold text-[#0E1B2C]">Elimina logo</h2>
+                <p className="text-sm text-[#4A5566]">
                   {loghi.find((l) => l.id === deletingId)?.nome}
                 </p>
               </div>
             </div>
-            <p className="text-sm text-[#8ba3c7] mb-4">
+            <p className="text-sm text-[#4A5566] mb-4">
               Questa azione è irreversibile. Il logo sarà rimosso dalla libreria.
             </p>
 
             {errore && (
-              <div className="mb-4 flex items-center gap-2 text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+              <div className="mb-4 flex items-center gap-2 text-sm text-red-700 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
                 <AlertCircle size={14} />
                 {errore}
               </div>
@@ -258,7 +258,7 @@ export default function LoghiClient({ loghiIniziali }: Props) {
             <div className="flex gap-3">
               <button
                 onClick={() => { setDeletingId(null); setErrore(null); }}
-                className="flex-1 border border-white/10 rounded-lg py-2 text-sm text-[#8ba3c7] hover:bg-white/5 transition-colors"
+                className="flex-1 border border-[#E4E0D6] rounded-lg py-2 text-sm text-[#4A5566] hover:bg-[#0E1B2C]/5 transition-colors"
               >
                 Annulla
               </button>

@@ -18,9 +18,16 @@ export const TAGLIE = [...TAGLIE_ADULTO, ...TAGLIE_KIDS] as const;
 
 export const CATEGORIE = [
   "T-Shirt PRF", "T-Shirt WS", "T-Shirt COT",
-  "Polo", "Hoodie", "Zip Hoodie", "Sweatshirt",
+  "Polo", "Hoodie", "Zip Hoodie", "Sweatshirt", "Jacket",
   "Sweatpants", "Short", "Skirt", "Dress", "Altro",
 ];
+
+export const TIPI_SCHEDA = [
+  { value: "preventivo", label: "Preventivo di costo", breve: "Preventivo" },
+  { value: "produzione", label: "Ordine di produzione", breve: "Ordine" },
+] as const;
+
+export type TipoScheda = typeof TIPI_SCHEDA[number]["value"];
 
 export const CATEGORIE_ELASTICO = ["Short", "Skirt", "Sweatpants"];
 
@@ -166,4 +173,56 @@ export function calcolaCostoUnitarioConsumo(mat: MaterialeCostoInfo | null | und
   if (!mat) return 0;
   if (mat.unitaMisura === "pz") return mat.costoMetro || 0;
   return calcolaCostoAlMetro(mat) ?? 0;
+}
+
+export interface RiepilogoCosti {
+  materiali: number;
+  accessori: number;
+  lavorazioni: number;
+  totale: number;
+  prezzoVendita: number;
+  /** Margine sul prezzo di vendita in %, null se manca prezzo o costo. */
+  margine: number | null;
+}
+
+/**
+ * Costo per capo di una scheda: consumo materiali × costo unitario attuale del materiale,
+ * più accessori e lavorazioni. Usato da scheda e lista, così il numero è lo stesso ovunque.
+ */
+export function calcolaRiepilogoCosti(
+  input: {
+    consumi: { materialeId: string; consumoPerCapo: number; costoUnitario?: number }[];
+    accessori: { quantita: number; prezzoUnitario: number }[];
+    lavorazioni: (number | null | undefined)[];
+    prezzoVendita: number | null | undefined;
+  },
+  materiali: (MaterialeCostoInfo & { id: string })[],
+): RiepilogoCosti {
+  const mat = input.consumi.reduce((sum, c) => {
+    const m = materiali.find((x) => x.id === c.materialeId);
+    const unitario = m ? calcolaCostoUnitarioConsumo(m) : (c.costoUnitario || 0);
+    return sum + (c.consumoPerCapo || 0) * unitario;
+  }, 0);
+  const acc = input.accessori.reduce((sum, a) => sum + (a.quantita || 0) * (a.prezzoUnitario || 0), 0);
+  const lav = input.lavorazioni.reduce<number>((sum, v) => sum + (v || 0), 0);
+  const totale = mat + acc + lav;
+  const prezzo = input.prezzoVendita || 0;
+  return {
+    materiali: mat,
+    accessori: acc,
+    lavorazioni: lav,
+    totale,
+    prezzoVendita: prezzo,
+    margine: prezzo > 0 && totale > 0 ? ((prezzo - totale) / prezzo) * 100 : null,
+  };
+}
+
+/** Prezzo di vendita che dà il margine indicato (in %) sul costo. */
+export function prezzoDaMargine(costo: number, marginePct: number): number {
+  if (marginePct >= 100) return 0;
+  return costo / (1 - marginePct / 100);
+}
+
+export function formatEuro(n: number): string {
+  return "€ " + n.toLocaleString("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }

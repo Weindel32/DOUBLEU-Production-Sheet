@@ -22,7 +22,7 @@ export default async function DashboardPage() {
       icon: FileText,
       href: "/schede",
       iconBg: "bg-blue-500/20",
-      iconColor: "text-blue-400",
+      iconColor: "text-[#1F3A68]",
     },
     {
       label: "Esecutive",
@@ -30,7 +30,7 @@ export default async function DashboardPage() {
       icon: CheckCircle2,
       href: "/schede",
       iconBg: "bg-emerald-500/20",
-      iconColor: "text-emerald-400",
+      iconColor: "text-[#1D6B4A]",
     },
     {
       label: "Bozze",
@@ -38,7 +38,7 @@ export default async function DashboardPage() {
       icon: Edit3,
       href: "/schede",
       iconBg: "bg-orange-500/20",
-      iconColor: "text-orange-400",
+      iconColor: "text-[#A8461F]",
     },
     {
       label: "Clienti / Club",
@@ -46,7 +46,7 @@ export default async function DashboardPage() {
       icon: Users,
       href: "/clienti",
       iconBg: "bg-purple-500/20",
-      iconColor: "text-purple-400",
+      iconColor: "text-purple-700",
     },
     {
       label: "Materiali",
@@ -61,8 +61,8 @@ export default async function DashboardPage() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-        <p className="text-[#8ba3c7] text-sm mt-1">Panoramica produzione Double U</p>
+        <h1 className="text-2xl font-bold text-[#0E1B2C]">Dashboard</h1>
+        <p className="text-[#4A5566] text-sm mt-1">Panoramica produzione Double U</p>
       </div>
 
       {/* Stats */}
@@ -71,13 +71,13 @@ export default async function DashboardPage() {
           <Link
             key={s.label}
             href={s.href}
-            className="card hover:bg-[#162a4e] transition-colors cursor-pointer group"
+            className="card hover:bg-[#FBFAF7] transition-colors cursor-pointer group"
           >
             <div className={`w-10 h-10 rounded-xl ${s.iconBg} flex items-center justify-center mb-3`}>
               <s.icon size={18} className={s.iconColor} />
             </div>
-            <div className="text-3xl font-bold text-white">{s.value}</div>
-            <div className="text-xs mt-1 text-[#8ba3c7] uppercase tracking-wide font-medium">{s.label}</div>
+            <div className="text-3xl font-bold text-[#0E1B2C]">{s.value}</div>
+            <div className="text-xs mt-1 text-[#4A5566] uppercase tracking-wide font-medium">{s.label}</div>
           </Link>
         ))}
       </div>
@@ -85,19 +85,19 @@ export default async function DashboardPage() {
       {/* Ultime schede */}
       <div className="card">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold text-white">Ultime schede modificate</h2>
-          <Link href="/schede" className="text-sm text-blue-400 hover:text-blue-300 transition-colors">
+          <h2 className="font-semibold text-[#0E1B2C]">Ultime schede modificate</h2>
+          <Link href="/schede" className="text-sm text-[#1F3A68] hover:text-[#1F3A68] transition-colors">
             Vedi tutte →
           </Link>
         </div>
 
         {schede.length === 0 ? (
-          <div className="text-center py-8 text-[#4e6585]">
+          <div className="text-center py-8 text-[#5F6878]">
             <FileText size={40} className="mx-auto mb-3 opacity-40" />
             <p>Nessuna scheda creata</p>
             <Link
               href="/schede/nuova"
-              className="mt-3 inline-block text-sm text-blue-400 hover:text-blue-300"
+              className="mt-3 inline-block text-sm text-[#1F3A68] hover:text-[#1F3A68]"
             >
               Crea la prima scheda
             </Link>
@@ -110,11 +110,11 @@ export default async function DashboardPage() {
                 <Link
                   key={s.id}
                   href={`/schede/${s.id}`}
-                  className="flex items-center justify-between py-3 hover:bg-white/[0.03] -mx-2 px-2 rounded-lg transition-colors"
+                  className="flex items-center justify-between py-3 hover:bg-[#0E1B2C]/[0.03] -mx-2 px-2 rounded-lg transition-colors"
                 >
                   <div>
-                    <div className="font-medium text-white text-sm">{s.nomeArticolo}</div>
-                    <div className="text-xs text-[#8ba3c7] mt-0.5">
+                    <div className="font-medium text-[#0E1B2C] text-sm">{s.nomeArticolo}</div>
+                    <div className="text-xs text-[#4A5566] mt-0.5">
                       {s.codice} · {s.cliente?.nome || "Nessun cliente"} · {formatData(s.updatedAt)}
                     </div>
                   </div>
