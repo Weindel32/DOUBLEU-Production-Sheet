@@ -24,7 +24,7 @@ const VESTIBILITA = [
 ];
 const STAGIONI = ["Primavera / Estate", "Autunno / Inverno", "Tutto l'anno"];
 const UTILIZZI = ["Training / Warm-up", "Gara", "Casual", "Allenamento"];
-const COLLI = ["Girocollo", "V-neck", "Polo", "Zip", "Cappuccio", "Collo alto"];
+const COLLI = ["Girocollo", "V-neck", "Polo", "Zip", "Cappuccio", "Collo alto", "Bomber"];
 const MANICHE = ["Corte", "Lunghe", "Senza maniche", "3/4", "Raglan", "Giro Manica"];
 
 function SelectField({ label, value, options, onChange, className }: {
