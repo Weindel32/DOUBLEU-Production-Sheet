@@ -22,7 +22,7 @@ export default async function SchedaPagina({ id, percorso }: { id: string; perco
   const tipo = normalizzaTipo(scheda.tipo);
   if (baseScheda(tipo) !== percorso) redirect(`${baseScheda(tipo)}/${id}`);
 
-  const [clienti, loghi, materiali, origineRow, ordiniRows] = await Promise.all([
+  const [clienti, loghi, materiali, origineRow, ordiniRows, modelli] = await Promise.all([
     prisma.cliente.findMany({ orderBy: { nome: "asc" } }),
     prisma.logo.findMany({ orderBy: { nome: "asc" } }),
     prisma.materiale.findMany({ orderBy: { nome: "asc" } }),
@@ -36,6 +36,7 @@ export default async function SchedaPagina({ id, percorso }: { id: string; perco
           select: { id: true, codice: true, nomeArticolo: true, stato: true, cliente: { select: { nome: true } } },
         })
       : [],
+    prisma.modello.findMany({ orderBy: { codice: "asc" }, select: { codice: true, descrizione: true, categoria: true, fascia: true } }),
   ]);
 
   const origine: SchedaCollegata | null = origineRow;
@@ -101,6 +102,7 @@ export default async function SchedaPagina({ id, percorso }: { id: string; perco
       materialiDisponibili={materiali}
       origine={origine}
       ordiniCollegati={ordiniCollegati}
+      modelli={modelli}
     />
   );
 }

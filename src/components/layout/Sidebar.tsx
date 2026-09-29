@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const BUILD = 10;
+const BUILD = 11;
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -26,7 +26,7 @@ const navItems = [
   { href: "/schede", label: "Schede produzione", icon: FileText },
   { href: "/schede/nuova", label: "Nuova scheda", icon: PlusCircle },
   { href: "/archivio", label: "Archivio", icon: Archive },
-  { href: "/modelli", label: "Modelli base", icon: BookOpen },
+  { href: "/modelli", label: "Modelli", icon: BookOpen },
   { href: "/clienti", label: "Clienti / Club", icon: Users },
   { href: "/loghi", label: "Loghi", icon: Image },
   { href: "/materiali", label: "Materiali", icon: Package },

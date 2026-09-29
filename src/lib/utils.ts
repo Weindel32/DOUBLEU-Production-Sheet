@@ -41,6 +41,24 @@ export function baseScheda(tipo: string | null | undefined): "/articoli" | "/sch
   return normalizzaTipo(tipo) === "costo" ? "/articoli" : "/schede";
 }
 
+export const FASCE_MODELLO = ["Adulto", "Uomo", "Donna", "Kids"] as const;
+export type FasciaModello = typeof FASCE_MODELLO[number];
+
+/** Fascia del modello → genere della scheda (Adulto è unisex, Kids è junior). */
+export function genereDaFascia(fascia: string | null | undefined): string {
+  return fascia === "Kids" ? "Junior" : fascia === "Donna" ? "Donna" : fascia === "Uomo" ? "Uomo" : "Unisex";
+}
+
+export function fasciaDaGenere(genere: string | null | undefined): FasciaModello {
+  return genere === "Junior" ? "Kids" : genere === "Donna" ? "Donna" : genere === "Uomo" ? "Uomo" : "Adulto";
+}
+
+/** Ordina le categorie come nel menu delle schede; quelle nuove in fondo, in ordine alfabetico. */
+export function ordinaCategorie(categorie: string[]): string[] {
+  const pos = (c: string) => { const i = CATEGORIE.indexOf(c); return i === -1 ? 999 : i; };
+  return [...new Set(categorie)].sort((a, b) => pos(a) - pos(b) || a.localeCompare(b));
+}
+
 /** Voci tipiche del costo di un campione, proposte come scorciatoie. */
 export const VOCI_CAMPIONE = [
   "Studio modello", "Cartamodello", "Taglio", "Tessuto", "Confezione (fasonista)", "Stampa / ricamo", "Spedizione",

@@ -53,6 +53,8 @@ model Scheda {
   tipo         String   @default("produzione") // "produzione" | "costo" ("preventivo" = nome storico di "costo")
   // Ordine creato da un articolo di costo: id dell'articolo di partenza
   origineId    String?
+  // Codice del cartamodello del modellista (es. "DUSP 09"): si ripete su più schede
+  codiceModello String?
   // JSON: [{id, nome, data, voci: [{descrizione, importo}], note}] — costi di sviluppo, fuori dal costo per capo
   campioni     String?
   versione     String   @default("1.0")
@@ -144,4 +146,16 @@ model MaterialeScheda {
   note           String?
   scheda         Scheda    @relation(fields: [schedaId], references: [id], onDelete: Cascade)
   materiale      Materiale @relation(fields: [materialeId], references: [id])
+}
+
+// Archivio dei cartamodelli del modellista. Il codice è quello del modellista: non si rinumera.
+model Modello {
+  id          String   @id @default(cuid())
+  codice      String   @unique
+  descrizione String
+  categoria   String
+  fascia      String // Adulto | Uomo | Donna | Kids
+  note        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

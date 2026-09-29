@@ -57,6 +57,7 @@ export interface SchedaCompleta {
   id: string;
   codice: string;
   origineId?: string | null;
+  codiceModello?: string | null;
   campioni?: Campione[] | null;
   nomeArticolo: string;
   stato: string;

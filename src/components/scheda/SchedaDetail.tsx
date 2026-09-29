@@ -15,6 +15,7 @@ import TabProduzione, { type TabProduzioneHandle } from "./TabProduzione";
 import TabCampioni from "./TabCampioni";
 import { Segmented } from "@/components/ui/Form";
 import type { SchedaCompleta, QuantitaTaglia, Campione } from "@/types";
+import type { ModelloBreve } from "@/components/modelli/CampoModello";
 
 export interface SchedaCollegata {
   id: string;
@@ -33,6 +34,7 @@ interface Props {
   origine?: SchedaCollegata | null;
   /** Articolo di costo: gli ordini creati da lui. */
   ordiniCollegati?: SchedaCollegata[];
+  modelli?: ModelloBreve[];
 }
 
 const SEZIONI = [
@@ -48,7 +50,7 @@ const STATI_OPZIONI = STATI_SCHEDA.map((s) => ({ value: s.value, label: s.label 
 
 const RIEPILOGO_VUOTO: RiepilogoCosti = { materiali: 0, accessori: 0, lavorazioni: 0, totale: 0, prezzoVendita: 0, margine: null };
 
-export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponibili, materialiDisponibili, origine, ordiniCollegati = [] }: Props) {
+export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponibili, materialiDisponibili, origine, ordiniCollegati = [], modelli = [] }: Props) {
   const router = useRouter();
   const tipo = normalizzaTipo(scheda.tipo);
   const isCosto = tipo === "costo";
@@ -56,7 +58,9 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
   const tipoInfo = TIPI_SCHEDA.find((t) => t.value === tipo)!;
 
   const [statoCorrente, setStatoCorrente] = useState<StatoScheda>(scheda.stato as StatoScheda);
-  const [meta, setMeta] = useState({ nomeArticolo: scheda.nomeArticolo, codice: scheda.codice, categoria: scheda.categoria || "" });
+  const [meta, setMeta] = useState({
+    nomeArticolo: scheda.nomeArticolo, codice: scheda.codice, categoria: scheda.categoria || "", codiceModello: scheda.codiceModello || "",
+  });
   const [savedAt, setSavedAt] = useState(formatOra(scheda.updatedAt));
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -192,7 +196,8 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
         </Link>
         <div className="flex-1 min-w-[260px] lg:min-w-0">
           <div className="text-xs text-[#5F6878]">
-            <span className="font-mono text-[#0E1B2C]">{meta.codice}</span>
+            {meta.codiceModello && <><span className="font-mono font-semibold text-[#0E1B2C]">{meta.codiceModello}</span> · </>}
+            <span className="font-mono">{meta.codice}</span>
             {scheda.cliente?.nome && <> · {scheda.cliente.nome}</>}
             {meta.categoria && <> · {meta.categoria}</>}
           </div>
@@ -275,7 +280,7 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
 
             <section id="sez-articolo" className="scheda-section">
               <TabArticolo ref={tabArticoloRef} scheda={scheda} onSave={handleSave} clienti={clientiDisponibili}
-                materiali={materialiDisponibili} onMetaChange={(m) => setMeta((prev) => ({ ...prev, ...m }))} />
+                materiali={materialiDisponibili} modelli={modelli} onMetaChange={(m) => setMeta((prev) => ({ ...prev, ...m }))} />
             </section>
 
             {!isCosto && (

@@ -28,6 +28,7 @@ export async function POST(req: NextRequest) {
         nomeArticolo: body.nomeArticolo,
         stato: body.stato || "bozza",
         tipo: normalizzaTipo(body.tipo),
+        codiceModello: typeof body.codiceModello === "string" && body.codiceModello.trim() ? body.codiceModello.trim() : null,
         versione: body.versione || "1.0",
         collezione: body.collezione,
         clienteId: body.clienteId || null,

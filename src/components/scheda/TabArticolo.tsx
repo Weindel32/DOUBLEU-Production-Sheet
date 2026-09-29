@@ -5,6 +5,8 @@ import Link from "next/link";
 import { Upload, X, ExternalLink, Loader2, Camera } from "lucide-react";
 import { CATEGORIE, parseGrammaturaCommerciale } from "@/lib/utils";
 import { Field, ChipGroup, Segmented, SectionCard, inputCls, textareaCls } from "@/components/ui/Form";
+import CampoModello, { trovaModello, type ModelloBreve } from "@/components/modelli/CampoModello";
+import { fasciaDaGenere } from "@/lib/utils";
 import type { SchedaCompleta } from "@/types";
 import ColorPickerNamed from "@/components/ui/ColorPickerNamed";
 
@@ -14,7 +16,9 @@ interface Props {
   clienti: { id: string; nome: string }[];
   materiali: { id: string; nome: string; tipo: string; costoMetro: number | null; peso: string | null; unitaPeso: string | null; larghezza: string | null }[];
   /** Nome, codice e categoria vivono anche nell'intestazione della scheda. */
-  onMetaChange?: (meta: { nomeArticolo?: string; codice?: string; categoria?: string }) => void;
+  onMetaChange?: (meta: { nomeArticolo?: string; codice?: string; categoria?: string; codiceModello?: string }) => void;
+  /** Archivio modelli, per suggerire il codice e proporre di aggiungere quelli nuovi. */
+  modelli?: ModelloBreve[];
 }
 
 const GENERI = ["Unisex", "Uomo", "Donna", "Junior"].map((v) => ({ value: v, label: v }));
@@ -76,7 +80,7 @@ async function preparaImmagine(file: File): Promise<File> {
   }
 }
 
-const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ scheda, onSave, clienti, materiali, onMetaChange }, ref) {
+const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ scheda, onSave, clienti, materiali, onMetaChange, modelli: modelliIniziali = [] }, ref) {
   const [immagini, setImmagini] = useState<string[]>(scheda.immagini || []);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -85,6 +89,7 @@ const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ 
   const [values, setValues] = useState({
     nomeArticolo: scheda.nomeArticolo,
     codice: scheda.codice,
+    codiceModello: scheda.codiceModello || "",
     categoria: scheda.categoria || "",
     vestibilita: scheda.vestibilita || "",
     genere: scheda.genere || "",
@@ -107,6 +112,9 @@ const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ 
     collezione: scheda.collezione || "",
   });
 
+  const [modelli, setModelli] = useState<ModelloBreve[]>(modelliIniziali);
+  const [modelloMsg, setModelloMsg] = useState<string | null>(null);
+
   const mostraColloManiche = !CATEGORIE_SENZA_COLLO_MANICHE.includes(values.categoria);
   const mostraCostina = CATEGORIE_COSTINA.includes(values.categoria);
 
@@ -115,6 +123,7 @@ const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ 
     const { nomeArticolo, codice, ...resto } = values;
     await onSave({
       ...resto,
+      codiceModello: resto.codiceModello.trim() || null,
       ...(nomeArticolo.trim() ? { nomeArticolo: nomeArticolo.trim() } : {}),
       ...(codice.trim() ? { codice: codice.trim() } : {}),
     });
@@ -172,6 +181,17 @@ const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ 
     setValues((v) => ({ ...v, [field]: value }));
 
   const handleBlur = async (field: keyof typeof values) => {
+    if (field === "codiceModello") {
+      const m = trovaModello(modelli, values.codiceModello);
+      const v = m ? m.codice : values.codiceModello.trim();
+      set("codiceModello", v);
+      setModelloMsg(null);
+      onMetaChange?.({ codiceModello: v });
+      // Modello scelto su una scheda senza categoria: la prendo dal modello.
+      if (m && !values.categoria) scegli("categoria", m.categoria);
+      await onSave({ codiceModello: v || null });
+      return;
+    }
     if (field === "nomeArticolo" || field === "codice") {
       const v = values[field].trim();
       if (!v) { set(field, field === "codice" ? scheda.codice : scheda.nomeArticolo); return; }
@@ -187,6 +207,24 @@ const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ 
     set(field, value);
     if (field === "categoria") onMetaChange?.({ categoria: value });
     onSave({ [field]: value || null });
+  };
+
+  const modelloNuovo = values.codiceModello.trim() !== "" && !trovaModello(modelli, values.codiceModello);
+
+  const aggiungiAiModelli = async () => {
+    if (!values.categoria) { setModelloMsg("Scegli prima la categoria dell'articolo: serve anche al modello."); return; }
+    const res = await fetch("/api/modelli", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        codice: values.codiceModello.trim(), descrizione: values.nomeArticolo.trim(),
+        categoria: values.categoria, fascia: fasciaDaGenere(values.genere),
+      }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) { setModelloMsg(body.error || "Non sono riuscito ad aggiungere il modello."); return; }
+    setModelli((prev) => [...prev, { codice: body.codice, descrizione: body.descrizione, categoria: body.categoria, fascia: body.fascia }]);
+    setModelloMsg(null);
   };
 
   const text = (field: keyof typeof values) => ({
@@ -255,14 +293,32 @@ const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ 
 
       <SectionCard title="Articolo">
         <div className="space-y-5">
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-4 gap-3 items-start">
             <Field label="Nome articolo" className="col-span-2">
               <input type="text" {...text("nomeArticolo")} placeholder="es. Hoodie Tecnico Pro" className={inputCls} />
             </Field>
-            <Field label="Codice">
+            <div className="flex flex-col gap-1.5 text-[13px] text-[#4A5566]">
+              <label htmlFor={`modello-${scheda.id}`}>Modello (modellista)</label>
+              <CampoModello id={`modello-${scheda.id}`} value={values.codiceModello} modelli={modelli}
+                onChange={(v) => set("codiceModello", v)} onBlur={() => handleBlur("codiceModello")} />
+            </div>
+            <Field label="Codice scheda">
               <input type="text" {...text("codice")} autoCapitalize="characters" className={`${inputCls} font-mono`} />
             </Field>
           </div>
+
+          {modelloNuovo && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-[10px] bg-[#FBEDE5] border border-[#F2D2C1] px-4 py-3 text-sm text-[#0E1B2C]">
+              <span>
+                <strong className="font-mono">{values.codiceModello.trim()}</strong> non è tra i Modelli.
+                {modelloMsg && <span className="block text-red-800 mt-1">{modelloMsg}</span>}
+              </span>
+              <button type="button" onClick={aggiungiAiModelli}
+                className="h-10 px-4 rounded-lg bg-[#0E1B2C] hover:bg-[#1F3A68] text-white text-sm font-semibold">
+                Aggiungi ai Modelli
+              </button>
+            </div>
+          )}
 
           <ChipGroup label="Categoria" options={CATEGORIE} value={values.categoria} onChange={(v) => scegli("categoria", v)} />
 
