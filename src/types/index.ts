@@ -42,6 +42,8 @@ export interface Accessorio {
 export interface VoceCampione {
   descrizione: string;
   importo: number;
+  /** Foto dello scontrino o della ricevuta (facoltativa). */
+  foto?: string;
 }
 
 /** Costo di sviluppo di un campione: non entra mai nel costo per capo di produzione. */

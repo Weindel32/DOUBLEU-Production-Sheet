@@ -1,85 +1,69 @@
 export const dynamic = "force-dynamic";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { formatData, calcolaTotaleQuantita } from "@/lib/utils";
+import { ChevronRight, Shirt } from "lucide-react";
+import { formatData, calcolaTotaleQuantita, STATI_SCHEDA, TIPI_COSTO_DB } from "@/lib/utils";
+import Testata from "@/components/mobile/Testata";
 
-const STATO_BADGE: Record<string, string> = {
-  bozza:     "bg-gray-100 text-gray-600",
-  esecutiva: "bg-green-100 text-green-700",
-};
-
-const STATO_LABEL: Record<string, string> = {
-  bozza:     "Bozza",
-  esecutiva: "Esecutiva",
-};
-
-export default async function MobileSchedePage() {
-  const schede = await prisma.scheda.findMany({
-    where: { stato: "esecutiva" },
-    include: { cliente: true },
-    orderBy: { updatedAt: "desc" },
-  });
+/** Schede di produzione in consultazione: di default le esecutive, cioè quelle in lavorazione. */
+export default async function MobileSchedePage({ searchParams }: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const sp = await searchParams;
+  const stato = sp.stato === "bozza" ? "bozza" : "esecutiva";
+  const [schede, conteggi] = await Promise.all([
+    prisma.scheda.findMany({
+      where: { stato, tipo: { notIn: TIPI_COSTO_DB } },
+      include: { cliente: true },
+      orderBy: { updatedAt: "desc" },
+    }),
+    prisma.scheda.groupBy({ by: ["stato"], where: { tipo: { notIn: TIPI_COSTO_DB } }, _count: { _all: true } }),
+  ]);
+  const n = (s: string) => conteggi.find((c) => c.stato === s)?._count._all ?? 0;
 
   return (
-    <div className="flex flex-col min-h-screen">
-      {/* Header */}
-      <div className="bg-blue-700 text-white px-4 pt-12 pb-4 sticky top-0 z-10">
-        <div className="text-xs font-medium opacity-70 uppercase tracking-wider mb-1">Double U</div>
-        <h1 className="text-xl font-bold">Schede attive</h1>
-        <div className="text-sm opacity-70 mt-0.5">{schede.length} schede</div>
-      </div>
-
-      {/* Filtro stati */}
-      <div className="bg-white border-b border-gray-200 px-4 py-2 flex gap-2 overflow-x-auto">
-        {["esecutiva"].map((s) => (
-          <span key={s} className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${STATO_BADGE[s]}`}>
-            {STATO_LABEL[s]}
-          </span>
-        ))}
-      </div>
-
-      {/* Lista schede */}
-      <div className="flex-1 px-4 py-3 space-y-3">
-        {schede.length === 0 ? (
-          <div className="text-center py-16 text-gray-400">
-            <div className="text-4xl mb-3">📋</div>
-            <div className="text-sm">Nessuna scheda attiva</div>
-          </div>
-        ) : (
-          schede.map((s) => {
-            const quantita = s.quantitaTaglia ? JSON.parse(s.quantitaTaglia) : {};
-            const totale = calcolaTotaleQuantita(quantita as Record<string, number>);
+    <>
+      <Testata sopra="Double U" titolo="Schede produzione" />
+      <div className="px-4 space-y-3">
+        <div role="group" aria-label="Stato" className="flex bg-[#EEEBE3] rounded-xl p-1">
+          {STATI_SCHEDA.slice().reverse().map((s) => {
+            const on = s.value === stato;
             return (
-              <Link
-                key={s.id}
-                href={`/m/schede/${s.id}`}
-                className="block bg-white rounded-xl shadow-sm border border-gray-100 p-4 active:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-gray-800 truncate">{s.nomeArticolo}</div>
-                    <div className="text-xs text-gray-400 mt-0.5">{s.codice}</div>
-                  </div>
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${STATO_BADGE[s.stato]}`}>
-                    {STATO_LABEL[s.stato]}
-                  </span>
-                </div>
-                <div className="flex items-center gap-4 text-xs text-gray-500">
-                  {s.cliente && <span>👤 {s.cliente.nome}</span>}
-                  {totale > 0 && <span>📦 {totale} pz</span>}
-                  <span className="ml-auto">{formatData(s.updatedAt.toISOString())}</span>
-                </div>
+              <Link key={s.value} href={s.value === "esecutiva" ? "/m/schede" : "/m/schede?stato=bozza"} aria-current={on ? "true" : undefined}
+                className={`flex-1 h-11 rounded-lg flex items-center justify-center gap-1.5 text-[15px] ${on ? "bg-white font-semibold shadow-[0_1px_2px_rgba(14,27,44,0.12)]" : "text-[#4A5566]"}`}>
+                {s.label === "Esecutiva" ? "Esecutive" : "Bozze"} <span className="text-xs text-[#5F6878] font-normal">{n(s.value)}</span>
               </Link>
             );
-          })
-        )}
-      </div>
+          })}
+        </div>
 
-      {/* Footer */}
-      <div className="bg-white border-t border-gray-200 px-4 py-3 text-center">
-        <div className="text-xs text-gray-400">Double U Production Sheet</div>
-        <a href="/" className="text-xs text-blue-600 mt-0.5 block">Apri versione desktop →</a>
+        <ul className="bg-white border border-[#E4E0D6] rounded-2xl overflow-hidden">
+          {schede.length === 0 && <li className="p-8 text-center text-[#5F6878]">Nessuna scheda {stato === "bozza" ? "in bozza" : "esecutiva"}.</li>}
+          {schede.map((s) => {
+            const totale = calcolaTotaleQuantita(s.quantitaTaglia ? JSON.parse(s.quantitaTaglia) : {});
+            const immagini: string[] = s.immagini ? JSON.parse(s.immagini) : [];
+            return (
+              <li key={s.id} className="border-b border-[#EFEBE2] last:border-0">
+                <Link href={`/m/schede/${s.id}`} className="flex items-center gap-3 px-3 py-3 active:bg-[#FBFAF7]">
+                  <span className="w-12 h-12 rounded-xl bg-[#EEEBE3] overflow-hidden flex-shrink-0 flex items-center justify-center text-[#5F6878]">
+                    {immagini[0] ? <img src={immagini[0]} alt="" className="w-full h-full object-cover" /> : <Shirt size={20} />}
+                  </span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block font-semibold truncate">{s.nomeArticolo}</span>
+                    <span className="block text-[13px] text-[#5F6878] truncate">
+                      <span className="font-mono">{s.codiceModello || s.codice}</span>
+                      {s.cliente && <> · {s.cliente.nome}</>}
+                      {totale > 0 && <> · {totale} pz</>}
+                    </span>
+                  </span>
+                  <span className="text-xs text-[#5F6878] flex-shrink-0">{formatData(s.updatedAt.toISOString())}</span>
+                  <ChevronRight size={18} className="text-[#C9C3B5] flex-shrink-0" />
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
       </div>
-    </div>
+    </>
   );
 }

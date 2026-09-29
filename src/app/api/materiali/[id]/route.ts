@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { rigaCambioPrezzo } from "@/lib/materiali";
 
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -11,6 +12,20 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const body = await req.json();
+  const prima = await prisma.materiale.findUnique({ where: { id } });
+  if (!prima) return NextResponse.json({ error: "Non trovato" }, { status: 404 });
+
+  // Un cambio di prezzo di listino finisce da solo in cima alle note, con la data:
+  // lo storico prezzi resta sul materiale senza doverlo scrivere a mano.
+  const dopo = {
+    unitaMisura: body.unitaMisura !== undefined ? body.unitaMisura : prima.unitaMisura,
+    costoMetro: body.costoMetro !== undefined ? body.costoMetro : prima.costoMetro,
+    prezzoKg: body.prezzoKg !== undefined ? body.prezzoKg : prima.prezzoKg,
+  };
+  const riga = rigaCambioPrezzo(prima, dopo);
+  const noteBase = body.note !== undefined ? body.note : prima.note;
+  const note = riga ? [riga, noteBase].filter(Boolean).join("\n") : noteBase;
+
   const materiale = await prisma.materiale.update({
     where: { id },
     data: {
@@ -24,7 +39,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       fornitore: body.fornitore,
       costoMetro: body.costoMetro,
       prezzoKg: body.prezzoKg,
-      note: body.note,
+      codice: body.codice,
+      foto: body.foto,
+      note,
     },
   });
   return NextResponse.json(materiale);

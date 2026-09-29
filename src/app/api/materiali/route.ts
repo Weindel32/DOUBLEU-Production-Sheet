@@ -8,11 +8,14 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
+  if (!body.nome || !body.tipo)
+    return NextResponse.json({ error: "Nome e tipo sono obbligatori" }, { status: 400 });
   const materiale = await prisma.materiale.create({
     data: {
       nome: body.nome, tipo: body.tipo, composizione: body.composizione,
       peso: body.peso, unitaPeso: body.unitaPeso, larghezza: body.larghezza, unitaMisura: body.unitaMisura,
       fornitore: body.fornitore, costoMetro: body.costoMetro, prezzoKg: body.prezzoKg, note: body.note,
+      codice: body.codice || null, foto: body.foto || null,
     },
   });
   return NextResponse.json(materiale, { status: 201 });

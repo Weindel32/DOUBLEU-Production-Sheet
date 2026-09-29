@@ -7,6 +7,7 @@ import { CATEGORIE, parseGrammaturaCommerciale } from "@/lib/utils";
 import { Field, ChipGroup, Segmented, SectionCard, inputCls, textareaCls } from "@/components/ui/Form";
 import CampoModello, { trovaModello, type ModelloBreve } from "@/components/modelli/CampoModello";
 import { fasciaDaGenere } from "@/lib/utils";
+import { preparaImmagine } from "@/lib/immagini";
 import type { SchedaCompleta } from "@/types";
 import ColorPickerNamed from "@/components/ui/ColorPickerNamed";
 
@@ -50,35 +51,6 @@ export interface TabArticoloHandle {
 
 const CATEGORIE_SENZA_COLLO_MANICHE = ["Short", "Skirt", "Sweatpants"];
 const CATEGORIE_COSTINA = ["Hoodie", "Zip Hoodie", "Sweatshirt", "Sweatpants"];
-
-// Le foto da iPad/iPhone sono grandi (HEIC, 4-10MB) e Vercel rifiuta body > ~4.5MB:
-// ridimensiono e converto in JPEG lato client prima dell'upload.
-const MAX_DIM = 2400;
-const SOGLIA_BYTES = 3 * 1024 * 1024;
-
-async function preparaImmagine(file: File): Promise<File> {
-  const leggero = file.size <= SOGLIA_BYTES && ["image/jpeg", "image/png", "image/webp"].includes(file.type);
-  if (leggero) return file;
-  try {
-    const bmp = await createImageBitmap(file);
-    const scala = Math.min(1, MAX_DIM / Math.max(bmp.width, bmp.height));
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.round(bmp.width * scala);
-    canvas.height = Math.round(bmp.height * scala);
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return file;
-    ctx.fillStyle = "#fff";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(bmp, 0, 0, canvas.width, canvas.height);
-    bmp.close?.();
-    const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/jpeg", 0.85));
-    if (!blob) return file;
-    const nome = (file.name || "foto").replace(/\.[^.]+$/, "") + ".jpg";
-    return new File([blob], nome, { type: "image/jpeg" });
-  } catch {
-    return file;
-  }
-}
 
 const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ scheda, onSave, clienti, materiali, onMetaChange, modelli: modelliIniziali = [] }, ref) {
   const [immagini, setImmagini] = useState<string[]>(scheda.immagini || []);
