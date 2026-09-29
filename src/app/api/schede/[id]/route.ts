@@ -29,8 +29,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     data.accessori = body.accessori ? JSON.stringify(body.accessori) : null;
   if (body.immagini !== undefined)
     data.immagini = body.immagini ? JSON.stringify(body.immagini) : null;
+  if (body.campioni !== undefined)
+    data.campioni = body.campioni ? JSON.stringify(body.campioni) : null;
 
-  if (data.tipo !== undefined && data.tipo !== "preventivo" && data.tipo !== "produzione")
+  if (data.tipo !== undefined && data.tipo !== "costo" && data.tipo !== "produzione")
     return NextResponse.json({ error: "Tipo scheda non valido" }, { status: 400 });
 
   try {

@@ -14,14 +14,16 @@ import {
   Settings,
   LogOut,
   BarChart2,
+  Calculator,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const BUILD = 7;
+const BUILD = 8;
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/schede", label: "Schede", icon: FileText },
+  { href: "/articoli", label: "Articoli e costi", icon: Calculator },
+  { href: "/schede", label: "Schede produzione", icon: FileText },
   { href: "/schede/nuova", label: "Nuova scheda", icon: PlusCircle },
   { href: "/archivio", label: "Archivio", icon: Archive },
   { href: "/modelli", label: "Modelli base", icon: BookOpen },

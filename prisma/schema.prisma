@@ -50,7 +50,11 @@ model Scheda {
   codice       String   @unique
   nomeArticolo String
   stato        String   @default("bozza")
-  tipo         String   @default("produzione") // "produzione" | "preventivo"
+  tipo         String   @default("produzione") // "produzione" | "costo" ("preventivo" = nome storico di "costo")
+  // Ordine creato da un articolo di costo: id dell'articolo di partenza
+  origineId    String?
+  // JSON: [{id, nome, data, voci: [{descrizione, importo}], note}] — costi di sviluppo, fuori dal costo per capo
+  campioni     String?
   versione     String   @default("1.0")
   collezione   String?
   clienteId    String?

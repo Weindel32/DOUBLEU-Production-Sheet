@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { normalizzaTipo } from "@/lib/utils";
+import { generaCodice } from "@/lib/codici";
 
 export async function GET() {
   const schede = await prisma.scheda.findMany({
@@ -9,23 +11,6 @@ export async function GET() {
   return NextResponse.json(schede);
 }
 
-const CATEGORIA_PREFISSO: Record<string, string> = {
-  "T-Shirt PRF": "TP", "T-Shirt WS": "TW", "T-Shirt COT": "TC",
-  "Polo": "PO", "Hoodie": "HO", "Zip Hoodie": "ZH",
-  "Sweatshirt": "SW", "Jacket": "JK", "Sweatpants": "SP",
-  "Short": "SH", "Skirt": "SK", "Dress": "DR", "Altro": "AL",
-};
-
-async function generaCodice(categoria: string): Promise<string> {
-  const now = new Date();
-  const anno = String(now.getFullYear()).slice(-2);
-  const mese = String(now.getMonth() + 1).padStart(2, "0");
-  const prefisso = CATEGORIA_PREFISSO[categoria] || categoria.substring(0, 2).toUpperCase();
-  const base = `${prefisso}-${anno}${mese}`;
-  const count = await prisma.scheda.count({ where: { codice: { startsWith: base } } });
-  const progressivo = String(count + 1).padStart(3, "0");
-  return `${base}-${progressivo}`;
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -42,7 +27,7 @@ export async function POST(req: NextRequest) {
         codice,
         nomeArticolo: body.nomeArticolo,
         stato: body.stato || "bozza",
-        tipo: body.tipo === "preventivo" ? "preventivo" : "produzione",
+        tipo: normalizzaTipo(body.tipo),
         versione: body.versione || "1.0",
         collezione: body.collezione,
         clienteId: body.clienteId || null,

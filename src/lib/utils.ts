@@ -23,11 +23,36 @@ export const CATEGORIE = [
 ];
 
 export const TIPI_SCHEDA = [
-  { value: "preventivo", label: "Preventivo di costo", breve: "Preventivo" },
+  { value: "costo", label: "Costo articolo", breve: "Costo articolo" },
   { value: "produzione", label: "Ordine di produzione", breve: "Ordine" },
 ] as const;
 
 export type TipoScheda = typeof TIPI_SCHEDA[number]["value"];
+
+/** Valori di `Scheda.tipo` che indicano un articolo di solo costo ("preventivo" è il nome storico). */
+export const TIPI_COSTO_DB = ["costo", "preventivo"];
+
+export function normalizzaTipo(tipo: string | null | undefined): TipoScheda {
+  return tipo && TIPI_COSTO_DB.includes(tipo) ? "costo" : "produzione";
+}
+
+/** Articoli di costo e ordini hanno due elenchi separati: ogni scheda vive sotto il suo. */
+export function baseScheda(tipo: string | null | undefined): "/articoli" | "/schede" {
+  return normalizzaTipo(tipo) === "costo" ? "/articoli" : "/schede";
+}
+
+/** Voci tipiche del costo di un campione, proposte come scorciatoie. */
+export const VOCI_CAMPIONE = [
+  "Studio modello", "Cartamodello", "Taglio", "Tessuto", "Confezione (fasonista)", "Stampa / ricamo", "Spedizione",
+];
+
+export function totaleCampione(c: { voci: { importo: number }[] }): number {
+  return c.voci.reduce((s, v) => s + (v.importo || 0), 0);
+}
+
+export function totaleSviluppo(campioni: { voci: { importo: number }[] }[]): number {
+  return campioni.reduce((s, c) => s + totaleCampione(c), 0);
+}
 
 export const CATEGORIE_ELASTICO = ["Short", "Skirt", "Sweatpants"];
 
