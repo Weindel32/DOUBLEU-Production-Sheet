@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-import { normalizzaTipo } from "@/lib/utils";
+import { normalizzaTipo, ACCESSORI_NUOVO_COSTO } from "@/lib/utils";
 import { generaCodice } from "@/lib/codici";
 
 export async function GET() {
@@ -62,7 +62,8 @@ export async function POST(req: NextRequest) {
         packaging: body.packaging,
         allegati: body.allegati ? JSON.stringify(body.allegati) : null,
         consumoMateriale: body.consumoMateriale ? JSON.stringify(body.consumoMateriale) : null,
-        accessori: body.accessori ? JSON.stringify(body.accessori) : null,
+        accessori: body.accessori ? JSON.stringify(body.accessori)
+          : normalizzaTipo(body.tipo) === "costo" ? JSON.stringify(ACCESSORI_NUOVO_COSTO) : null,
         costoLavorazione: body.costoLavorazione,
         costoTaglio: body.costoTaglio,
         costoCucitura: body.costoCucitura,
