@@ -3,15 +3,17 @@ import Link from "next/link";
 import { Plus, FileText, Search } from "lucide-react";
 import {
   formatData, STATI_SCHEDA, TIPI_COSTO_DB, calcolaTotaleQuantita, formatEuro, totaleSviluppo,
+  FASCE_MODELLO, FASCIA_STYLE, ordinaCategorie,
 } from "@/lib/utils";
 import SchedaRowMenu from "@/components/scheda/SchedaRowMenu";
 import { riepilogoScheda } from "@/lib/costiScheda";
 import type { Campione } from "@/types";
 
-type Filtri = { stato?: string; margine?: string; campioni?: string; q?: string };
+type Filtri = { stato?: string; margine?: string; campioni?: string; fascia?: string; q?: string };
 type Vista = "articoli" | "ordini";
 
 const SOGLIA_MARGINE = 30;
+const SENZA_MODELLO = "Senza modello";
 
 const TESTI: Record<Vista, { titolo: string; base: string; nuovo: string; nuovoHref: string; vuoto: string; singolare: string; plurale: string }> = {
   articoli: {
@@ -36,7 +38,7 @@ export default async function ListaSchede({ vista, searchParams }: {
 }) {
   const t = TESTI[vista];
   const str = (k: string) => (typeof searchParams[k] === "string" ? (searchParams[k] as string) : undefined);
-  const filtri: Filtri = { stato: str("stato"), margine: str("margine"), campioni: str("campioni"), q: str("q") };
+  const filtri: Filtri = { stato: str("stato"), margine: str("margine"), campioni: str("campioni"), fascia: str("fascia"), q: str("q") };
 
   const hrefFiltri = (cambio: Filtri) => {
     const next = { ...filtri, ...cambio };
@@ -44,7 +46,7 @@ export default async function ListaSchede({ vista, searchParams }: {
     return qs ? `${t.base}?${qs}` : t.base;
   };
 
-  const [schede, materiali, conteggiOrdini] = await Promise.all([
+  const [schede, materiali, conteggiOrdini, modelli] = await Promise.all([
     prisma.scheda.findMany({
       where: vista === "articoli" ? { tipo: { in: TIPI_COSTO_DB } } : { tipo: { notIn: TIPI_COSTO_DB } },
       orderBy: { updatedAt: "desc" },
@@ -54,8 +56,12 @@ export default async function ListaSchede({ vista, searchParams }: {
     vista === "articoli"
       ? prisma.scheda.groupBy({ by: ["origineId"], where: { origineId: { not: null } }, _count: { _all: true } })
       : Promise.resolve([]),
+    vista === "articoli"
+      ? prisma.modello.findMany({ select: { codice: true, categoria: true, fascia: true } })
+      : Promise.resolve([]),
   ]);
   const ordiniPerArticolo = new Map(conteggiOrdini.map((c) => [c.origineId, c._count._all]));
+  const modelloDi = new Map(modelli.map((m) => [m.codice, m]));
 
   const righe = schede.map((s) => {
     const costi = riepilogoScheda(s, materiali);
@@ -68,12 +74,15 @@ export default async function ListaSchede({ vista, searchParams }: {
       sviluppo: totaleSviluppo(campioni),
       nCampioni: campioni.length,
       nOrdini: ordiniPerArticolo.get(s.id) ?? 0,
+      // Categoria e fascia vengono dal modello collegato, come nella pagina Modelli.
+      modello: s.codiceModello ? modelloDi.get(s.codiceModello) : undefined,
     };
   });
 
   const q = filtri.q?.trim().toLowerCase();
-  const filtrate = righe.filter(({ s, costi, nCampioni }) =>
+  const filtrate = righe.filter(({ s, costi, nCampioni, modello }) =>
     (!filtri.stato || s.stato === filtri.stato) &&
+    (!filtri.fascia || modello?.fascia === filtri.fascia) &&
     (filtri.margine !== "basso" || (costi.margine !== null && costi.margine < SOGLIA_MARGINE)) &&
     (filtri.campioni !== "si" || nCampioni > 0) &&
     (!q || [s.codice, s.codiceModello, s.nomeArticolo, s.cliente?.nome, s.categoria, s.collezione].some((v) => v?.toLowerCase().includes(q))),
@@ -86,7 +95,19 @@ export default async function ListaSchede({ vista, searchParams }: {
     </Link>
   );
 
-  const nessunFiltro = !filtri.stato && !filtri.margine && !filtri.campioni && !filtri.q;
+  // Articoli: un blocco per categoria del modello, nell'ordine di Modelli; senza modello in fondo.
+  const gruppi = vista === "articoli"
+    ? [
+        ...ordinaCategorie(filtrate.flatMap((r) => (r.modello ? [r.modello.categoria] : []))).map((categoria) => ({
+          categoria,
+          righe: filtrate.filter((r) => r.modello?.categoria === categoria)
+            .sort((a, b) => a.s.codiceModello!.localeCompare(b.s.codiceModello!, "it", { numeric: true }) || a.s.nomeArticolo.localeCompare(b.s.nomeArticolo)),
+        })),
+        { categoria: SENZA_MODELLO, righe: filtrate.filter((r) => !r.modello) },
+      ].filter((g) => g.righe.length > 0)
+    : [{ categoria: null, righe: filtrate }];
+
+  const nessunFiltro = !filtri.stato && !filtri.margine && !filtri.campioni && !filtri.fascia && !filtri.q;
   const isArticoli = vista === "articoli";
   const cella = "px-3 py-2.5";
   const numero = `${cella} text-right font-mono whitespace-nowrap`;
@@ -105,6 +126,7 @@ export default async function ListaSchede({ vista, searchParams }: {
           {filtri.stato && <input type="hidden" name="stato" value={filtri.stato} />}
           {filtri.margine && <input type="hidden" name="margine" value={filtri.margine} />}
           {filtri.campioni && <input type="hidden" name="campioni" value={filtri.campioni} />}
+          {filtri.fascia && <input type="hidden" name="fascia" value={filtri.fascia} />}
           <label className="h-12 border border-[#D6D1C4] rounded-xl bg-white flex items-center gap-2.5 px-3.5 text-[#5F6878] focus-within:border-[#1F3A68]">
             <Search size={18} />
             <input type="search" name="q" defaultValue={filtri.q} placeholder={isArticoli ? "Cerca codice o articolo" : "Cerca codice, articolo, cliente"} aria-label="Cerca"
@@ -118,7 +140,9 @@ export default async function ListaSchede({ vista, searchParams }: {
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        {chip("Tutti", { stato: undefined, margine: undefined, campioni: undefined }, nessunFiltro || (!filtri.stato && !filtri.margine && !filtri.campioni))}
+        {chip("Tutti", { stato: undefined, margine: undefined, campioni: undefined, fascia: undefined }, nessunFiltro || (!filtri.stato && !filtri.margine && !filtri.campioni && !filtri.fascia))}
+        {isArticoli && FASCE_MODELLO.map((f) => chip(f, { fascia: filtri.fascia === f ? undefined : f }, filtri.fascia === f))}
+        {isArticoli && <span aria-hidden className="w-px h-6 bg-[#D6D1C4] mx-1" />}
         {!isArticoli && STATI_SCHEDA.map((st) => chip(st.label, { stato: filtri.stato === st.value ? undefined : st.value }, filtri.stato === st.value))}
         {chip(`Margine sotto ${SOGLIA_MARGINE}%`, { margine: filtri.margine === "basso" ? undefined : "basso" }, filtri.margine === "basso")}
         {isArticoli && chip("Con campioni", { campioni: filtri.campioni === "si" ? undefined : "si" }, filtri.campioni === "si")}
@@ -136,72 +160,100 @@ export default async function ListaSchede({ vista, searchParams }: {
             : <Link href={t.base} className="h-11 px-5 rounded-xl border border-[#D6D1C4] text-[#0E1B2C] text-sm font-medium inline-flex items-center">Mostra tutti</Link>}
         </div>
       ) : (
-        <div className="bg-white border border-[#E4E0D6] rounded-2xl overflow-x-auto">
-          <table className="w-full text-[15px] min-w-[860px]">
-            <thead>
-              <tr className="border-b border-[#E4E0D6] text-left">
-                <th className="pl-4 pr-2 py-3 w-[72px]"><span className="sr-only">Foto</span></th>
-                <th className={cella}>Modello / codice</th>
-                <th className={cella}>Articolo</th>
-                {!isArticoli && <th className={cella}>Cliente</th>}
-                <th className={`${cella} text-right`}>Costo / capo</th>
-                <th className={`${cella} text-right`}>Prezzo</th>
-                <th className={`${cella} text-right`}>Margine</th>
-                {isArticoli && <th className={`${cella} text-right`}>Sviluppo</th>}
-                {isArticoli && <th className={`${cella} text-right`}>Ordini</th>}
-                <th className={cella}>{isArticoli ? "Aggiornato" : "Stato"}</th>
-                <th className="px-3 py-3 w-12"><span className="sr-only">Azioni</span></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtrate.map(({ s, costi, copertina, pezzi, sviluppo, nCampioni, nOrdini }) => {
-                const stato = STATI_SCHEDA.find((x) => x.value === s.stato);
-                const dettagli = [s.categoria, s.genere, !isArticoli && pezzi > 0 ? `${pezzi} pz` : null].filter(Boolean).join(" · ");
-                const margineCls = costi.margine === null ? "text-[#5F6878]" : costi.margine < SOGLIA_MARGINE ? "text-[#A8461F]" : "text-[#1D6B4A]";
-                const href = `${t.base}/${s.id}`;
-                return (
-                  <tr key={s.id} className="border-b border-[#EFEBE2] last:border-0">
-                    <td className="pl-4 pr-2 py-2.5">
-                      <Link href={href} tabIndex={-1} aria-hidden className="block w-14 h-14 rounded-[10px] bg-[#EEEBE3] overflow-hidden">
-                        {copertina && <img src={copertina} alt="" className="w-full h-full object-cover" />}
-                      </Link>
-                    </td>
-                    <td className={`${cella} font-mono text-sm whitespace-nowrap`}>
-                      {s.codiceModello
-                        ? <><span className="font-semibold text-[#0E1B2C]">{s.codiceModello}</span><div className="text-xs text-[#5F6878]">{s.codice}</div></>
-                        : <span className="text-[#0E1B2C]">{s.codice}</span>}
-                    </td>
-                    <td className={cella}>
-                      <Link href={href} className="font-semibold text-[#0E1B2C] hover:text-[#1F3A68] hover:underline underline-offset-2">
-                        {s.nomeArticolo}
-                      </Link>
-                      {dettagli && <div className="text-[13px] text-[#5F6878]">{dettagli}</div>}
-                    </td>
-                    {!isArticoli && <td className={`${cella} text-[#4A5566]`}>{s.cliente?.nome || "—"}</td>}
-                    <td className={numero}>{costi.totale > 0 ? formatEuro(costi.totale) : "—"}</td>
-                    <td className={numero}>{costi.prezzoVendita > 0 ? formatEuro(costi.prezzoVendita) : "—"}</td>
-                    <td className={`${numero} font-semibold ${margineCls}`}>
-                      {costi.margine === null ? "—" : `${costi.margine.toFixed(1).replace(".", ",")}%`}
-                    </td>
-                    {isArticoli && (
-                      <td className={`${numero} text-[#1F3A68]`}>
-                        {nCampioni > 0 ? formatEuro(sviluppo) : "—"}
-                        {nCampioni > 0 && <div className="text-xs text-[#5F6878] font-sans">{nCampioni} {nCampioni === 1 ? "campione" : "campioni"}</div>}
-                      </td>
-                    )}
-                    {isArticoli && <td className={numero}>{nOrdini || "—"}</td>}
-                    <td className={cella}>
-                      {!isArticoli && stato && <span className={`badge badge-${s.stato}`}>{stato.label}</span>}
-                      <div className={`text-xs text-[#5F6878] ${isArticoli ? "" : "mt-1"}`}>{formatData(s.updatedAt)}</div>
-                    </td>
-                    <td className="px-2 py-2.5 text-right">
-                      <SchedaRowMenu id={s.id} nome={s.nomeArticolo} statoCorrente={s.stato} base={t.base} />
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        <div className="space-y-5">
+          {gruppi.map((g) => (
+            <section key={g.categoria ?? "tutte"} className="bg-white border border-[#E4E0D6] rounded-2xl overflow-hidden">
+              {g.categoria && (
+                <div className="px-5 py-3 border-b border-[#E4E0D6] bg-[#FBFAF7] flex items-baseline justify-between">
+                  <h2 className="font-display text-[17px] font-bold text-[#0E1B2C]">{g.categoria}</h2>
+                  <span className="text-xs text-[#5F6878]">{g.righe.length} {g.righe.length === 1 ? t.singolare : t.plurale}</span>
+                </div>
+              )}
+              <div className="overflow-x-auto">
+                {/* Larghezze fisse negli articoli: le colonne restano allineate tra un blocco e l'altro. */}
+                <table className={`w-full text-[15px] min-w-[860px] ${isArticoli ? "table-fixed" : ""}`}>
+                  {isArticoli && (
+                    <colgroup>
+                      <col className="w-[72px]" /><col className="w-[140px]" /><col />
+                      <col className="w-[110px]" /><col className="w-[100px]" /><col className="w-[90px]" />
+                      <col className="w-[120px]" /><col className="w-[76px]" /><col className="w-[110px]" /><col className="w-12" />
+                    </colgroup>
+                  )}
+                  <thead>
+                    <tr className="border-b border-[#E4E0D6] text-left">
+                      <th className="pl-4 pr-2 py-3 w-[72px]"><span className="sr-only">Foto</span></th>
+                      <th className={cella}>Modello / codice</th>
+                      <th className={cella}>Articolo</th>
+                      {!isArticoli && <th className={cella}>Cliente</th>}
+                      <th className={`${cella} text-right`}>Costo / capo</th>
+                      <th className={`${cella} text-right`}>Prezzo</th>
+                      <th className={`${cella} text-right`}>Margine</th>
+                      {isArticoli && <th className={`${cella} text-right`}>Sviluppo</th>}
+                      {isArticoli && <th className={`${cella} text-right`}>Ordini</th>}
+                      <th className={cella}>{isArticoli ? "Aggiornato" : "Stato"}</th>
+                      <th className="px-3 py-3 w-12"><span className="sr-only">Azioni</span></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {g.righe.map(({ s, costi, copertina, pezzi, sviluppo, nCampioni, nOrdini, modello }) => {
+                      const stato = STATI_SCHEDA.find((x) => x.value === s.stato);
+                      // Negli articoli categoria e fascia sono già nel blocco e nel badge.
+                      const dettagli = isArticoli
+                        ? (modello ? null : s.categoria)
+                        : [s.categoria, s.genere, pezzi > 0 ? `${pezzi} pz` : null].filter(Boolean).join(" · ");
+                      const margineCls = costi.margine === null ? "text-[#5F6878]" : costi.margine < SOGLIA_MARGINE ? "text-[#A8461F]" : "text-[#1D6B4A]";
+                      const href = `${t.base}/${s.id}`;
+                      return (
+                        <tr key={s.id} className="border-b border-[#EFEBE2] last:border-0">
+                          <td className="pl-4 pr-2 py-2.5">
+                            <Link href={href} tabIndex={-1} aria-hidden className="block w-14 h-14 rounded-[10px] bg-[#EEEBE3] overflow-hidden">
+                              {copertina && <img src={copertina} alt="" className="w-full h-full object-cover" />}
+                            </Link>
+                          </td>
+                          <td className={`${cella} font-mono text-sm whitespace-nowrap`}>
+                            {s.codiceModello
+                              ? <><span className="font-semibold text-[#0E1B2C]">{s.codiceModello}</span><div className="text-xs text-[#5F6878]">{s.codice}</div></>
+                              : <span className="text-[#0E1B2C]">{s.codice}</span>}
+                          </td>
+                          <td className={cella}>
+                            <Link href={href} className="font-semibold text-[#0E1B2C] hover:text-[#1F3A68] hover:underline underline-offset-2">
+                              {s.nomeArticolo}
+                            </Link>
+                            {modello && (
+                              <span className={`ml-2 align-middle text-xs font-semibold px-2 py-0.5 rounded-full ${FASCIA_STYLE[modello.fascia] ?? "bg-[#EEEBE3] text-[#4A5566]"}`}>
+                                {modello.fascia}
+                              </span>
+                            )}
+                            {dettagli && <div className="text-[13px] text-[#5F6878]">{dettagli}</div>}
+                          </td>
+                          {!isArticoli && <td className={`${cella} text-[#4A5566]`}>{s.cliente?.nome || "—"}</td>}
+                          <td className={numero}>{costi.totale > 0 ? formatEuro(costi.totale) : "—"}</td>
+                          <td className={numero}>{costi.prezzoVendita > 0 ? formatEuro(costi.prezzoVendita) : "—"}</td>
+                          <td className={`${numero} font-semibold ${margineCls}`}>
+                            {costi.margine === null ? "—" : `${costi.margine.toFixed(1).replace(".", ",")}%`}
+                          </td>
+                          {isArticoli && (
+                            <td className={`${numero} text-[#1F3A68]`}>
+                              {nCampioni > 0 ? formatEuro(sviluppo) : "—"}
+                              {nCampioni > 0 && <div className="text-xs text-[#5F6878] font-sans">{nCampioni} {nCampioni === 1 ? "campione" : "campioni"}</div>}
+                            </td>
+                          )}
+                          {isArticoli && <td className={numero}>{nOrdini || "—"}</td>}
+                          <td className={cella}>
+                            {!isArticoli && stato && <span className={`badge badge-${s.stato}`}>{stato.label}</span>}
+                            <div className={`text-xs text-[#5F6878] ${isArticoli ? "" : "mt-1"}`}>{formatData(s.updatedAt)}</div>
+                          </td>
+                          <td className="px-2 py-2.5 text-right">
+                            <SchedaRowMenu id={s.id} nome={s.nomeArticolo} statoCorrente={s.stato} base={t.base} />
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          ))}
         </div>
       )}
     </div>

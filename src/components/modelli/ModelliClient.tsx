@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Plus, Search, Pencil, Trash2, X, Calculator, FileText } from "lucide-react";
-import { CATEGORIE, FASCE_MODELLO, ordinaCategorie } from "@/lib/utils";
+import { CATEGORIE, FASCE_MODELLO, FASCIA_STYLE, ordinaCategorie } from "@/lib/utils";
 import { Field, ChipGroup, Segmented, inputCls } from "@/components/ui/Form";
 
 export interface ModelloRiga {
@@ -19,13 +19,6 @@ export interface ModelloRiga {
 }
 
 const FASCE = FASCE_MODELLO.map((f) => ({ value: f, label: f }));
-
-const FASCIA_STYLE: Record<string, string> = {
-  Adulto: "bg-[#E3E9F3] text-[#1F3A68]",
-  Uomo: "bg-[#E6EEF0] text-[#1E5260]",
-  Donna: "bg-[#F7E6EC] text-[#8A2E52]",
-  Kids: "bg-[#FBEDE5] text-[#A8461F]",
-};
 
 type Bozza = { id?: string; codice: string; descrizione: string; categoria: string; fascia: string; note: string };
 const VUOTA: Bozza = { codice: "", descrizione: "", categoria: "", fascia: "Adulto", note: "" };
