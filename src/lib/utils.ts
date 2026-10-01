@@ -29,6 +29,19 @@ export const TIPI_SCHEDA = [
 
 export type TipoScheda = typeof TIPI_SCHEDA[number]["value"];
 
+/** Accessori con un costo standard per capo, precompilato quando si aggiungono.
+ *  Elastico h 4 cm: 10 € ogni 50 m = 0,20 €/m; da 68 cm (XXS) a 80 cm (XXL),
+ *  2 cm per taglia, la media è 74 cm = 0,148 € → 0,15 €. */
+export const ACCESSORI_STANDARD: Record<string, { nome: string; prezzo: number }> = {
+  Elastico: { nome: "Elastico h 4 cm (media taglie)", prezzo: 0.15 },
+  Packaging: { nome: "Packaging", prezzo: 0.8 },
+};
+
+/** Ogni nuovo articolo di costo parte con il packaging: è un costo del prodotto e si dimentica facilmente. */
+export const ACCESSORI_NUOVO_COSTO = [
+  { nome: ACCESSORI_STANDARD.Packaging.nome, quantita: 1, prezzoUnitario: ACCESSORI_STANDARD.Packaging.prezzo },
+];
+
 /** Valori di `Scheda.tipo` che indicano un articolo di solo costo ("preventivo" è il nome storico). */
 export const TIPI_COSTO_DB = ["costo", "preventivo"];
 

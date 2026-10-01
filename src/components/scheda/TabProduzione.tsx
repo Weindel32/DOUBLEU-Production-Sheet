@@ -4,7 +4,7 @@ import { useState, useEffect, forwardRef, useImperativeHandle } from "react";
 import { Plus, Trash2, Upload, Lock } from "lucide-react";
 import type { SchedaCompleta, ConsumoMateriale, Accessorio } from "@/types";
 import {
-  calcolaTotaleQuantita, parseNumIt, calcolaKgPerMetroLineare, calcolaCostoUnitarioConsumo,
+  calcolaTotaleQuantita, ACCESSORI_STANDARD, parseNumIt, calcolaKgPerMetroLineare, calcolaCostoUnitarioConsumo,
   calcolaRiepilogoCosti, prezzoDaMargine, formatEuro, type RiepilogoCosti,
 } from "@/lib/utils";
 import { Field, SectionCard, EuroInput, numStr, inputCls, textareaCls } from "@/components/ui/Form";
@@ -37,7 +37,7 @@ export interface TabProduzioneHandle {
 
 const parseNum = parseNumIt;
 
-const ACCESSORI_RAPIDI = ["Zip", "Laccio", "Etichetta", "Puntali", "Bottone", "Elastico"];
+const ACCESSORI_RAPIDI = ["Zip", "Laccio", "Etichetta", "Puntali", "Bottone", "Elastico", "Packaging"];
 const MARGINI_OBIETTIVO = [35, 45, 55];
 
 // Colonne condivise da intestazione e righe di materiali e accessori.
@@ -146,6 +146,16 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
   // ── Accessori ────────────────────────────────────────────
   const aggiungiAccessorio = (nome = "") => {
     const idx = accessori.length;
+    // Elastico e packaging hanno un costo standard: la riga arriva già compilata e salvata
+    const std = ACCESSORI_STANDARD[nome];
+    if (std) {
+      const nuovi = [...accessori, { nome: std.nome, quantita: 1, prezzoUnitario: std.prezzo }];
+      setAccessori(nuovi);
+      setAccessoriStr((prev) => [...prev, { quantita: "1", prezzo: numStr(std.prezzo) }]);
+      setFocusAcc(null);
+      salva({ accessori: nuovi });
+      return;
+    }
     setAccessori((prev) => [...prev, { nome, quantita: 1, prezzoUnitario: 0 }]);
     setAccessoriStr((prev) => [...prev, { quantita: "1", prezzo: "" }]);
     setFocusAcc(nome ? `acc-prezzo-${idx}` : `acc-nome-${idx}`);
