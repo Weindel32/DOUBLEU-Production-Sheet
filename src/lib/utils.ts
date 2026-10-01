@@ -57,6 +57,14 @@ export function baseScheda(tipo: string | null | undefined): "/articoli" | "/sch
 export const FASCE_MODELLO = ["Adulto", "Uomo", "Donna", "Kids"] as const;
 export type FasciaModello = typeof FASCE_MODELLO[number];
 
+/** Colori del badge della fascia, uguali in Modelli e in Articoli e costi. */
+export const FASCIA_STYLE: Record<string, string> = {
+  Adulto: "bg-[#E3E9F3] text-[#1F3A68]",
+  Uomo: "bg-[#E6EEF0] text-[#1E5260]",
+  Donna: "bg-[#F7E6EC] text-[#8A2E52]",
+  Kids: "bg-[#FBEDE5] text-[#A8461F]",
+};
+
 /** Fascia del modello → genere della scheda (Adulto è unisex, Kids è junior). */
 export function genereDaFascia(fascia: string | null | undefined): string {
   return fascia === "Kids" ? "Junior" : fascia === "Donna" ? "Donna" : fascia === "Uomo" ? "Uomo" : "Unisex";
