@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const BUILD = 16;
+const BUILD = 17;
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -37,14 +37,10 @@ const navItems = [
 export default function Sidebar() {
   const pathname = usePathname();
 
-  // Cancella il cookie di sessione. L'header Basic finto sostituisce eventuali credenziali del
-  // vecchio popup salvate dal browser, che altrimenti farebbero rientrare senza password.
+  // Cancella il cookie di sessione.
   const handleLogout = async () => {
     try {
-      await fetch("/api/logout", {
-        method: "POST",
-        headers: { Authorization: "Basic " + btoa("logout:logout") },
-      });
+      await fetch("/api/logout", { method: "POST" });
     } catch {}
     window.location.href = "/login";
   };

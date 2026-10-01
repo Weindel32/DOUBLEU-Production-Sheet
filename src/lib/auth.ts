@@ -67,18 +67,6 @@ export async function sessioneValida(valore: string | undefined): Promise<boolea
   }
 }
 
-/** Vecchio accesso Basic Auth (popup del browser): accettato ancora per non chiudere fuori nessuno. */
-export function basicAuthValida(header: string | null): boolean {
-  if (!header?.startsWith("Basic ")) return false;
-  try {
-    const decoded = atob(header.slice(6));
-    const i = decoded.indexOf(":");
-    return i > 0 && credenzialiValide(decoded.slice(0, i), decoded.slice(i + 1));
-  } catch {
-    return false;
-  }
-}
-
 /** Solo percorsi interni: niente redirect verso altri siti dopo il login. */
 export function percorsoSicuro(next: string | null | undefined): string {
   return next && next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\") ? next : "/";

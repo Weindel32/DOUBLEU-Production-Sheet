@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { COOKIE_SESSIONE, sessioneValida, basicAuthValida } from "@/lib/auth";
+import { COOKIE_SESSIONE, sessioneValida } from "@/lib/auth";
 
 // Raggiungibili senza sessione: la pagina di accesso e la sua API.
 const PUBBLICI = ["/login", "/api/login"];
@@ -9,7 +9,6 @@ export async function proxy(req: NextRequest) {
   if (PUBBLICI.includes(pathname)) return NextResponse.next();
 
   if (await sessioneValida(req.cookies.get(COOKIE_SESSIONE)?.value)) return NextResponse.next();
-  if (basicAuthValida(req.headers.get("authorization"))) return NextResponse.next();
 
   // Le API rispondono 401 (le chiama il codice, non una persona); le pagine portano al login.
   if (pathname.startsWith("/api/"))
