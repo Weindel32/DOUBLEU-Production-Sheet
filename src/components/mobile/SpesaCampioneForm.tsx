@@ -1,10 +1,10 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { Camera, Loader2, X, Check } from "lucide-react";
+import { useState } from "react";
+import { Loader2, Check } from "lucide-react";
 import type { Campione, VoceCampione } from "@/types";
 import { VOCI_CAMPIONE, parseNumIt, formatEuro, totaleCampione, totaleSviluppo } from "@/lib/utils";
-import { caricaImmagine } from "@/lib/immagini";
+import FotoRitagliabile from "@/components/mobile/FotoRitagliabile";
 import { Field, ChipGroup, EuroInput, inputCls } from "@/components/ui/Form";
 
 const NUOVO = "__nuovo__";
@@ -16,30 +16,17 @@ const dataIt = (d: string) => (/^\d{4}-\d{2}-\d{2}$/.test(d) ? d.split("-").reve
  * anche nuovo. Resta separata dal costo per capo, come nella scheda.
  */
 export default function SpesaCampioneForm({ schedaId, campioniIniziali }: { schedaId: string; campioniIniziali: Campione[] }) {
-  const fileRef = useRef<HTMLInputElement>(null);
   const [campioni, setCampioni] = useState(campioniIniziali);
   const [scelto, setScelto] = useState(campioniIniziali.at(-1)?.id ?? NUOVO);
   const [voce, setVoce] = useState("");
   const [importo, setImporto] = useState("");
   const [foto, setFoto] = useState("");
-  const [caricando, setCaricando] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [errore, setErrore] = useState<string | null>(null);
   const [fatto, setFatto] = useState<string | null>(null);
 
   const campione = campioni.find((c) => c.id === scelto);
   const importoNum = parseNumIt(importo);
-
-  const scattaFoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    setCaricando(true);
-    setErrore(null);
-    try { setFoto(await caricaImmagine(file)); }
-    catch (err) { setErrore(err instanceof Error ? err.message : "Foto non caricata"); }
-    finally { setCaricando(false); }
-  };
 
   const registra = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -113,27 +100,12 @@ export default function SpesaCampioneForm({ schedaId, campioniIniziali }: { sche
           <span>Importo</span>
           <EuroInput big label="Importo della spesa" value={importo} onChange={setImporto} onBlur={() => {}} />
         </div>
-        {foto ? (
-          <div className="relative">
-            <a href={foto} target="_blank" rel="noreferrer" aria-label="Apri lo scontrino a tutto schermo">
-              <img src={foto} alt="Scontrino" className="w-full h-auto max-h-[50vh] object-contain rounded-xl bg-[#EEEBE3]" />
-            </a>
-            <button type="button" onClick={() => setFoto("")} aria-label="Togli la foto"
-              className="absolute top-2 right-2 w-10 h-10 rounded-full bg-white/95 shadow flex items-center justify-center"><X size={18} /></button>
-          </div>
-        ) : (
-          <button type="button" onClick={() => fileRef.current?.click()} disabled={caricando}
-            className="w-full h-12 rounded-xl border border-dashed border-[#C9C3B5] text-[#1F3A68] text-sm font-semibold flex items-center justify-center gap-2">
-            {caricando ? <Loader2 size={18} className="animate-spin" /> : <Camera size={18} />}
-            Foto dello scontrino (facoltativa)
-          </button>
-        )}
-        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={scattaFoto} />
+        <FotoRitagliabile value={foto} onChange={setFoto} etichetta="Foto dello scontrino (facoltativa)" alt="Scontrino" />
       </div>
 
       {errore && <p role="alert" className="text-sm text-red-800 bg-red-50 border border-red-200 rounded-[10px] px-3 py-2">{errore}</p>}
 
-      <button type="submit" disabled={salvando || caricando || !voce.trim() || importoNum === null}
+      <button type="submit" disabled={salvando || !voce.trim() || importoNum === null}
         className="w-full h-14 rounded-2xl bg-[#0E1B2C] text-white text-base font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
         {salvando && <Loader2 size={18} className="animate-spin" />}
         Registra spesa
