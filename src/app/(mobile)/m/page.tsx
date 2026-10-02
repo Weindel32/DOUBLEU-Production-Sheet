@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { PackagePlus, Tag, Receipt, Calculator, FileText, Monitor } from "lucide-react";
+import { PackagePlus, Tag, Receipt, Calculator, FileText } from "lucide-react";
 import Testata from "@/components/mobile/Testata";
+import { BUILD } from "@/lib/build";
 
 const AZIONI = [
   { href: "/m/materiali/nuovo", titolo: "Nuovo materiale", testo: "Dal fornitore, con foto del cartellino", icon: PackagePlus },
@@ -35,9 +36,7 @@ export default function MobileHome() {
           </span>
         </Link>
 
-        <Link href="/dashboard" className="flex items-center justify-center gap-2 h-12 text-sm font-medium text-[#1F3A68]">
-          <Monitor size={17} /> Apri la versione completa
-        </Link>
+        <p className="text-center font-mono text-xs text-[#5F6878] pt-1">build {BUILD}</p>
       </div>
     </>
   );
