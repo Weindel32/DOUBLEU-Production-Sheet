@@ -1,10 +1,10 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Camera, Loader2, X, History } from "lucide-react";
+import { Loader2, History } from "lucide-react";
 import { calcolaCostoMetroDaPrezzoKg, parseNumIt, formatEuro } from "@/lib/utils";
-import { caricaImmagine } from "@/lib/immagini";
+import FotoRitagliabile from "@/components/mobile/FotoRitagliabile";
 import { Field, ChipGroup, Segmented, EuroInput, numStr, inputCls, textareaCls } from "@/components/ui/Form";
 
 const TIPI = ["Tessuto", "Fodera", "Elastico", "Cerniera", "Bottoni", "Ricamo", "Stampa", "Altro"];
@@ -35,7 +35,6 @@ export default function MaterialeMobileForm({ materiale, fornitori, composizioni
   composizioni: string[];
 }) {
   const router = useRouter();
-  const fileRef = useRef<HTMLInputElement>(null);
   const [f, setF] = useState({
     nome: materiale?.nome ?? "",
     tipo: materiale?.tipo ?? "Tessuto",
@@ -51,7 +50,6 @@ export default function MaterialeMobileForm({ materiale, fornitori, composizioni
     foto: materiale?.foto ?? "",
   });
   const [salvando, setSalvando] = useState(false);
-  const [caricando, setCaricando] = useState(false);
   const [errore, setErrore] = useState<string | null>(null);
 
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((x) => ({ ...x, [k]: v }));
@@ -64,21 +62,6 @@ export default function MaterialeMobileForm({ materiale, fornitori, composizioni
     : null;
   const prezzoPrima = materiale ? (materiale.unitaMisura === "kg" ? materiale.prezzoKg : materiale.costoMetro) : null;
   const prezzoCambiato = !!materiale && (prezzoNum !== prezzoPrima || f.unitaMisura !== (materiale.unitaMisura ?? "metro"));
-
-  const scattaFoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    setCaricando(true);
-    setErrore(null);
-    try {
-      set("foto", await caricaImmagine(file));
-    } catch (err) {
-      setErrore(err instanceof Error ? err.message : "Foto non caricata");
-    } finally {
-      setCaricando(false);
-    }
-  };
 
   const salva = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -119,23 +102,8 @@ export default function MaterialeMobileForm({ materiale, fornitori, composizioni
     <form onSubmit={salva} className="px-4 space-y-4 pb-6">
       {/* Foto del cartellino / campione */}
       <div className="bg-white border border-[#E4E0D6] rounded-2xl p-3">
-        {f.foto ? (
-          <div className="relative">
-            {/* Foto intera, mai ritagliata: si vede il cartellino com'è stato scattato. Tocco = a tutto schermo. */}
-            <a href={f.foto} target="_blank" rel="noreferrer" aria-label="Apri la foto a tutto schermo">
-              <img src={f.foto} alt="Foto del materiale" className="w-full h-auto max-h-[50vh] object-contain rounded-xl bg-[#EEEBE3]" />
-            </a>
-            <button type="button" onClick={() => set("foto", "")} aria-label="Togli la foto"
-              className="absolute top-2 right-2 w-10 h-10 rounded-full bg-white/95 shadow flex items-center justify-center"><X size={18} /></button>
-          </div>
-        ) : (
-          <button type="button" onClick={() => fileRef.current?.click()} disabled={caricando}
-            className="w-full h-32 rounded-xl border-2 border-dashed border-[#C9C3B5] bg-[#FBFAF7] text-[#1F3A68] flex flex-col items-center justify-center gap-1.5 font-semibold">
-            {caricando ? <Loader2 size={24} className="animate-spin" /> : <Camera size={26} />}
-            {caricando ? "Caricamento…" : "Foto del cartellino o del campione"}
-          </button>
-        )}
-        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={scattaFoto} />
+        <FotoRitagliabile value={f.foto} onChange={(url) => set("foto", url)}
+          etichetta="Foto del cartellino o del campione" alt="Foto del materiale" />
       </div>
 
       <div className="bg-white border border-[#E4E0D6] rounded-2xl p-4 space-y-4">
@@ -204,7 +172,7 @@ export default function MaterialeMobileForm({ materiale, fornitori, composizioni
 
       {errore && <p role="alert" className="text-sm text-red-800 bg-red-50 border border-red-200 rounded-[10px] px-3 py-2">{errore}</p>}
 
-      <button type="submit" disabled={salvando || caricando || !f.nome.trim()}
+      <button type="submit" disabled={salvando || !f.nome.trim()}
         className="w-full h-14 rounded-2xl bg-[#0E1B2C] text-white text-base font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
         {salvando && <Loader2 size={18} className="animate-spin" />}
         {materiale ? "Salva modifiche" : "Aggiungi materiale"}

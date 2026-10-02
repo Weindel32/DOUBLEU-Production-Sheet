@@ -1,2 +1,2 @@
 /** Numero di build mostrato in app (desktop e mobile): va aumentato a ogni rilascio. */
-export const BUILD = 19;
+export const BUILD = 20;
