@@ -121,7 +121,10 @@ export default function MaterialeMobileForm({ materiale, fornitori, composizioni
       <div className="bg-white border border-[#E4E0D6] rounded-2xl p-3">
         {f.foto ? (
           <div className="relative">
-            <img src={f.foto} alt="Foto del materiale" className="w-full h-52 object-cover rounded-xl bg-[#EEEBE3]" />
+            {/* Foto intera, mai ritagliata: si vede il cartellino com'è stato scattato. Tocco = a tutto schermo. */}
+            <a href={f.foto} target="_blank" rel="noreferrer" aria-label="Apri la foto a tutto schermo">
+              <img src={f.foto} alt="Foto del materiale" className="w-full h-auto max-h-[50vh] object-contain rounded-xl bg-[#EEEBE3]" />
+            </a>
             <button type="button" onClick={() => set("foto", "")} aria-label="Togli la foto"
               className="absolute top-2 right-2 w-10 h-10 rounded-full bg-white/95 shadow flex items-center justify-center"><X size={18} /></button>
           </div>
