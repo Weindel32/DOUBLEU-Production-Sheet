@@ -115,7 +115,9 @@ export default function SpesaCampioneForm({ schedaId, campioniIniziali }: { sche
         </div>
         {foto ? (
           <div className="relative">
-            <img src={foto} alt="Scontrino" className="w-full h-40 object-cover rounded-xl bg-[#EEEBE3]" />
+            <a href={foto} target="_blank" rel="noreferrer" aria-label="Apri lo scontrino a tutto schermo">
+              <img src={foto} alt="Scontrino" className="w-full h-auto max-h-[50vh] object-contain rounded-xl bg-[#EEEBE3]" />
+            </a>
             <button type="button" onClick={() => setFoto("")} aria-label="Togli la foto"
               className="absolute top-2 right-2 w-10 h-10 rounded-full bg-white/95 shadow flex items-center justify-center"><X size={18} /></button>
           </div>
