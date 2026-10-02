@@ -17,8 +17,7 @@ import {
   Calculator,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const BUILD = 18;
+import { BUILD } from "@/lib/build";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
