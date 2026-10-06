@@ -15,7 +15,7 @@ const PLURALE: Record<string, string> = {
   Bottoni: "Bottoni", Ricamo: "Ricami", Stampa: "Stampe", Altro: "Altro",
 };
 const UNITA_LABEL: Record<string, string> = { metro: "/m", kg: "/kg", pz: "/pz" };
-const GRIGLIA = "grid grid-cols-[48px_minmax(0,1.3fr)_minmax(0,1.5fr)_110px_120px_76px] items-center gap-x-4";
+const GRIGLIA = "grid grid-cols-[48px_minmax(0,1.3fr)_minmax(0,1.5fr)_130px_140px_76px] items-center gap-x-5";
 
 export default async function MaterialiPage({ searchParams }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
