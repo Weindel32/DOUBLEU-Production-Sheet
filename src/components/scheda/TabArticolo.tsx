@@ -9,13 +9,16 @@ import CampoModello, { trovaModello, type ModelloBreve } from "@/components/mode
 import { fasciaDaGenere } from "@/lib/utils";
 import { preparaImmagine } from "@/lib/immagini";
 import type { SchedaCompleta } from "@/types";
-import ColorPickerNamed from "@/components/ui/ColorPickerNamed";
+import SceltaColoreTessuto from "@/components/scheda/SceltaColoreTessuto";
+import { coloriTessuto, dizionarioFornitore, leggiCodici, type VoceColore } from "@/lib/colori";
 
 interface Props {
   scheda: SchedaCompleta;
   onSave: (data: Partial<SchedaCompleta>) => Promise<void>;
   clienti: { id: string; nome: string }[];
-  materiali: { id: string; nome: string; tipo: string; costoMetro: number | null; peso: string | null; unitaPeso: string | null; larghezza: string | null }[];
+  materiali: { id: string; nome: string; tipo: string; costoMetro: number | null; peso: string | null; unitaPeso: string | null; larghezza: string | null; fornitore?: string | null; colori?: string | null }[];
+  /** Nomi dei codici colore per fornitore: i colori del tessuto si scelgono da qui. */
+  vociColori?: VoceColore[];
   /** Nome, codice e categoria vivono anche nell'intestazione della scheda. */
   onMetaChange?: (meta: { nomeArticolo?: string; codice?: string; categoria?: string; codiceModello?: string }) => void;
   /** Archivio modelli, per suggerire il codice e proporre di aggiungere quelli nuovi. */
@@ -52,7 +55,7 @@ export interface TabArticoloHandle {
 const CATEGORIE_SENZA_COLLO_MANICHE = ["Short", "Skirt", "Sweatpants"];
 const CATEGORIE_COSTINA = ["Hoodie", "Zip Hoodie", "Sweatshirt", "Sweatpants"];
 
-const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ scheda, onSave, clienti, materiali, onMetaChange, modelli: modelliIniziali = [] }, ref) {
+const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ scheda, onSave, clienti, materiali, onMetaChange, modelli: modelliIniziali = [], vociColori = [] }, ref) {
   const [immagini, setImmagini] = useState<string[]>(scheda.immagini || []);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -77,6 +80,8 @@ const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ 
     produttore: scheda.produttore || "",
     coloreBase: scheda.coloreBase || "",
     coloriSecondari: scheda.coloriSecondari || "",
+    coloreBaseCodice: scheda.coloreBaseCodice || "",
+    coloriSecondariCodice: scheda.coloriSecondariCodice || "",
     collo: scheda.collo || "",
     maniche: scheda.maniche || "",
     noteSpecifiche: scheda.noteSpecifiche || "",
@@ -209,17 +214,34 @@ const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ 
     const mat = materiali.find((m) => m.nome === nome);
     const peso = mat?.peso && mat?.unitaPeso ? `${mat.peso} ${mat.unitaPeso}` : (mat?.peso ?? "");
     const altezza = mat?.larghezza ?? "";
+    // Cambiando tessuto, un codice colore che il nuovo tessuto non ha non vale più: resta il nome, con l'avviso.
+    const codiciNuovi = leggiCodici(mat?.colori);
+    const codici = {
+      coloreBaseCodice: codiciNuovi.includes(values.coloreBaseCodice) ? values.coloreBaseCodice : "",
+      coloriSecondariCodice: codiciNuovi.includes(values.coloriSecondariCodice) ? values.coloriSecondariCodice : "",
+    };
     setValues((v) => ({
       ...v,
       tessutoPrincipale: nome,
+      ...codici,
       ...(peso ? { pesoTessuto: peso } : {}),
       ...(altezza ? { altezzaTessuto: altezza } : {}),
     }));
     onSave({
       tessutoPrincipale: nome || null,
+      coloreBaseCodice: codici.coloreBaseCodice || null,
+      coloriSecondariCodice: codici.coloriSecondariCodice || null,
       ...(peso ? { pesoTessuto: peso } : {}),
       ...(altezza ? { altezzaTessuto: altezza } : {}),
     });
+  };
+
+  const tessutoPrincipale = materiali.find((m) => m.nome === values.tessutoPrincipale);
+  const coloriPrincipale = coloriTessuto(leggiCodici(tessutoPrincipale?.colori), dizionarioFornitore(vociColori, tessutoPrincipale?.fornitore));
+  const scegliColore = (campo: "coloreBase" | "coloriSecondari") => (nome: string, codice: string | null) => {
+    const campoCodice = campo === "coloreBase" ? "coloreBaseCodice" : "coloriSecondariCodice";
+    setValues((v) => ({ ...v, [campo]: nome, [campoCodice]: codice ?? "" }));
+    onSave({ [campo]: nome || null, [campoCodice]: codice });
   };
 
   const handleTessutoSecondarioChange = (nome: string) => {
@@ -350,12 +372,17 @@ const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ 
             </>
           )}
 
-          <div className="col-span-3 grid grid-cols-2 gap-3">
+          {/* Con i colori del tessuto le due scelte vanno una sotto l'altra: le cartelle hanno fino a 20 colori. */}
+          <div className={`col-span-3 grid gap-3 ${coloriPrincipale.length ? "grid-cols-1" : "grid-cols-2"}`}>
             <Field label="Colore base" group>
-              <ColorPickerNamed value={values.coloreBase} onChange={(val) => scegli("coloreBase", val)} placeholder="es. Blu royal" />
+              <SceltaColoreTessuto value={values.coloreBase} codice={values.coloreBaseCodice} colori={coloriPrincipale}
+                tessuto={values.tessutoPrincipale} fornitore={tessutoPrincipale?.fornitore ?? null}
+                onChange={scegliColore("coloreBase")} placeholder="es. Blu royal" />
             </Field>
             <Field label="Colori secondari" group>
-              <ColorPickerNamed value={values.coloriSecondari} onChange={(val) => scegli("coloriSecondari", val)} placeholder="es. Blu navy" />
+              <SceltaColoreTessuto value={values.coloriSecondari} codice={values.coloriSecondariCodice} colori={coloriPrincipale}
+                tessuto={values.tessutoPrincipale} fornitore={tessutoPrincipale?.fornitore ?? null}
+                onChange={scegliColore("coloriSecondari")} placeholder="es. Blu navy" />
             </Field>
           </div>
 

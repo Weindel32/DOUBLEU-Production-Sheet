@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { calcolaCostoMetroDaPrezzoKg, calcolaGrammiMq, parseNumIt } from "@/lib/utils";
+import SezioneColori from "@/components/materiali/SezioneColori";
+import type { VoceColore } from "@/lib/colori";
 
 const TIPI = ["Tessuto", "Fodera", "Elastico", "Cerniera", "Bottoni", "Ricamo", "Stampa", "Altro"];
 const COMPOSIZIONI = [
@@ -38,6 +40,12 @@ export default function NuovoMaterialePage() {
     note: "",
   });
 
+  const [colori, setColori] = useState({ codici: [] as string[], cartellaFoto: "", cartellaData: "" });
+  const [voci, setVoci] = useState<VoceColore[]>([]);
+  useEffect(() => {
+    fetch("/api/colori-fornitore").then((r) => (r.ok ? r.json() : [])).then(setVoci).catch(() => {});
+  }, []);
+
   const set = (field: string, value: string) =>
     setForm((f) => ({ ...f, [field]: value }));
 
@@ -66,6 +74,7 @@ export default function NuovoMaterialePage() {
         ...form,
         costoMetro: isKg ? costoAlMetro : parseNumIt(form.costoMetro),
         prezzoKg: isKg ? parseNumIt(form.prezzoKg) : null,
+        colori: colori.codici, cartellaFoto: colori.cartellaFoto || null, cartellaData: colori.cartellaData.trim() || null,
       }),
     });
     router.push("/materiali");
@@ -234,6 +243,13 @@ export default function NuovoMaterialePage() {
               className="w-full border border-[#D6D1C4] rounded-lg px-3 py-2 text-sm focus:border-blue-400 outline-none"
             />
           </div>
+        </div>
+
+        <div className="border-t border-[#EFEBE2] pt-5">
+          <SezioneColori fornitore={form.fornitore} codici={colori.codici} onCodici={(c) => setColori((x) => ({ ...x, codici: c }))}
+            voci={voci} onVoce={(v) => setVoci((vs) => [...vs.filter((x) => !(x.fornitore === v.fornitore && x.codice === v.codice)), v])}
+            cartellaFoto={colori.cartellaFoto} onCartellaFoto={(u) => setColori((x) => ({ ...x, cartellaFoto: u }))}
+            cartellaData={colori.cartellaData} onCartellaData={(d) => setColori((x) => ({ ...x, cartellaData: d }))} />
         </div>
 
         <div className="flex gap-3 pt-2">

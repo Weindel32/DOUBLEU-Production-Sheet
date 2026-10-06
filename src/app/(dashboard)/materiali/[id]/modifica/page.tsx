@@ -8,7 +8,10 @@ export default async function ModificaMaterialePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const materiale = await prisma.materiale.findUnique({ where: { id } });
+  const [materiale, voci] = await Promise.all([
+    prisma.materiale.findUnique({ where: { id } }),
+    prisma.coloreFornitore.findMany(),
+  ]);
   if (!materiale) notFound();
-  return <ModificaMaterialeForm materiale={materiale} />;
+  return <ModificaMaterialeForm materiale={materiale} voci={voci} />;
 }

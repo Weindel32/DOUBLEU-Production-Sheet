@@ -5,11 +5,14 @@ import MaterialeMobileForm from "@/components/mobile/MaterialeMobileForm";
 import { suggerimentiMateriali } from "../suggerimenti";
 
 export default async function NuovoMaterialeMobile() {
-  const materiali = await prisma.materiale.findMany({ select: { fornitore: true, composizione: true } });
+  const [materiali, voci] = await Promise.all([
+    prisma.materiale.findMany({ select: { fornitore: true, composizione: true } }),
+    prisma.coloreFornitore.findMany(),
+  ]);
   return (
     <>
       <Testata indietro="/m/materiali" sopra="Materiali" titolo="Nuovo materiale" />
-      <MaterialeMobileForm {...suggerimentiMateriali(materiali)} />
+      <MaterialeMobileForm voci={voci} {...suggerimentiMateriali(materiali)} />
     </>
   );
 }

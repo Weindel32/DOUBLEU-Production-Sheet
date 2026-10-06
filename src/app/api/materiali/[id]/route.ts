@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-import { rigaCambioPrezzo } from "@/lib/materiali";
+import { rigaCambioPrezzo, codiciJson } from "@/lib/materiali";
 
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -41,6 +41,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       prezzoKg: body.prezzoKg,
       codice: body.codice,
       foto: body.foto,
+      colori: body.colori !== undefined ? codiciJson(body.colori) : undefined,
+      cartellaFoto: body.cartellaFoto,
+      cartellaData: body.cartellaData,
       note,
     },
   });
