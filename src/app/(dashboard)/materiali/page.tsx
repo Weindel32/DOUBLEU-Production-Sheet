@@ -1,113 +1,134 @@
 export const dynamic = "force-dynamic";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { Package, PlusCircle } from "lucide-react";
+import { Package, Plus, Palette } from "lucide-react";
 import MaterialiActions from "./MaterialiActions";
-import { calcolaCostoAlMetro, calcolaGrammaturaCommerciale } from "@/lib/utils";
+import { calcolaCostoAlMetro, calcolaGrammaturaCommerciale, formatEuro } from "@/lib/utils";
+import { chiaveFornitore, coloriTessuto, dizionarioFornitore, leggiCodici } from "@/lib/colori";
+import BadgeColori from "@/components/materiali/BadgeColori";
+import FiltriMateriali from "@/components/materiali/FiltriMateriali";
 
-function mPerKg(peso: string): string | null {
-  const p = parseFloat(peso.replace(",", "."));
-  if (!p || p <= 0) return null;
-  return (1000 / p).toFixed(2);
-}
-
+// Ordine dei blocchi, come le scelte del tipo nel form; i tipi non previsti vanno in fondo.
+const TIPI = ["Tessuto", "Fodera", "Elastico", "Cerniera", "Bottoni", "Ricamo", "Stampa", "Altro"];
+const PLURALE: Record<string, string> = {
+  Tessuto: "Tessuti", Fodera: "Fodere", Elastico: "Elastici", Cerniera: "Cerniere",
+  Bottoni: "Bottoni", Ricamo: "Ricami", Stampa: "Stampe", Altro: "Altro",
+};
 const UNITA_LABEL: Record<string, string> = { metro: "/m", kg: "/kg", pz: "/pz" };
+const GRIGLIA = "grid grid-cols-[48px_minmax(0,1.3fr)_minmax(0,1.5fr)_130px_140px_76px] items-center gap-x-5";
 
-export default async function MaterialiPage() {
-  const materiali = await prisma.materiale.findMany({ orderBy: { nome: "asc" } });
+export default async function MaterialiPage({ searchParams }: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const sp = await searchParams;
+  const str = (k: string) => (typeof sp[k] === "string" ? (sp[k] as string) : "");
+  const filtri = { q: str("q"), colore: str("colore"), fornitore: str("fornitore") };
+
+  const [tutti, voci] = await Promise.all([
+    prisma.materiale.findMany({ orderBy: { nome: "asc" } }),
+    prisma.coloreFornitore.findMany(),
+  ]);
+  const righe = tutti.map((m) => ({ m, colori: coloriTessuto(leggiCodici(m.colori), dizionarioFornitore(voci, m.fornitore)) }));
+
+  const nomiColore = [...new Set(righe.flatMap((r) => r.colori.map((c) => c.nome).filter((n): n is string => !!n)))]
+    .sort((a, b) => a.localeCompare(b));
+  const fornitori = [...new Set(tutti.map((m) => m.fornitore?.trim()).filter((f): f is string => !!f))]
+    .sort((a, b) => a.localeCompare(b));
+
+  const q = filtri.q.toLowerCase();
+  const visibili = righe.filter(({ m, colori }) =>
+    (!filtri.colore || colori.some((c) => c.nome === filtri.colore)) &&
+    (!filtri.fornitore || chiaveFornitore(m.fornitore) === chiaveFornitore(filtri.fornitore)) &&
+    (!q || [m.nome, m.codice, m.composizione, m.fornitore].some((v) => v?.toLowerCase().includes(q))));
+
+  const tipi = [...TIPI, ...new Set(visibili.map((r) => r.m.tipo).filter((t) => !TIPI.includes(t)))];
+  const gruppi = tipi.map((tipo) => ({ tipo, righe: visibili.filter((r) => r.m.tipo === tipo) })).filter((g) => g.righe.length > 0);
+  const filtrato = !!(filtri.q || filtri.colore || filtri.fornitore);
 
   return (
-    <div className="p-6 space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-[#0E1B2C]">Materiali</h1>
-          <p className="text-sm text-[#4A5566] mt-0.5">{materiali.length} materiali in libreria</p>
+    <div className="p-6 lg:p-8 space-y-5">
+      <div className="flex flex-wrap items-end gap-4">
+        <div className="flex-1 min-w-[220px]">
+          <h1 className="font-display text-[34px] font-extrabold tracking-tight text-[#0E1B2C] leading-tight">Materiali</h1>
+          <p className="text-sm text-[#5F6878] mt-1">
+            {filtrato ? `${visibili.length} su ${tutti.length} materiali` : `${tutti.length} materiali in libreria`}
+            {filtri.colore && ` · disponibili in ${filtri.colore}`}
+          </p>
         </div>
-        <Link
-          href="/materiali/nuovo"
-          className="flex items-center gap-2 bg-[#0E1B2C] hover:bg-[#1F3A68] text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-        >
-          <PlusCircle size={16} />
-          Aggiungi materiale
+        <Link href="/materiali/colori"
+          className="h-12 px-4 rounded-xl border border-[#D6D1C4] bg-white text-[15px] font-medium text-[#0E1B2C] inline-flex items-center gap-2 hover:border-[#0E1B2C]/40">
+          <Palette size={18} /> Colori fornitori
+        </Link>
+        <Link href="/materiali/nuovo"
+          className="h-12 px-5 rounded-xl bg-[#0E1B2C] hover:bg-[#1F3A68] text-white text-[15px] font-semibold inline-flex items-center gap-2">
+          <Plus size={18} /> Nuovo materiale
         </Link>
       </div>
 
-      {materiali.length === 0 ? (
-        <div className="card text-center py-16">
-          <Package size={48} className="mx-auto mb-4 text-[#5F6878]" />
-          <h2 className="text-[#4A5566] font-medium mb-2">Nessun materiale</h2>
-          <p className="text-[#5F6878] text-sm mb-4">Aggiungi tessuti e materiali alla libreria</p>
-          <Link
-            href="/materiali/nuovo"
-            className="inline-flex items-center gap-2 bg-[#0E1B2C] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#1F3A68] transition-colors"
-          >
-            <PlusCircle size={16} />
-            Aggiungi materiale
-          </Link>
-        </div>
-      ) : (
-        <div className="card p-0 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-[#E4E0D6]">
-                <th className="text-left px-4 py-3">Nome</th>
-                <th className="text-left px-4 py-3">Tipo</th>
-                <th className="text-left px-4 py-3">Composizione</th>
-                <th className="text-left px-4 py-3">Peso</th>
-                <th className="text-left px-4 py-3">Grammatura commerciale</th>
-                <th className="text-left px-4 py-3">Fornitore</th>
-                <th className="text-right px-4 py-3">Costo</th>
-                <th className="px-4 py-3"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {materiali.map((m) => {
-                const unita = m.unitaMisura ?? "metro";
-                const costoAlMetro = calcolaCostoAlMetro(m);
-                const grammaturaCommerciale = calcolaGrammaturaCommerciale(m);
-                return (
-                <tr key={m.id} className="border-b border-[#E4E0D6] hover:bg-[#0E1B2C]/[0.03] transition-colors">
-                  <td className="px-4 py-3 font-medium text-[#0E1B2C]">{m.nome}</td>
-                  <td className="px-4 py-3 text-[#4A5566]">{m.tipo}</td>
-                  <td className="px-4 py-3 text-[#4A5566]">{m.composizione || "—"}</td>
-                  <td className="px-4 py-3 text-[#4A5566]">
-                    {m.peso ? (
-                      <span>
-                        {m.peso} {m.unitaPeso ?? "g/m²"}
-                        {m.unitaPeso === "g/m" && mPerKg(m.peso) && (
-                          <span className="text-xs text-[#1F3A68] ml-1">({mPerKg(m.peso)} m/kg)</span>
-                        )}
-                      </span>
-                    ) : "—"}
-                  </td>
-                  <td className="px-4 py-3 text-[#4A5566]">
-                    {grammaturaCommerciale !== null ? `${grammaturaCommerciale.toFixed(0)} g/m²` : "—"}
-                  </td>
-                  <td className="px-4 py-3 text-[#4A5566]">{m.fornitore || "—"}</td>
-                  <td className="px-4 py-3 text-right text-[#4A5566]">
-                    {unita === "kg" ? (
-                      costoAlMetro !== null || m.prezzoKg ? (
-                        <span>
-                          {costoAlMetro !== null
-                            ? `€ ${costoAlMetro.toFixed(2)}/m`
-                            : <span className="text-[#A8461F]">peso/altezza mancanti</span>}
-                          {m.prezzoKg ? <span className="text-xs text-[#1F3A68] block">€{m.prezzoKg.toFixed(2)}/kg</span> : null}
-                        </span>
-                      ) : "—"
-                    ) : m.costoMetro ? (
-                      <span>€ {m.costoMetro.toFixed(2)}{UNITA_LABEL[unita] ?? "/m"}</span>
-                    ) : "—"}
-                  </td>
-                  <td className="px-4 py-3 w-20">
-                    <MaterialiActions id={m.id} />
-                  </td>
-                </tr>
-                );
-              })}
-            </tbody>
-          </table>
+      <FiltriMateriali {...filtri} colori={nomiColore} fornitori={fornitori} />
+
+      {gruppi.length === 0 && (
+        <div className="bg-white border border-[#E4E0D6] rounded-2xl text-center py-14 px-6">
+          <Package size={40} className="mx-auto mb-3 text-[#5F6878]" />
+          <p className="text-[#5F6878] mb-4">{tutti.length === 0 ? "Nessun materiale in libreria." : "Nessun materiale con questi filtri."}</p>
+          {filtrato && <Link href="/materiali" className="h-11 px-5 rounded-xl border border-[#D6D1C4] text-sm font-medium inline-flex items-center">Mostra tutti</Link>}
         </div>
       )}
+
+      {gruppi.map((g) => (
+        <section key={g.tipo} className="bg-white border border-[#E4E0D6] rounded-2xl">
+          <div className="px-5 py-3 border-b border-[#E4E0D6] bg-[#FBFAF7] rounded-t-2xl flex items-baseline justify-between">
+            <h2 className="font-display text-[17px] font-bold text-[#0E1B2C]">{PLURALE[g.tipo] ?? g.tipo}</h2>
+            <span className="text-xs text-[#5F6878]">{g.righe.length}</span>
+          </div>
+          <div className={`${GRIGLIA} px-5 py-2 border-b border-[#EFEBE2] text-[11px] font-semibold uppercase tracking-wider text-[#5F6878]`}>
+            <span /><span>Materiale</span><span>Specifiche</span><span>Colori</span><span className="text-right">Prezzo</span><span />
+          </div>
+          <ul>
+            {g.righe.map(({ m, colori }) => {
+              const unita = m.unitaMisura ?? "metro";
+              const alMetro = calcolaCostoAlMetro(m);
+              const grammatura = calcolaGrammaturaCommerciale(m);
+              const href = `/materiali/${m.id}/modifica`;
+              const sotto = [m.fornitore, m.codice].filter(Boolean).join(" · ");
+              const misure = [
+                m.peso ? `${m.peso} ${m.unitaPeso ?? "g/m²"}` : null,
+                m.larghezza ? `${m.larghezza} cm` : null,
+                grammatura !== null && m.unitaPeso !== "g/m²" ? `${grammatura.toFixed(0)} g/m²` : null,
+              ].filter(Boolean).join(" · ");
+              return (
+                <li key={m.id} className={`${GRIGLIA} px-5 py-2.5 border-b border-[#EFEBE2] last:border-0`}>
+                  <Link href={href} tabIndex={-1} aria-hidden className="w-12 h-12 rounded-[10px] bg-[#EEEBE3] overflow-hidden flex items-center justify-center text-[#9AA3B2]">
+                    {m.foto ? <img src={m.foto} alt="" className="w-full h-full object-cover" /> : <Package size={18} />}
+                  </Link>
+                  <div className="min-w-0">
+                    <Link href={href} className="block font-semibold text-[15px] leading-snug text-[#0E1B2C] line-clamp-2 hover:text-[#1F3A68] hover:underline underline-offset-2">{m.nome}</Link>
+                    {sotto && <div className="text-[13px] text-[#5F6878] truncate">{sotto}</div>}
+                  </div>
+                  <div className="min-w-0 text-[14px]">
+                    {m.composizione && <div className="text-[#0E1B2C] truncate">{m.composizione}</div>}
+                    {misure ? <div className={`truncate ${m.composizione ? "text-[13px] text-[#5F6878]" : "text-[#0E1B2C]"}`}>{misure}</div>
+                      : !m.composizione && <span className="text-[#5F6878]">—</span>}
+                  </div>
+                  <BadgeColori colori={colori} fornitore={chiaveFornitore(m.fornitore) || null}
+                    cartellaData={m.cartellaData} cartellaFoto={m.cartellaFoto} hrefModifica={href} />
+                  <div className="text-right font-mono whitespace-nowrap">
+                    {unita === "kg" ? (
+                      <>
+                        <div className="text-[14px] text-[#0E1B2C]">{alMetro !== null ? `${formatEuro(alMetro)}/m` : "—"}</div>
+                        {m.prezzoKg ? <div className="text-xs text-[#5F6878]">{formatEuro(m.prezzoKg)}/kg</div> : null}
+                      </>
+                    ) : (
+                      <div className="text-[14px] text-[#0E1B2C]">{m.costoMetro ? `${formatEuro(m.costoMetro)}${UNITA_LABEL[unita] ?? "/m"}` : "—"}</div>
+                    )}
+                  </div>
+                  <MaterialiActions id={m.id} />
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ))}
     </div>
   );
 }

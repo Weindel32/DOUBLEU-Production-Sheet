@@ -1,3 +1,5 @@
+import { parseCodici } from "@/lib/colori";
+
 /** Prezzo di un materiale così come lo si legge sul listino del fornitore. */
 export function prezzoListino(m: { unitaMisura: string | null; costoMetro: number | null; prezzoKg: number | null }):
   { valore: number | null; unita: string } {
@@ -24,4 +26,10 @@ export function rigaCambioPrezzo(
   const giorno = data.toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "Europe/Rome" });
   const da = a.unita === b.unita ? fmt(a.valore) : `${fmt(a.valore)} ${a.unita}`;
   return `${giorno} · prezzo ${da} → ${fmt(b.valore)} ${b.unita}`;
+}
+
+/** Codici colore come arrivano dai form (array o testo "99, 100") → JSON da salvare, null se vuoto. */
+export function codiciJson(valore: unknown): string | null {
+  const codici = Array.isArray(valore) ? parseCodici(valore.join(",")) : typeof valore === "string" ? parseCodici(valore) : [];
+  return codici.length ? JSON.stringify(codici) : null;
 }

@@ -84,6 +84,8 @@ export interface SchedaCompleta {
   produttore?: string | null;
   coloreBase?: string | null;
   coloriSecondari?: string | null;
+  coloreBaseCodice?: string | null;
+  coloriSecondariCodice?: string | null;
   collo?: string | null;
   maniche?: string | null;
   noteSpecifiche?: string | null;

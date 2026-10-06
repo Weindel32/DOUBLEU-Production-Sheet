@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { formatData, calcolaTotaleQuantita, TAGLIE_ADULTO, TAGLIE_KIDS, CATEGORIE_ELASTICO, STATI_SCHEDA } from "@/lib/utils";
 import Testata from "@/components/mobile/Testata";
+import { etichettaColore } from "@/lib/colori";
 
 function Blocco({ titolo, destra, children }: { titolo: string; destra?: ReactNode; children: ReactNode }) {
   return (
@@ -35,6 +36,9 @@ export default async function MobileSchedaDetailPage({ params }: { params: Promi
   const { id } = await params;
   const scheda = await prisma.scheda.findUnique({ where: { id }, include: { cliente: true } });
   if (!scheda) notFound();
+  const fornitoreTessuto = scheda.tessutoPrincipale
+    ? (await prisma.materiale.findFirst({ where: { nome: scheda.tessutoPrincipale }, select: { fornitore: true } }))?.fornitore ?? null
+    : null;
 
   const quantita: Record<string, number> = scheda.quantitaTaglia ? JSON.parse(scheda.quantitaTaglia) : {};
   const tabellaMisure = scheda.tabellaMisure ? JSON.parse(scheda.tabellaMisure) : {};
@@ -72,8 +76,8 @@ export default async function MobileSchedaDetailPage({ params }: { params: Promi
             { label: "Vestibilità", value: scheda.vestibilita },
             { label: "Tessuto", value: scheda.tessutoPrincipale },
             { label: "Peso", value: scheda.pesoTessuto },
-            { label: "Colore base", value: scheda.coloreBase },
-            { label: "Colori secondari", value: scheda.coloriSecondari },
+            { label: "Colore base", value: etichettaColore(scheda.coloreBase, scheda.coloreBaseCodice, fornitoreTessuto) },
+            { label: "Colori secondari", value: etichettaColore(scheda.coloriSecondari, scheda.coloriSecondariCodice, fornitoreTessuto) },
             { label: "Collo", value: scheda.collo },
             { label: "Maniche", value: scheda.maniche },
           ]} />

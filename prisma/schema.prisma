@@ -42,26 +42,29 @@ model Materiale {
   codice       String?
   note         String?
   foto         String? // URL della foto del cartellino o del campione
+  colori       String? // JSON: codici colore del fornitore disponibili, es. ["99","100","02"]
+  cartellaFoto String? // URL della foto della cartella colori
+  cartellaData String? // data riportata sulla cartella, es. "06/26"
   createdAt    DateTime          @default(now())
   schede       MaterialeScheda[]
 }
 
 model Scheda {
-  id           String   @id @default(cuid())
-  codice       String   @unique
-  nomeArticolo String
-  stato        String   @default("bozza")
-  tipo         String   @default("produzione") // "produzione" | "costo" ("preventivo" = nome storico di "costo")
+  id            String   @id @default(cuid())
+  codice        String   @unique
+  nomeArticolo  String
+  stato         String   @default("bozza")
+  tipo          String   @default("produzione") // "produzione" | "costo" ("preventivo" = nome storico di "costo")
   // Ordine creato da un articolo di costo: id dell'articolo di partenza
-  origineId    String?
+  origineId     String?
   // Codice del cartamodello del modellista (es. "DUSP 09"): si ripete su più schede
   codiceModello String?
   // JSON: [{id, nome, data, voci: [{descrizione, importo}], note}] — costi di sviluppo, fuori dal costo per capo
-  campioni     String?
-  versione     String   @default("1.0")
-  collezione   String?
-  clienteId    String?
-  cliente      Cliente? @relation(fields: [clienteId], references: [id])
+  campioni      String?
+  versione      String   @default("1.0")
+  collezione    String?
+  clienteId     String?
+  cliente       Cliente? @relation(fields: [clienteId], references: [id])
 
   // Tab 1 - Articolo
   categoria   String?
@@ -77,11 +80,13 @@ model Scheda {
   altezzaTessuto        String?
   tessutoSecondario     String?
   pesoTessutoSecondario String?
-  coloreBase        String?
-  coloriSecondari   String?
-  collo             String?
-  maniche           String?
-  noteSpecifiche    String?
+  coloreBase            String?
+  coloreBaseCodice      String? // codice colore del fornitore del tessuto principale, es. "100"
+  coloriSecondari       String?
+  coloriSecondariCodice String? // codice colore del fornitore del tessuto secondario
+  collo                 String?
+  maniche               String?
+  noteSpecifiche        String?
 
   // Fornitori
   modellista       String?
@@ -127,15 +132,15 @@ model Scheda {
 }
 
 model LogoScheda {
-  id         String @id @default(cuid())
+  id         String  @id @default(cuid())
   schedaId   String
   logoId     String
   posizione  String
   tecnica    String
   dimensione String?
   note       String?
-  scheda     Scheda @relation(fields: [schedaId], references: [id], onDelete: Cascade)
-  logo       Logo   @relation(fields: [logoId], references: [id])
+  scheda     Scheda  @relation(fields: [schedaId], references: [id], onDelete: Cascade)
+  logo       Logo    @relation(fields: [logoId], references: [id])
 }
 
 model MaterialeScheda {
@@ -159,4 +164,17 @@ model Modello {
   note        String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+// Nome DOUBLEU dei codici colore di un fornitore: lo stesso codice vale per tutti i suoi tessuti
+// (per CTA il 99 è nero e il 100 blu scuro, qualunque sia l'articolo).
+model ColoreFornitore {
+  id        String   @id @default(cuid())
+  fornitore String
+  codice    String
+  nome      String
+  hex       String?
+  createdAt DateTime @default(now())
+
+  @@unique([fornitore, codice])
 }

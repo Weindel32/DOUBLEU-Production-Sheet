@@ -45,6 +45,8 @@ export async function POST(req: NextRequest) {
         produttore: body.produttore,
         coloreBase: body.coloreBase,
         coloriSecondari: body.coloriSecondari,
+        coloreBaseCodice: body.coloreBaseCodice,
+        coloriSecondariCodice: body.coloriSecondariCodice,
         collo: body.collo,
         maniche: body.maniche,
         noteSpecifiche: body.noteSpecifiche,

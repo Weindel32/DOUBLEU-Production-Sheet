@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { CATEGORIE_ELASTICO, calcolaCostoUnitarioConsumo, normalizzaTipo, totaleCampione, totaleSviluppo } from "@/lib/utils";
 import type { ConsumoMateriale, Campione } from "@/types";
+import { etichettaColore } from "@/lib/colori";
 
 const PALETTE_HEX: Record<string, string> = {
   "Nero": "#000000", "Bianco": "#ffffff", "Grigio chiaro": "#d1d5db",
@@ -72,6 +73,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const escHtml = (t: string) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   // Il costo unitario si ricalcola dal materiale attuale: quello salvato nella scheda è
   // una fotografia dell'ultimo salvataggio e resta solo come ripiego (materiale eliminato).
+  // Il codice colore si legge col fornitore del tessuto principale: "Blu scuro · CTA col. 100".
+  const fornitoreTessuto = scheda.tessutoPrincipale
+    ? (await prisma.materiale.findFirst({ where: { nome: scheda.tessutoPrincipale }, select: { fornitore: true } }))?.fornitore ?? null
+    : null;
   const materialiConsumo = await prisma.materiale.findMany({
     where: { id: { in: consumiSalvati.map((c) => c.materialeId) } },
   });
@@ -243,8 +248,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     ['Altezza tessuto', scheda.altezzaTessuto],
     ['Costina', (scheda as Record<string, unknown>).tessutoSecondario as string | null],
     ['Peso costina', (scheda as Record<string, unknown>).pesoTessutoSecondario as string | null],
-    ['Colore base', scheda.coloreBase],
-    ['Colori secondari articolo', scheda.coloriSecondari],
+    ['Colore base', etichettaColore(scheda.coloreBase, scheda.coloreBaseCodice, fornitoreTessuto)],
+    ['Colori secondari articolo', etichettaColore(scheda.coloriSecondari, scheda.coloriSecondariCodice, fornitoreTessuto)],
     ['Collo', scheda.collo],
     ['Maniche', scheda.maniche],
   ] as [string, string | null | undefined][];
