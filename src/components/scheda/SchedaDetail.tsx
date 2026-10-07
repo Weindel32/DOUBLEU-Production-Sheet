@@ -202,7 +202,7 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
           <div className="text-xs text-[#5F6878]">
             {meta.codiceModello && <><span className="font-mono font-semibold text-[#0E1B2C]">{meta.codiceModello}</span> · </>}
             <span className="font-mono">{meta.codice}</span>
-            {scheda.cliente?.nome && <> · {scheda.cliente.nome}</>}
+            {scheda.cliente?.nome && <> · <span className="font-semibold text-[#1F3A68]">{scheda.cliente.nome}</span></>}
             {meta.categoria && <> · {meta.categoria}</>}
           </div>
           <div className="flex items-center gap-2.5 mt-0.5">

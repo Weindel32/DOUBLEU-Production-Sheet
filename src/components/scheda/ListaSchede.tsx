@@ -226,7 +226,7 @@ export default async function ListaSchede({ vista, searchParams }: {
                             )}
                             {dettagli && <div className="text-[13px] text-[#5F6878]">{dettagli}</div>}
                           </td>
-                          {!isArticoli && <td className={`${cella} text-[#4A5566]`}>{s.cliente?.nome || "—"}</td>}
+                          {!isArticoli && <td className={`${cella} ${s.cliente ? "font-semibold text-[#1F3A68]" : "text-[#5F6878]"}`}>{s.cliente?.nome || "—"}</td>}
                           <td className={numero}>{costi.totale > 0 ? formatEuro(costi.totale) : "—"}</td>
                           <td className={numero}>{costi.prezzoVendita > 0 ? formatEuro(costi.prezzoVendita) : "—"}</td>
                           <td className={`${numero} font-semibold ${margineCls}`}>
