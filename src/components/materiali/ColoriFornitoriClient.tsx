@@ -14,6 +14,8 @@ export interface RigaColore {
   nome: string | null;
   hex: string | null;
   tessuti: string[];
+  /** Tessuti che usano il nome del fornitore (non uno proprio): se 0, al codice basta il nome per tessuto. */
+  senzaNomeProprio: number;
 }
 
 export default function ColoriFornitoriClient({ righe }: { righe: RigaColore[] }) {
@@ -71,7 +73,8 @@ export default function ColoriFornitoriClient({ righe }: { righe: RigaColore[] }
 
       {fornitori.map((f) => {
         const mie = righe.filter((r) => r.fornitore === f);
-        const senzaNome = mie.filter((r) => !r.nome).length;
+        const daNominare = (r: RigaColore) => !r.nome && (r.senzaNomeProprio > 0 || r.tessuti.length === 0);
+        const senzaNome = mie.filter(daNominare).length;
         return (
           <section key={f} className="bg-white border border-[#E4E0D6] rounded-2xl overflow-hidden">
             <div className="px-5 py-3 border-b border-[#E4E0D6] bg-[#FBFAF7] flex items-baseline justify-between">
@@ -84,8 +87,8 @@ export default function ColoriFornitoriClient({ righe }: { righe: RigaColore[] }
                   <div className="flex items-center gap-3 px-5 py-2.5">
                     <Pallino hex={r.hex} size={22} />
                     <span className="font-mono font-semibold w-14">{r.codice}</span>
-                    <button type="button" onClick={() => apri(r)} className={`flex-1 text-left text-[15px] ${r.nome ? "text-[#0E1B2C]" : "text-[#A8461F]"}`}>
-                      {r.nome ?? "dai un nome"}
+                    <button type="button" onClick={() => apri(r)} className={`flex-1 text-left text-[15px] ${r.nome ? "text-[#0E1B2C]" : daNominare(r) ? "text-[#A8461F]" : "text-[#5F6878] italic"}`}>
+                      {r.nome ?? (daNominare(r) ? "dai un nome" : "nome diverso per tessuto")}
                     </button>
                     <span className="text-xs text-[#5F6878] hidden sm:block max-w-[40%] truncate" title={r.tessuti.join(", ")}>
                       {r.tessuti.length ? r.tessuti.join(", ") : "in nessun tessuto"}

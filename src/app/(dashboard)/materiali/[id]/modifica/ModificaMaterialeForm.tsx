@@ -6,7 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { calcolaCostoMetroDaPrezzoKg, calcolaGrammiMq, parseNumIt } from "@/lib/utils";
 import SezioneColori from "@/components/materiali/SezioneColori";
-import { leggiCodici, type VoceColore } from "@/lib/colori";
+import { leggiCodici, leggiNomiTessuto, type VoceColore } from "@/lib/colori";
 
 const TIPI = ["Tessuto", "Fodera", "Elastico", "Cerniera", "Bottoni", "Ricamo", "Stampa", "Altro"];
 const COMPOSIZIONI = [
@@ -37,6 +37,7 @@ type Materiale = {
   prezzoKg: number | null;
   note: string | null;
   colori: string | null;
+  coloriNomi: string | null;
   cartellaFoto: string | null;
   cartellaData: string | null;
 };
@@ -60,6 +61,7 @@ export default function ModificaMaterialeForm({ materiale, voci: vociIniziali }:
 
   const [colori, setColori] = useState({
     codici: leggiCodici(materiale.colori),
+    nomi: leggiNomiTessuto(materiale.coloriNomi),
     cartellaFoto: materiale.cartellaFoto ?? "",
     cartellaData: materiale.cartellaData ?? "",
   });
@@ -97,7 +99,7 @@ export default function ModificaMaterialeForm({ materiale, voci: vociIniziali }:
           ? costoAlMetro ?? (materiale.unitaMisura === "kg" ? materiale.costoMetro : null)
           : parseNumIt(form.costoMetro),
         prezzoKg: isKg ? parseNumIt(form.prezzoKg) : null,
-        colori: colori.codici, cartellaFoto: colori.cartellaFoto || null, cartellaData: colori.cartellaData.trim() || null,
+        colori: colori.codici, coloriNomi: colori.nomi, cartellaFoto: colori.cartellaFoto || null, cartellaData: colori.cartellaData.trim() || null,
       }),
     });
     router.push("/materiali");
@@ -272,6 +274,7 @@ export default function ModificaMaterialeForm({ materiale, voci: vociIniziali }:
         <div className="border-t border-[#EFEBE2] pt-5">
           <SezioneColori fornitore={form.fornitore} codici={colori.codici} onCodici={(c) => setColori((x) => ({ ...x, codici: c }))}
             voci={voci} onVoce={(v) => setVoci((vs) => [...vs.filter((x) => !(x.fornitore === v.fornitore && x.codice === v.codice)), v])}
+            nomi={colori.nomi} onNomi={(n) => setColori((x) => ({ ...x, nomi: n }))}
             cartellaFoto={colori.cartellaFoto} onCartellaFoto={(u) => setColori((x) => ({ ...x, cartellaFoto: u }))}
             cartellaData={colori.cartellaData} onCartellaData={(d) => setColori((x) => ({ ...x, cartellaData: d }))} />
         </div>

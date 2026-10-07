@@ -57,6 +57,7 @@ export default function BadgeColori({ colori, fornitore, cartellaData, cartellaF
                 <Pallino hex={c.hex} size={16} />
                 <span className="font-mono font-semibold w-10">{c.codice}</span>
                 <span className={c.nome ? "text-[#0E1B2C]" : "text-[#A8461F] text-[13px]"}>{c.nome ?? "da nominare"}</span>
+                {c.soloQui && <span className="text-[10px] font-semibold uppercase tracking-wide text-[#1F3A68] bg-[#E3E9F3] rounded px-1.5 py-0.5">solo qui</span>}
               </li>
             ))}
           </ul>

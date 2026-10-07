@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Package, Plus, Palette } from "lucide-react";
 import MaterialiActions from "./MaterialiActions";
 import { calcolaCostoAlMetro, calcolaGrammaturaCommerciale, formatEuro } from "@/lib/utils";
-import { chiaveFornitore, coloriTessuto, dizionarioFornitore, leggiCodici } from "@/lib/colori";
+import { chiaveFornitore, coloriTessuto, dizionarioFornitore, leggiCodici, leggiNomiTessuto } from "@/lib/colori";
 import BadgeColori from "@/components/materiali/BadgeColori";
 import FiltriMateriali from "@/components/materiali/FiltriMateriali";
 
@@ -28,7 +28,7 @@ export default async function MaterialiPage({ searchParams }: {
     prisma.materiale.findMany({ orderBy: { nome: "asc" } }),
     prisma.coloreFornitore.findMany(),
   ]);
-  const righe = tutti.map((m) => ({ m, colori: coloriTessuto(leggiCodici(m.colori), dizionarioFornitore(voci, m.fornitore)) }));
+  const righe = tutti.map((m) => ({ m, colori: coloriTessuto(leggiCodici(m.colori), dizionarioFornitore(voci, m.fornitore), leggiNomiTessuto(m.coloriNomi)) }));
 
   const nomiColore = [...new Set(righe.flatMap((r) => r.colori.map((c) => c.nome).filter((n): n is string => !!n)))]
     .sort((a, b) => a.localeCompare(b));

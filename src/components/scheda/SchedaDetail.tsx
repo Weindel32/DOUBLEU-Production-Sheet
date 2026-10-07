@@ -30,7 +30,7 @@ interface Props {
   scheda: SchedaCompleta;
   clientiDisponibili: { id: string; nome: string }[];
   loghiDisponibili: { id: string; nome: string; file: string; tipo: string }[];
-  materialiDisponibili: { id: string; nome: string; tipo: string; costoMetro: number | null; prezzoKg: number | null; unitaMisura: string | null; peso: string | null; unitaPeso: string | null; larghezza: string | null; fornitore?: string | null; colori?: string | null }[];
+  materialiDisponibili: { id: string; nome: string; tipo: string; costoMetro: number | null; prezzoKg: number | null; unitaMisura: string | null; peso: string | null; unitaPeso: string | null; larghezza: string | null; fornitore?: string | null; colori?: string | null; coloriNomi?: string | null }[];
   /** Ordine nato da un articolo di costo: l'articolo di partenza. */
   origine?: SchedaCollegata | null;
   /** Articolo di costo: gli ordini creati da lui. */

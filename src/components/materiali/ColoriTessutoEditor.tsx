@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { X, Plus, Check } from "lucide-react";
 import { PALETTE_COLORI } from "@/components/ui/ColorPickerNamed";
-import { chiaveFornitore, coloriTessuto, dizionarioFornitore, parseCodici, type VoceColore } from "@/lib/colori";
+import { chiaveFornitore, coloriTessuto, dizionarioFornitore, parseCodici, type NomiTessuto, type VoceColore } from "@/lib/colori";
 
 /** Pallino del colore; senza colore assegnato è tratteggiato. */
 export function Pallino({ hex, size = 18 }: { hex: string | null; size?: number }) {
@@ -17,12 +17,15 @@ export function Pallino({ hex, size = 18 }: { hex: string | null; size?: number 
  * Codici colore di un tessuto, scritti come sulla cartella del fornitore ("99, 100, 02").
  * Il nome di ogni codice vale per tutto il fornitore: lo si dà una volta e compare su tutti i suoi tessuti.
  */
-export default function ColoriTessutoEditor({ fornitore, codici, onChange, voci, onVoce }: {
+export default function ColoriTessutoEditor({ fornitore, codici, onChange, voci, onVoce, nomi, onNomi }: {
   fornitore: string;
   codici: string[];
   onChange: (codici: string[]) => void;
   voci: VoceColore[];
   onVoce: (voce: VoceColore) => void;
+  /** Nomi validi solo per questo tessuto (si salvano col materiale). */
+  nomi: NomiTessuto;
+  onNomi: (nomi: NomiTessuto) => void;
 }) {
   const [nuovi, setNuovi] = useState("");
   const [aperto, setAperto] = useState<string | null>(null);
@@ -30,8 +33,10 @@ export default function ColoriTessutoEditor({ fornitore, codici, onChange, voci,
   const [hex, setHex] = useState<string | null>(null);
   const [errore, setErrore] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
+  const [soloQui, setSoloQui] = useState(false);
 
-  const colori = coloriTessuto(codici, dizionarioFornitore(voci, fornitore));
+  const colori = coloriTessuto(codici, dizionarioFornitore(voci, fornitore), nomi);
+  const fornitoreK = chiaveFornitore(fornitore);
   const senzaNome = colori.filter((c) => !c.nome).length;
 
   const aggiungi = () => {
@@ -46,11 +51,26 @@ export default function ColoriTessutoEditor({ fornitore, codici, onChange, voci,
     setAperto(aperto === codice ? null : codice);
     setNome(c?.nome ?? "");
     setHex(c?.hex ?? null);
+    setSoloQui(!!c?.soloQui);
+  };
+
+  // Torna al nome del fornitore: il codice non ha più un nome proprio in questo tessuto.
+  const usaNomeFornitore = (codice: string) => {
+    const resto = { ...nomi };
+    delete resto[codice];
+    onNomi(resto);
+    setAperto(null);
   };
 
   const salvaNome = async () => {
     if (!aperto || !nome.trim()) return;
-    if (!chiaveFornitore(fornitore)) { setErrore("Indica prima il fornitore: il nome vale per tutti i suoi tessuti"); return; }
+    if (soloQui) {
+      onNomi({ ...nomi, [aperto]: { nome: nome.trim(), hex } });
+      setAperto(null);
+      return;
+    }
+    if (nomi[aperto]) usaNomeFornitore(aperto);
+    if (!fornitoreK) { setErrore("Indica prima il fornitore: il nome vale per tutti i suoi tessuti"); return; }
     setSalvando(true);
     const res = await fetch("/api/colori-fornitore", {
       method: "PUT",
@@ -95,6 +115,7 @@ export default function ColoriTessutoEditor({ fornitore, codici, onChange, voci,
                 <Pallino hex={c.hex} />
                 <span className="font-mono font-semibold">{c.codice}</span>
                 <span className={c.nome ? "text-[#0E1B2C]" : "text-[#A8461F] text-[13px]"}>{c.nome ?? "dai un nome"}</span>
+                {c.soloQui && <span className="text-[11px] font-semibold uppercase tracking-wide text-[#1F3A68] bg-[#E3E9F3] rounded px-1.5 py-0.5">solo qui</span>}
               </button>
               <button type="button" onClick={() => onChange(codici.filter((x) => x !== c.codice))} aria-label={`Togli il colore ${c.codice}`}
                 className="w-9 h-10 flex items-center justify-center text-[#5F6878] hover:text-[#A8461F]"><X size={15} /></button>
@@ -107,7 +128,15 @@ export default function ColoriTessutoEditor({ fornitore, codici, onChange, voci,
         <div className="rounded-xl border border-[#E4E0D6] bg-[#FBFAF7] p-3 space-y-3">
           <div className="text-[13px] text-[#4A5566]">
             Nome del colore <span className="font-mono font-semibold text-[#0E1B2C]">{aperto}</span>
-            {chiaveFornitore(fornitore) && <> per tutti i tessuti {chiaveFornitore(fornitore)}</>}
+          </div>
+          {/* Di norma un codice è lo stesso colore su tutti i tessuti del fornitore; quando non è così vale solo qui. */}
+          <div role="group" aria-label="Il nome vale per" className="flex bg-[#EEEBE3] rounded-xl p-1 text-[13px]">
+            {[{ v: false, l: fornitoreK ? `Tutti i tessuti ${fornitoreK}` : "Tutto il fornitore" }, { v: true, l: "Solo questo tessuto" }].map((o) => (
+              <button key={String(o.v)} type="button" aria-pressed={soloQui === o.v} onClick={() => setSoloQui(o.v)}
+                className={`flex-1 h-9 rounded-lg ${soloQui === o.v ? "bg-white font-semibold shadow-[0_1px_2px_rgba(14,27,44,0.12)]" : "text-[#4A5566]"}`}>
+                {o.l}
+              </button>
+            ))}
           </div>
           <div className="grid grid-cols-7 gap-1.5">
             {PALETTE_COLORI.map((p) => (
@@ -127,6 +156,12 @@ export default function ColoriTessutoEditor({ fornitore, codici, onChange, voci,
               <Check size={16} /> Salva
             </button>
           </div>
+          {nomi[aperto] && (
+            <button type="button" onClick={() => usaNomeFornitore(aperto)} className="text-[13px] text-[#1F3A68] underline underline-offset-2">
+              Usa il nome {fornitoreK || "del fornitore"}
+            </button>
+          )}
+          {soloQui && <p className="text-xs text-[#5F6878]">Si salva insieme al materiale.</p>}
           {errore && <p role="alert" className="text-sm text-red-800">{errore}</p>}
         </div>
       )}
