@@ -81,7 +81,7 @@ export default function ModelliClient({ modelli }: { modelli: ModelloRiga[] }) {
     `/schede/nuova?${new URLSearchParams({ modello: m.codice, tipo }).toString()}`;
 
   return (
-    <div className="p-6 lg:p-8 space-y-5">
+    <div className="p-6 lg:p-8 space-y-6">
       <div className="flex flex-wrap items-end gap-4">
         <div className="flex-1 min-w-[220px]">
           <h1 className="font-display text-[34px] font-extrabold tracking-tight text-[#0E1B2C] leading-tight">Modelli</h1>
@@ -118,26 +118,26 @@ export default function ModelliClient({ modelli }: { modelli: ModelloRiga[] }) {
 
       {gruppi.map((g) => (
         <section key={g.categoria} className="bg-white border border-[#E4E0D6] rounded-2xl overflow-hidden">
-          <div className="px-5 py-3 border-b border-[#E4E0D6] bg-[#FBFAF7] flex items-baseline justify-between">
+          <div className="px-6 py-3.5 border-b border-[#E4E0D6] bg-[#FBFAF7] flex items-baseline justify-between">
             <h2 className="font-display text-[17px] font-bold text-[#0E1B2C]">{g.categoria}</h2>
             <span className="text-xs text-[#5F6878]">{g.modelli.length} {g.modelli.length === 1 ? "modello" : "modelli"}</span>
           </div>
           <ul>
             {g.modelli.map((m) => (
-              <li key={m.id} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 py-2.5 border-b border-[#EFEBE2] last:border-0">
-                <span className="font-mono text-sm font-semibold text-[#0E1B2C] w-28 flex-shrink-0">{m.codice}</span>
+              <li key={m.id} className="flex flex-wrap items-center gap-x-6 gap-y-2 px-6 py-3.5 border-b border-[#EFEBE2] last:border-0">
+                <span className="font-mono text-sm font-semibold text-[#0E1B2C] w-32 flex-shrink-0">{m.codice}</span>
                 <span className="flex-1 min-w-[160px]">
                   <span className="text-[15px] text-[#0E1B2C]">{m.descrizione}</span>
                   {m.note && <span className="block text-xs text-[#5F6878]">{m.note}</span>}
                 </span>
                 <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${FASCIA_STYLE[m.fascia] ?? "bg-[#EEEBE3] text-[#4A5566]"}`}>{m.fascia}</span>
-                <span className="text-xs text-[#5F6878] w-36 text-right">
+                <span className="text-xs text-[#5F6878] w-36 text-right lg:mr-2">
                   {m.articoli + m.ordini === 0 ? "Mai usato" : [
                     m.articoli > 0 && `${m.articoli} ${m.articoli === 1 ? "articolo" : "articoli"}`,
                     m.ordini > 0 && `${m.ordini} ${m.ordini === 1 ? "ordine" : "ordini"}`,
                   ].filter(Boolean).join(" · ")}
                 </span>
-                <span className="flex items-center gap-1.5 ml-auto">
+                <span className="flex items-center gap-2 ml-auto">
                   {/* Il costo esiste già: si apre quello invece di crearne un doppione. */}
                   {m.costi.length === 1 ? (
                     <Link href={`/articoli/${m.costi[0].id}`} aria-label={`Apri il costo di ${m.codice}`}
