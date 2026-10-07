@@ -7,15 +7,17 @@ datasource db {
 }
 
 model Cliente {
-  id        String   @id @default(cuid())
-  nome      String
-  email     String?
-  telefono  String?
-  indirizzo String?
-  note      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  schede    Scheda[]
+  id         String   @id @default(cuid())
+  nome       String
+  email      String?
+  telefono   String?
+  indirizzo  String?
+  note       String?
+  orderAppId String?  @unique // id del cliente nell'Order App, che ha l'anagrafica completa
+  citta      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  schede     Scheda[]
 }
 
 model Logo {
