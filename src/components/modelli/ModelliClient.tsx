@@ -3,9 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, Search, Pencil, Trash2, X, Calculator, FileText } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, X, Calculator, FileText, Check } from "lucide-react";
 import { CATEGORIE, FASCE_MODELLO, FASCIA_STYLE, ordinaCategorie } from "@/lib/utils";
 import { Field, ChipGroup, Segmented, inputCls } from "@/components/ui/Form";
+import type { CostoModello } from "@/lib/costiModelli";
+import { formatEuro } from "@/lib/utils";
 
 export interface ModelloRiga {
   id: string;
@@ -16,6 +18,8 @@ export interface ModelloRiga {
   note: string | null;
   articoli: number;
   ordini: number;
+  /** Articoli di costo già creati da questo modello. */
+  costi: CostoModello[];
 }
 
 const FASCE = FASCE_MODELLO.map((f) => ({ value: f, label: f }));
@@ -27,6 +31,8 @@ const VUOTA: Bozza = { codice: "", descrizione: "", categoria: "", fascia: "Adul
 export default function ModelliClient({ modelli }: { modelli: ModelloRiga[] }) {
   const router = useRouter();
   const [q, setQ] = useState("");
+  const [statoCosto, setStatoCosto] = useState<"tutti" | "senza" | "con">("tutti");
+  const conCosto = modelli.filter((m) => m.costi.length > 0).length;
   const [bozza, setBozza] = useState<Bozza | null>(null);
   const [errore, setErrore] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
@@ -36,7 +42,8 @@ export default function ModelliClient({ modelli }: { modelli: ModelloRiga[] }) {
 
   const filtro = q.trim().toLowerCase();
   const visibili = modelli.filter((m) =>
-    !filtro || [m.codice, m.descrizione, m.categoria, m.fascia].some((v) => v.toLowerCase().includes(filtro)));
+    (!filtro || [m.codice, m.descrizione, m.categoria, m.fascia].some((v) => v.toLowerCase().includes(filtro))) &&
+    (statoCosto === "tutti" || (statoCosto === "con") === (m.costi.length > 0)));
   const gruppi = ordinaCategorie(visibili.map((m) => m.categoria)).map((cat) => ({
     categoria: cat,
     modelli: visibili.filter((m) => m.categoria === cat).sort((a, b) => a.codice.localeCompare(b.codice, "it", { numeric: true })),
@@ -79,7 +86,8 @@ export default function ModelliClient({ modelli }: { modelli: ModelloRiga[] }) {
         <div className="flex-1 min-w-[220px]">
           <h1 className="font-display text-[34px] font-extrabold tracking-tight text-[#0E1B2C] leading-tight">Modelli</h1>
           <p className="text-sm text-[#5F6878] mt-1">
-            {modelli.length} cartamodelli del modellista · {categorieEsistenti.length} categorie
+            {modelli.length} cartamodelli del modellista · {categorieEsistenti.length} categorie ·{" "}
+            <span className="font-semibold text-[#1D6B4A]">{conCosto} di {modelli.length} con il costo</span>
           </p>
         </div>
         <label className="w-full sm:w-72 h-12 border border-[#D6D1C4] rounded-xl bg-white flex items-center gap-2.5 px-3.5 text-[#5F6878] focus-within:border-[#1F3A68]">
@@ -91,6 +99,15 @@ export default function ModelliClient({ modelli }: { modelli: ModelloRiga[] }) {
           className="h-12 px-5 rounded-xl bg-[#0E1B2C] hover:bg-[#1F3A68] text-white text-[15px] font-semibold inline-flex items-center gap-2">
           <Plus size={18} /> Nuovo modello
         </button>
+      </div>
+
+      <div role="group" aria-label="Costo articolo" className="flex flex-wrap items-center gap-2">
+        {([["tutti", "Tutti", modelli.length], ["senza", "Senza costo", modelli.length - conCosto], ["con", "Con costo", conCosto]] as const).map(([v, l, n]) => (
+          <button key={v} type="button" aria-pressed={statoCosto === v} onClick={() => setStatoCosto(v)}
+            className={`h-10 px-4 rounded-full border text-sm inline-flex items-center gap-1.5 ${statoCosto === v ? "bg-[#0E1B2C] border-[#0E1B2C] text-white font-semibold" : "bg-white border-[#D6D1C4] text-[#0E1B2C] hover:border-[#0E1B2C]/40"}`}>
+            {l} <span className={`text-xs ${statoCosto === v ? "text-white/70" : "text-[#5F6878]"}`}>{n}</span>
+          </button>
+        ))}
       </div>
 
       {gruppi.length === 0 && (
@@ -121,10 +138,23 @@ export default function ModelliClient({ modelli }: { modelli: ModelloRiga[] }) {
                   ].filter(Boolean).join(" · ")}
                 </span>
                 <span className="flex items-center gap-1.5 ml-auto">
-                  <Link href={nuovaScheda(m, "costo")} aria-label={`Nuovo articolo di costo da ${m.codice}`}
-                    className="h-10 px-3 rounded-lg border border-[#D6D1C4] text-[13px] font-medium text-[#0E1B2C] inline-flex items-center gap-1.5 hover:border-[#0E1B2C]/40">
-                    <Calculator size={15} /> Articolo
-                  </Link>
+                  {/* Il costo esiste già: si apre quello invece di crearne un doppione. */}
+                  {m.costi.length === 1 ? (
+                    <Link href={`/articoli/${m.costi[0].id}`} aria-label={`Apri il costo di ${m.codice}`}
+                      className="h-10 w-[188px] justify-center px-3 rounded-lg border border-[#B9D8C6] bg-[#EAF5EE] text-[13px] font-semibold text-[#1D6B4A] inline-flex items-center gap-1.5 hover:border-[#1D6B4A]/50">
+                      <Check size={15} /> Apri costo{m.costi[0].totale > 0 && <span className="font-mono"> · {formatEuro(m.costi[0].totale)}</span>}
+                    </Link>
+                  ) : m.costi.length > 1 ? (
+                    <Link href={`/articoli?q=${encodeURIComponent(m.codice)}`} aria-label={`Apri i costi di ${m.codice}`}
+                      className="h-10 w-[188px] justify-center px-3 rounded-lg border border-[#B9D8C6] bg-[#EAF5EE] text-[13px] font-semibold text-[#1D6B4A] inline-flex items-center gap-1.5 hover:border-[#1D6B4A]/50">
+                      <Check size={15} /> {m.costi.length} costi
+                    </Link>
+                  ) : (
+                    <Link href={nuovaScheda(m, "costo")} aria-label={`Nuovo articolo di costo da ${m.codice}`}
+                      className="h-10 w-[188px] justify-center px-3 rounded-lg border border-[#D6D1C4] text-[13px] font-medium text-[#0E1B2C] inline-flex items-center gap-1.5 hover:border-[#0E1B2C]/40">
+                      <Calculator size={15} /> + Costo articolo
+                    </Link>
+                  )}
                   <Link href={nuovaScheda(m, "produzione")} aria-label={`Nuovo ordine da ${m.codice}`}
                     className="h-10 px-3 rounded-lg border border-[#D6D1C4] text-[13px] font-medium text-[#0E1B2C] inline-flex items-center gap-1.5 hover:border-[#0E1B2C]/40">
                     <FileText size={15} /> Ordine
