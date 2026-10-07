@@ -175,6 +175,7 @@ model ColoreFornitore {
   codice    String
   nome      String
   hex       String?
+  doubleu   String? // colore DOUBLEU (lista chiusa in lib/colori.ts): nome per clienti e filtri
   createdAt DateTime @default(now())
 
   @@unique([fornitore, codice])

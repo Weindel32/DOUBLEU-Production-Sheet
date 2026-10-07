@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Package, Plus, Palette } from "lucide-react";
 import MaterialiActions from "./MaterialiActions";
 import { calcolaCostoAlMetro, calcolaGrammaturaCommerciale, formatEuro } from "@/lib/utils";
-import { chiaveFornitore, coloriTessuto, dizionarioFornitore, leggiCodici, leggiNomiTessuto } from "@/lib/colori";
+import { chiaveFornitore, coloriTessuto, COLORI_DOUBLEU, dizionarioFornitore, leggiCodici, leggiNomiTessuto } from "@/lib/colori";
 import BadgeColori from "@/components/materiali/BadgeColori";
 import FiltriMateriali from "@/components/materiali/FiltriMateriali";
 
@@ -30,14 +30,15 @@ export default async function MaterialiPage({ searchParams }: {
   ]);
   const righe = tutti.map((m) => ({ m, colori: coloriTessuto(leggiCodici(m.colori), dizionarioFornitore(voci, m.fornitore), leggiNomiTessuto(m.coloriNomi)) }));
 
-  const nomiColore = [...new Set(righe.flatMap((r) => r.colori.map((c) => c.nome).filter((n): n is string => !!n)))]
-    .sort((a, b) => a.localeCompare(b));
+  // Il filtro lavora sui colori DOUBLEU, così "Navy" trova i tessuti di tutti i fornitori.
+  const presenti = new Set(righe.flatMap((r) => r.colori.map((c) => c.doubleu)));
+  const nomiColore = COLORI_DOUBLEU.map((c) => c.nome).filter((n) => presenti.has(n));
   const fornitori = [...new Set(tutti.map((m) => m.fornitore?.trim()).filter((f): f is string => !!f))]
     .sort((a, b) => a.localeCompare(b));
 
   const q = filtri.q.toLowerCase();
   const visibili = righe.filter(({ m, colori }) =>
-    (!filtri.colore || colori.some((c) => c.nome === filtri.colore)) &&
+    (!filtri.colore || colori.some((c) => c.doubleu === filtri.colore)) &&
     (!filtri.fornitore || chiaveFornitore(m.fornitore) === chiaveFornitore(filtri.fornitore)) &&
     (!q || [m.nome, m.codice, m.composizione, m.fornitore].some((v) => v?.toLowerCase().includes(q))));
 

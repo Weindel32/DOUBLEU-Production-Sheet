@@ -13,16 +13,17 @@ export default async function ColoriFornitoriPage() {
   const righe = new Map<string, RigaColore>();
   const chiave = (f: string, c: string) => `${f}|${c}`;
   for (const v of voci)
-    righe.set(chiave(v.fornitore, v.codice), { id: v.id, fornitore: v.fornitore, codice: v.codice, nome: v.nome, hex: v.hex, tessuti: [], senzaNomeProprio: 0 });
+    righe.set(chiave(v.fornitore, v.codice), { id: v.id, fornitore: v.fornitore, codice: v.codice, nome: v.nome, hex: v.hex, doubleu: v.doubleu, tessuti: [], senzaNomeProprio: 0 });
   for (const m of materiali) {
     const f = chiaveFornitore(m.fornitore);
     if (!f) continue;
     const propri = leggiNomiTessuto(m.coloriNomi);
     for (const codice of leggiCodici(m.colori)) {
       const k = chiave(f, codice);
-      if (!righe.has(k)) righe.set(k, { id: null, fornitore: f, codice, nome: null, hex: null, tessuti: [], senzaNomeProprio: 0 });
+      if (!righe.has(k)) righe.set(k, { id: null, fornitore: f, codice, nome: null, hex: null, doubleu: null, tessuti: [], senzaNomeProprio: 0 });
       // Su questo tessuto il codice ha un nome suo: lo si vede accanto al tessuto.
-      righe.get(k)!.tessuti.push(propri[codice] ? `${m.nome} (${propri[codice].nome})` : m.nome);
+      const p = propri[codice];
+      righe.get(k)!.tessuti.push(p ? `${m.nome} (${p.doubleu ?? p.nome})` : m.nome);
       if (!propri[codice]) righe.get(k)!.senzaNomeProprio++;
     }
   }
