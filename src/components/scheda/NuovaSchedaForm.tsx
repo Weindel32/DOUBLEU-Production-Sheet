@@ -5,10 +5,11 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Check, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import {
-  CATEGORIE, TIPI_SCHEDA, baseScheda, genereDaFascia, fasciaDaGenere, ordinaCategorie, type TipoScheda,
+  CATEGORIE, TIPI_SCHEDA, baseScheda, formatEuro, genereDaFascia, fasciaDaGenere, ordinaCategorie, type TipoScheda,
 } from "@/lib/utils";
 import { Field, ChipGroup, Segmented, inputCls } from "@/components/ui/Form";
 import CampoModello, { trovaModello, type ModelloBreve } from "@/components/modelli/CampoModello";
+import type { CostoModello } from "@/lib/costiModelli";
 
 const DESCRIZIONE_TIPO: Record<TipoScheda, string> = {
   costo: "Il costo per capo di un articolo, da usare per preventivi e ordini. Qui registri anche i campioni.",
@@ -21,10 +22,12 @@ const VESTIBILITA = [
   { value: "Loose Fit", label: "Loose" }, { value: "Athletic Fit", label: "Athletic" },
 ];
 
-export default function NuovaSchedaForm({ tipoIniziale, modelloIniziale, modelli }: {
+export default function NuovaSchedaForm({ tipoIniziale, modelloIniziale, modelli, costiEsistenti = {} }: {
   tipoIniziale: TipoScheda;
   modelloIniziale: string;
   modelli: ModelloBreve[];
+  /** Articoli di costo già creati, per codice modello (minuscolo): avvisano prima di un doppione. */
+  costiEsistenti?: Record<string, CostoModello[]>;
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -48,6 +51,9 @@ export default function NuovaSchedaForm({ tipoIniziale, modelloIniziale, modelli
   const [aggiungiModello, setAggiungiModello] = useState(true);
 
   const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) => setForm((f) => ({ ...f, [k]: v }));
+
+  // Costo articolo per un modello che ne ha già uno: si propone di aprire quello.
+  const doppioni = form.tipo === "costo" ? costiEsistenti[form.codiceModello.trim().toLowerCase()] ?? [] : [];
 
   const cambiaModello = (v: string) => {
     const m = trovaModello(modelli, v);
@@ -180,6 +186,22 @@ export default function NuovaSchedaForm({ tipoIniziale, modelloIniziale, modelli
           </Field>
         </div>
 
+        {doppioni.length > 0 && (
+          <div role="alert" className="rounded-xl border border-[#E8C98A] bg-[#FBF3DF] px-4 py-3 space-y-2">
+            <p className="text-sm text-[#7A5B12]">
+              <span className="font-semibold">{form.codiceModello.trim()}</span> ha già {doppioni.length === 1 ? "un costo articolo" : `${doppioni.length} costi articolo`}.
+              Di solito basta aprire quello; creane un altro solo se cambia davvero qualcosa (es. un tessuto diverso).
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {doppioni.map((c) => (
+                <Link key={c.id} href={`/articoli/${c.id}`}
+                  className="h-10 px-3 rounded-lg bg-white border border-[#E8C98A] text-[13px] font-semibold text-[#0E1B2C] inline-flex items-center gap-1.5 hover:border-[#7A5B12]">
+                  Apri {c.nome}{c.totale > 0 && <span className="font-mono font-normal"> · {formatEuro(c.totale)}</span>}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
         {error && (
           <div role="alert" className="text-sm text-red-800 bg-red-50 border border-red-200 rounded-[10px] px-3 py-2">{error}</div>
         )}
@@ -194,7 +216,7 @@ export default function NuovaSchedaForm({ tipoIniziale, modelloIniziale, modelli
             </Link>
             <button type="submit" disabled={loading || !form.nomeArticolo.trim()}
               className="h-12 px-6 rounded-xl bg-[#0E1B2C] hover:bg-[#1F3A68] text-white text-[15px] font-semibold inline-flex items-center gap-2 disabled:opacity-50">
-              {loading ? "Creazione…" : form.tipo === "costo" ? "Crea e vai ai costi" : "Crea scheda"}
+              {loading ? "Creazione…" : doppioni.length > 0 ? "Crea comunque" : form.tipo === "costo" ? "Crea e vai ai costi" : "Crea scheda"}
               {!loading && <ArrowRight size={18} />}
             </button>
           </div>
