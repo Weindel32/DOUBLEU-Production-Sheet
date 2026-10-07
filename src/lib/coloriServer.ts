@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { chiaveFornitore, leggiNomiTessuto } from "@/lib/colori";
+import { chiaveFornitore, coloriTessuto, dizionarioFornitore, leggiCodici, leggiNomiTessuto } from "@/lib/colori";
 
 /**
  * Fornitore del tessuto principale e nome che il fornitore dà a un suo codice colore:
@@ -16,4 +16,19 @@ export async function riferimentoColori(tessuto: string | null | undefined) {
     nomeFornitore: (codice: string | null | undefined) =>
       codice ? propri[codice]?.nome ?? voci.find((v) => v.codice === codice)?.nome ?? null : null,
   };
+}
+
+/** Per ogni tessuto con colori: i colori DOUBLEU e i codici con cui si ordinano (vista "per colore"). */
+export async function coloriDisponibili() {
+  const [voci, materiali] = await Promise.all([
+    prisma.coloreFornitore.findMany(),
+    prisma.materiale.findMany({ where: { colori: { not: null } }, select: { id: true, nome: true, fornitore: true, colori: true, coloriNomi: true }, orderBy: { nome: "asc" } }),
+  ]);
+  return materiali.flatMap((m) =>
+    coloriTessuto(leggiCodici(m.colori), dizionarioFornitore(voci, m.fornitore), leggiNomiTessuto(m.coloriNomi))
+      .filter((c) => c.doubleu)
+      .map((c) => ({
+        doubleu: c.doubleu!, materialeId: m.id, tessuto: m.nome, fornitore: chiaveFornitore(m.fornitore),
+        codice: c.codice, nome: c.nome, hex: c.hex,
+      })));
 }

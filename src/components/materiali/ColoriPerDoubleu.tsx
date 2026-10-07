@@ -22,7 +22,8 @@ const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,
  * "Mi serve un bordeaux": per ogni colore DOUBLEU i tessuti in cui c'è, con il codice da ordinare.
  * La ricerca trova anche per famiglia ("rossi"), nome del fornitore ("vulcano") o codice.
  */
-export default function ColoriPerDoubleu({ disponibili }: { disponibili: DisponibileColore[] }) {
+export default function ColoriPerDoubleu({ disponibili, mobile = false }: { disponibili: DisponibileColore[]; mobile?: boolean }) {
+  const hrefTessuto = (id: string) => (mobile ? `/m/materiali/${id}` : `/materiali/${id}/modifica`);
   const [q, setQ] = useState("");
   const f = norm(q.trim());
 
@@ -37,7 +38,7 @@ export default function ColoriPerDoubleu({ disponibili }: { disponibili: Disponi
     <div className="space-y-4">
       <label className="h-12 border border-[#D6D1C4] rounded-xl bg-white flex items-center gap-2.5 px-3.5 text-[#5F6878] focus-within:border-[#1F3A68] max-w-xl">
         <Search size={18} />
-        <input type="search" value={q} onChange={(e) => setQ(e.target.value)} autoFocus
+        <input type="search" value={q} onChange={(e) => setQ(e.target.value)} autoFocus={!mobile}
           placeholder="Cerca un colore: bordeaux, navy, verde…" aria-label="Cerca un colore"
           className="flex-1 min-w-0 border-0 !shadow-none bg-transparent p-0 text-[15px]" />
       </label>
@@ -69,7 +70,7 @@ export default function ColoriPerDoubleu({ disponibili }: { disponibili: Disponi
                     const mie = g.voci.filter((v) => v.materialeId === id);
                     return (
                       <li key={id} className="flex items-start gap-2.5 py-2 text-[14px]">
-                        <Link href={`/materiali/${id}/modifica`} className="font-semibold text-[#0E1B2C] hover:underline underline-offset-2 min-w-0 truncate">
+                        <Link href={hrefTessuto(id)} className="font-semibold text-[#0E1B2C] hover:underline underline-offset-2 min-w-0 truncate">
                           {mie[0].tessuto}
                         </Link>
                         <span className="ml-auto flex flex-wrap justify-end gap-x-3 gap-y-1 text-[13px] text-[#5F6878]">

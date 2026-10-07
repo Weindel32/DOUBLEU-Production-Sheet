@@ -66,6 +66,21 @@ export default function MaterialeMobileForm({ materiale, fornitori, composizioni
 
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((x) => ({ ...x, [k]: v }));
 
+  // Su un materiale già salvato la foto (ritagliata o nuova) si salva subito: non serve "Salva modifiche".
+  const [fotoMsg, setFotoMsg] = useState<string | null>(null);
+  const salvaFoto = async (campo: "foto" | "cartellaFoto", url: string) => {
+    set(campo, url);
+    if (!materiale) return;
+    setFotoMsg(null);
+    const res = await fetch(`/api/materiali/${materiale.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ [campo]: url || null }),
+    });
+    setFotoMsg(res.ok ? (url ? "Foto salvata" : "Foto tolta") : "Foto non salvata: riprova o tocca Salva modifiche");
+    if (res.ok) router.refresh();
+  };
+
   const isKg = f.unitaMisura === "kg";
   const isTessuto = f.unitaMisura !== "pz";
   const prezzoNum = parseNumIt(f.prezzo);
@@ -115,8 +130,9 @@ export default function MaterialeMobileForm({ materiale, fornitori, composizioni
     <form onSubmit={salva} className="px-4 space-y-4 pb-6">
       {/* Foto del cartellino / campione */}
       <div className="bg-white border border-[#E4E0D6] rounded-2xl p-3">
-        <FotoRitagliabile value={f.foto} onChange={(url) => set("foto", url)}
+        <FotoRitagliabile value={f.foto} onChange={(url) => salvaFoto("foto", url)}
           etichetta="Foto del cartellino o del campione" alt="Foto del materiale" />
+        {fotoMsg && <p role="status" className={`mt-2 text-center text-[13px] ${fotoMsg.startsWith("Foto non") ? "text-[#A8461F]" : "text-[#1D6B4A]"}`}>{fotoMsg}</p>}
       </div>
 
       <div className="bg-white border border-[#E4E0D6] rounded-2xl p-4 space-y-4">
@@ -174,7 +190,7 @@ export default function MaterialeMobileForm({ materiale, fornitori, composizioni
         <SezioneColori fornitore={f.fornitore} codici={f.colori} onCodici={(c) => set("colori", c)}
           nomi={f.coloriNomi} onNomi={(n) => set("coloriNomi", n)}
           voci={voci} onVoce={(v) => setVoci((vs) => [...vs.filter((x) => x.id !== v.id && !(x.fornitore === v.fornitore && x.codice === v.codice)), v])}
-          cartellaFoto={f.cartellaFoto} onCartellaFoto={(u) => set("cartellaFoto", u)}
+          cartellaFoto={f.cartellaFoto} onCartellaFoto={(u) => salvaFoto("cartellaFoto", u)}
           cartellaData={f.cartellaData} onCartellaData={(d) => set("cartellaData", d)} />
       </div>
 
