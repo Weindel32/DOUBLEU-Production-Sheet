@@ -142,7 +142,8 @@ export default function NuovaSchedaForm({ tipoIniziale, modelloIniziale, modelli
         <div className="grid grid-cols-[200px_minmax(0,1fr)] gap-3 items-start">
           <div className="flex flex-col gap-1.5 text-[13px] text-[#4A5566]">
             <label htmlFor="nuova-modello">Modello (modellista)</label>
-            <CampoModello id="nuova-modello" value={form.codiceModello} onChange={cambiaModello} modelli={modelli} />
+            <CampoModello id="nuova-modello" value={form.codiceModello} onChange={cambiaModello} modelli={modelli}
+              categoria={form.categoria} genere={form.genere} />
           </div>
           <Field label="Nome articolo *">
             <input required autoFocus={!form.nomeArticolo} type="text" value={form.nomeArticolo}
