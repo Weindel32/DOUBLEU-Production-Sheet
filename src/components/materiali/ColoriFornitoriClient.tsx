@@ -7,6 +7,7 @@ import { ArrowLeft, Check, Trash2 } from "lucide-react";
 import SceltaDoubleu from "@/components/materiali/SceltaDoubleu";
 import { hexDoubleu } from "@/lib/colori";
 import Pallino from "@/components/materiali/Pallino";
+import ColoriPerDoubleu, { type DisponibileColore } from "@/components/materiali/ColoriPerDoubleu";
 
 export interface RigaColore {
   id: string | null;
@@ -20,8 +21,9 @@ export interface RigaColore {
   senzaNomeProprio: number;
 }
 
-export default function ColoriFornitoriClient({ righe }: { righe: RigaColore[] }) {
+export default function ColoriFornitoriClient({ righe, disponibili }: { righe: RigaColore[]; disponibili: DisponibileColore[] }) {
   const router = useRouter();
+  const [vista, setVista] = useState<"colore" | "fornitore">("colore");
   const [aperta, setAperta] = useState<string | null>(null);
   const [nome, setNome] = useState("");
   const [hex, setHex] = useState<string | null>(null);
@@ -71,13 +73,24 @@ export default function ColoriFornitoriClient({ righe }: { righe: RigaColore[] }
         </p>
       </div>
 
-      {righe.length === 0 && (
+      <div role="tablist" aria-label="Vista" className="inline-flex bg-[#EEEBE3] rounded-xl p-1">
+        {([["colore", "Per colore DOUBLEU"], ["fornitore", "Per fornitore"]] as const).map(([v, l]) => (
+          <button key={v} type="button" role="tab" aria-selected={vista === v} onClick={() => setVista(v)}
+            className={`h-10 px-4 rounded-lg text-[15px] ${vista === v ? "bg-white font-semibold shadow-[0_1px_2px_rgba(14,27,44,0.12)]" : "text-[#4A5566]"}`}>
+            {l}
+          </button>
+        ))}
+      </div>
+
+      {vista === "colore" && <ColoriPerDoubleu disponibili={disponibili} />}
+
+      {vista === "fornitore" && righe.length === 0 && (
         <div className="bg-white border border-[#E4E0D6] rounded-2xl text-center py-14 text-[#5F6878]">
           Nessun colore ancora: aggiungi i codici della cartella in un tessuto.
         </div>
       )}
 
-      {fornitori.map((f) => {
+      {vista === "fornitore" && fornitori.map((f) => {
         const mie = righe.filter((r) => r.fornitore === f);
         const daNominare = (r: RigaColore) => !r.doubleu && (r.senzaNomeProprio > 0 || r.tessuti.length === 0);
         const senzaNome = mie.filter(daNominare).length;

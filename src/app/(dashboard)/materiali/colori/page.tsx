@@ -1,13 +1,14 @@
 export const dynamic = "force-dynamic";
 import { prisma } from "@/lib/prisma";
 import ColoriFornitoriClient, { type RigaColore } from "@/components/materiali/ColoriFornitoriClient";
-import { chiaveFornitore, leggiCodici, leggiNomiTessuto } from "@/lib/colori";
+import type { DisponibileColore } from "@/components/materiali/ColoriPerDoubleu";
+import { chiaveFornitore, coloriTessuto, dizionarioFornitore, leggiCodici, leggiNomiTessuto } from "@/lib/colori";
 
 /** Nomi dei codici colore per fornitore, con i tessuti in cui compaiono e i codici ancora senza nome. */
 export default async function ColoriFornitoriPage() {
   const [voci, materiali] = await Promise.all([
     prisma.coloreFornitore.findMany(),
-    prisma.materiale.findMany({ where: { colori: { not: null } }, select: { nome: true, fornitore: true, colori: true, coloriNomi: true } }),
+    prisma.materiale.findMany({ where: { colori: { not: null } }, select: { id: true, nome: true, fornitore: true, colori: true, coloriNomi: true }, orderBy: { nome: "asc" } }),
   ]);
 
   const righe = new Map<string, RigaColore>();
@@ -30,5 +31,14 @@ export default async function ColoriFornitoriPage() {
   const ordinate = [...righe.values()].sort((a, b) =>
     a.fornitore.localeCompare(b.fornitore) || a.codice.localeCompare(b.codice, "it", { numeric: true }));
 
-  return <ColoriFornitoriClient righe={ordinate} />;
+  // Vista per colore DOUBLEU: in quali tessuti c'è e con quale codice si ordina.
+  const disponibili: DisponibileColore[] = materiali.flatMap((m) =>
+    coloriTessuto(leggiCodici(m.colori), dizionarioFornitore(voci, m.fornitore), leggiNomiTessuto(m.coloriNomi))
+      .filter((c) => c.doubleu)
+      .map((c) => ({
+        doubleu: c.doubleu!, materialeId: m.id, tessuto: m.nome, fornitore: chiaveFornitore(m.fornitore),
+        codice: c.codice, nome: c.nome, hex: c.hex,
+      })));
+
+  return <ColoriFornitoriClient righe={ordinate} disponibili={disponibili} />;
 }
