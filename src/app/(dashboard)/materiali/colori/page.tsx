@@ -2,7 +2,8 @@ export const dynamic = "force-dynamic";
 import { prisma } from "@/lib/prisma";
 import ColoriFornitoriClient, { type RigaColore } from "@/components/materiali/ColoriFornitoriClient";
 import type { DisponibileColore } from "@/components/materiali/ColoriPerDoubleu";
-import { chiaveFornitore, coloriTessuto, dizionarioFornitore, leggiCodici, leggiNomiTessuto } from "@/lib/colori";
+import { chiaveFornitore, leggiCodici, leggiNomiTessuto } from "@/lib/colori";
+import { coloriDisponibili } from "@/lib/coloriServer";
 
 /** Nomi dei codici colore per fornitore, con i tessuti in cui compaiono e i codici ancora senza nome. */
 export default async function ColoriFornitoriPage() {
@@ -32,13 +33,7 @@ export default async function ColoriFornitoriPage() {
     a.fornitore.localeCompare(b.fornitore) || a.codice.localeCompare(b.codice, "it", { numeric: true }));
 
   // Vista per colore DOUBLEU: in quali tessuti c'è e con quale codice si ordina.
-  const disponibili: DisponibileColore[] = materiali.flatMap((m) =>
-    coloriTessuto(leggiCodici(m.colori), dizionarioFornitore(voci, m.fornitore), leggiNomiTessuto(m.coloriNomi))
-      .filter((c) => c.doubleu)
-      .map((c) => ({
-        doubleu: c.doubleu!, materialeId: m.id, tessuto: m.nome, fornitore: chiaveFornitore(m.fornitore),
-        codice: c.codice, nome: c.nome, hex: c.hex,
-      })));
+  const disponibili: DisponibileColore[] = await coloriDisponibili();
 
   return <ColoriFornitoriClient righe={ordinate} disponibili={disponibili} />;
 }
