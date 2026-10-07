@@ -6,7 +6,7 @@ import { Loader2, History } from "lucide-react";
 import { calcolaCostoMetroDaPrezzoKg, parseNumIt, formatEuro } from "@/lib/utils";
 import FotoRitagliabile from "@/components/mobile/FotoRitagliabile";
 import SezioneColori from "@/components/materiali/SezioneColori";
-import { leggiCodici, type VoceColore } from "@/lib/colori";
+import { leggiCodici, leggiNomiTessuto, type VoceColore } from "@/lib/colori";
 import { Field, ChipGroup, Segmented, EuroInput, numStr, inputCls, textareaCls } from "@/components/ui/Form";
 
 const TIPI = ["Tessuto", "Fodera", "Elastico", "Cerniera", "Bottoni", "Ricamo", "Stampa", "Altro"];
@@ -29,6 +29,7 @@ export interface MaterialeMobile {
   note: string | null;
   foto: string | null;
   colori: string | null;
+  coloriNomi: string | null;
   cartellaFoto: string | null;
   cartellaData: string | null;
 }
@@ -55,6 +56,7 @@ export default function MaterialeMobileForm({ materiale, fornitori, composizioni
     notaNuova: "",
     foto: materiale?.foto ?? "",
     colori: leggiCodici(materiale?.colori),
+    coloriNomi: leggiNomiTessuto(materiale?.coloriNomi),
     cartellaFoto: materiale?.cartellaFoto ?? "",
     cartellaData: materiale?.cartellaData ?? "",
   });
@@ -89,7 +91,7 @@ export default function MaterialeMobileForm({ materiale, fornitori, composizioni
       costoMetro: isKg ? costoAlMetro ?? (materiale?.unitaMisura === "kg" ? materiale.costoMetro : null) : prezzoNum,
       prezzoKg: isKg ? prezzoNum : null,
       foto: f.foto || null,
-      colori: f.colori, cartellaFoto: f.cartellaFoto || null, cartellaData: f.cartellaData.trim() || null,
+      colori: f.colori, coloriNomi: f.coloriNomi, cartellaFoto: f.cartellaFoto || null, cartellaData: f.cartellaData.trim() || null,
       note,
     };
     const res = await fetch(materiale ? `/api/materiali/${materiale.id}` : "/api/materiali", {
@@ -170,6 +172,7 @@ export default function MaterialeMobileForm({ materiale, fornitori, composizioni
 
       <div className="bg-white border border-[#E4E0D6] rounded-2xl p-4">
         <SezioneColori fornitore={f.fornitore} codici={f.colori} onCodici={(c) => set("colori", c)}
+          nomi={f.coloriNomi} onNomi={(n) => set("coloriNomi", n)}
           voci={voci} onVoce={(v) => setVoci((vs) => [...vs.filter((x) => x.id !== v.id && !(x.fornitore === v.fornitore && x.codice === v.codice)), v])}
           cartellaFoto={f.cartellaFoto} onCartellaFoto={(u) => set("cartellaFoto", u)}
           cartellaData={f.cartellaData} onCartellaData={(d) => set("cartellaData", d)} />

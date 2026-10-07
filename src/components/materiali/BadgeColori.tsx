@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Pencil } from "lucide-react";
-import { Pallino } from "@/components/materiali/ColoriTessutoEditor";
+import Pallino from "@/components/materiali/Pallino";
 import type { ColoreTessuto } from "@/lib/colori";
 
 /** "20 colori" nell'elenco: un clic apre la lista con codici e nomi, senza lasciare la pagina. */
@@ -16,7 +16,7 @@ export default function BadgeColori({ colori, fornitore, cartellaData, cartellaF
 }) {
   const [aperto, setAperto] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const daNominare = colori.filter((c) => !c.nome).length;
+  const daNominare = colori.filter((c) => !c.doubleu).length;
 
   useEffect(() => {
     if (!aperto) return;
@@ -36,7 +36,7 @@ export default function BadgeColori({ colori, fornitore, cartellaData, cartellaF
         <span className="block text-[14px] font-medium text-[#1F3A68] underline decoration-dotted underline-offset-4">
           {colori.length} {colori.length === 1 ? "colore" : "colori"}
         </span>
-        {daNominare > 0 && <span className="block text-xs text-[#A8461F]">{daNominare} da nominare</span>}
+        {daNominare > 0 && <span className="block text-xs text-[#A8461F]">{daNominare} da abbinare</span>}
       </button>
 
       {aperto && (
@@ -56,7 +56,9 @@ export default function BadgeColori({ colori, fornitore, cartellaData, cartellaF
               <li key={c.codice} className="flex items-center gap-2.5 px-1 py-1.5 text-[14px]">
                 <Pallino hex={c.hex} size={16} />
                 <span className="font-mono font-semibold w-10">{c.codice}</span>
-                <span className={c.nome ? "text-[#0E1B2C]" : "text-[#A8461F] text-[13px]"}>{c.nome ?? "da nominare"}</span>
+                <span className={c.doubleu ? "text-[#0E1B2C]" : "text-[#A8461F] text-[13px]"}>{c.doubleu ?? "da abbinare"}</span>
+                {c.nome && c.nome !== c.doubleu && <span className="text-[12px] text-[#5F6878] truncate">{c.nome}</span>}
+                {c.soloQui && <span className="text-[10px] font-semibold uppercase tracking-wide text-[#1F3A68] bg-[#E3E9F3] rounded px-1.5 py-0.5">solo qui</span>}
               </li>
             ))}
           </ul>

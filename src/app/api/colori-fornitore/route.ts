@@ -1,13 +1,13 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-import { chiaveFornitore } from "@/lib/colori";
+import { chiaveFornitore, hexDoubleu } from "@/lib/colori";
 
 export async function GET() {
   const voci = await prisma.coloreFornitore.findMany({ orderBy: [{ fornitore: "asc" }, { codice: "asc" }] });
   return NextResponse.json(voci);
 }
 
-/** Dà (o cambia) il nome a un codice colore di un fornitore. */
+/** Dà (o cambia) nome del fornitore e colore DOUBLEU a un codice colore. */
 export async function PUT(req: NextRequest) {
   const body = await req.json();
   const fornitore = chiaveFornitore(body.fornitore);
@@ -15,11 +15,13 @@ export async function PUT(req: NextRequest) {
   const nome = String(body.nome ?? "").trim();
   if (!fornitore || !codice || !nome)
     return NextResponse.json({ error: "Fornitore, codice e nome sono obbligatori" }, { status: 400 });
-  const hex = typeof body.hex === "string" && /^#[0-9a-fA-F]{6}$/.test(body.hex) ? body.hex : null;
+  const doubleu = typeof body.doubleu === "string" && hexDoubleu(body.doubleu) ? body.doubleu : null;
+  // Senza un pallino proprio prende quello del colore DOUBLEU.
+  const hex = typeof body.hex === "string" && /^#[0-9a-fA-F]{6}$/.test(body.hex) ? body.hex : hexDoubleu(doubleu);
   const voce = await prisma.coloreFornitore.upsert({
     where: { fornitore_codice: { fornitore, codice } },
-    create: { fornitore, codice, nome, hex },
-    update: { nome, hex },
+    create: { fornitore, codice, nome, hex, doubleu },
+    update: { nome, hex, doubleu },
   });
   return NextResponse.json(voce);
 }

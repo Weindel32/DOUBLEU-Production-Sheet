@@ -1,0 +1,1 @@
+ALTER TABLE "ColoreFornitore" ADD COLUMN IF NOT EXISTS "doubleu" TEXT;

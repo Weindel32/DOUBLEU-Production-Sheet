@@ -2,7 +2,7 @@
 
 import FotoRitagliabile from "@/components/mobile/FotoRitagliabile";
 import ColoriTessutoEditor from "@/components/materiali/ColoriTessutoEditor";
-import type { VoceColore } from "@/lib/colori";
+import type { NomiTessuto, VoceColore } from "@/lib/colori";
 
 /** Colori del tessuto: codici della cartella, foto della cartella (il riferimento vero) e la sua data. */
 export default function SezioneColori(p: {
@@ -11,6 +11,8 @@ export default function SezioneColori(p: {
   onCodici: (c: string[]) => void;
   voci: VoceColore[];
   onVoce: (v: VoceColore) => void;
+  nomi: NomiTessuto;
+  onNomi: (n: NomiTessuto) => void;
   cartellaFoto: string;
   onCartellaFoto: (url: string) => void;
   cartellaData: string;
@@ -18,7 +20,7 @@ export default function SezioneColori(p: {
 }) {
   return (
     <div className="space-y-4">
-      <ColoriTessutoEditor fornitore={p.fornitore} codici={p.codici} onChange={p.onCodici} voci={p.voci} onVoce={p.onVoce} />
+      <ColoriTessutoEditor fornitore={p.fornitore} codici={p.codici} onChange={p.onCodici} voci={p.voci} onVoce={p.onVoce} nomi={p.nomi} onNomi={p.onNomi} />
       <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_160px] items-start">
         <div>
           <div className="text-[13px] text-[#4A5566] mb-1.5">Foto della cartella colori</div>

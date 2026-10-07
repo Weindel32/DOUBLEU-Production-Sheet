@@ -10,13 +10,13 @@ import { fasciaDaGenere } from "@/lib/utils";
 import { preparaImmagine } from "@/lib/immagini";
 import type { SchedaCompleta } from "@/types";
 import SceltaColoreTessuto from "@/components/scheda/SceltaColoreTessuto";
-import { coloriTessuto, dizionarioFornitore, leggiCodici, type VoceColore } from "@/lib/colori";
+import { coloriTessuto, dizionarioFornitore, leggiCodici, leggiNomiTessuto, type VoceColore } from "@/lib/colori";
 
 interface Props {
   scheda: SchedaCompleta;
   onSave: (data: Partial<SchedaCompleta>) => Promise<void>;
   clienti: { id: string; nome: string }[];
-  materiali: { id: string; nome: string; tipo: string; costoMetro: number | null; peso: string | null; unitaPeso: string | null; larghezza: string | null; fornitore?: string | null; colori?: string | null }[];
+  materiali: { id: string; nome: string; tipo: string; costoMetro: number | null; peso: string | null; unitaPeso: string | null; larghezza: string | null; fornitore?: string | null; colori?: string | null; coloriNomi?: string | null }[];
   /** Nomi dei codici colore per fornitore: i colori del tessuto si scelgono da qui. */
   vociColori?: VoceColore[];
   /** Nome, codice e categoria vivono anche nell'intestazione della scheda. */
@@ -237,7 +237,7 @@ const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ 
   };
 
   const tessutoPrincipale = materiali.find((m) => m.nome === values.tessutoPrincipale);
-  const coloriPrincipale = coloriTessuto(leggiCodici(tessutoPrincipale?.colori), dizionarioFornitore(vociColori, tessutoPrincipale?.fornitore));
+  const coloriPrincipale = coloriTessuto(leggiCodici(tessutoPrincipale?.colori), dizionarioFornitore(vociColori, tessutoPrincipale?.fornitore), leggiNomiTessuto(tessutoPrincipale?.coloriNomi));
   const scegliColore = (campo: "coloreBase" | "coloriSecondari") => (nome: string, codice: string | null) => {
     const campoCodice = campo === "coloreBase" ? "coloreBaseCodice" : "coloriSecondariCodice";
     setValues((v) => ({ ...v, [campo]: nome, [campoCodice]: codice ?? "" }));

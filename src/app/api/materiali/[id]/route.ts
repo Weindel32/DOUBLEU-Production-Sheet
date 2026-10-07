@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { rigaCambioPrezzo, codiciJson } from "@/lib/materiali";
+import { leggiCodici, leggiNomiTessuto, nomiTessutoJson } from "@/lib/colori";
 
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -26,6 +27,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const noteBase = body.note !== undefined ? body.note : prima.note;
   const note = riga ? [riga, noteBase].filter(Boolean).join("\n") : noteBase;
 
+  // I nomi propri del tessuto valgono solo per i codici che il tessuto ha ancora.
+  const colori = body.colori !== undefined ? codiciJson(body.colori) : prima.colori;
+  const coloriNomi = body.coloriNomi !== undefined || body.colori !== undefined
+    ? nomiTessutoJson(body.coloriNomi !== undefined ? body.coloriNomi : leggiNomiTessuto(prima.coloriNomi), leggiCodici(colori))
+    : undefined;
+
   const materiale = await prisma.materiale.update({
     where: { id },
     data: {
@@ -41,7 +48,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       prezzoKg: body.prezzoKg,
       codice: body.codice,
       foto: body.foto,
-      colori: body.colori !== undefined ? codiciJson(body.colori) : undefined,
+      colori: body.colori !== undefined ? colori : undefined,
+      coloriNomi,
       cartellaFoto: body.cartellaFoto,
       cartellaData: body.cartellaData,
       note,

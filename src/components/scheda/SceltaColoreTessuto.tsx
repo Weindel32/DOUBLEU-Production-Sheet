@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import ColorPickerNamed from "@/components/ui/ColorPickerNamed";
-import { Pallino } from "@/components/materiali/ColoriTessutoEditor";
-import { chiaveFornitore, type ColoreTessuto } from "@/lib/colori";
+import Pallino from "@/components/materiali/Pallino";
+import { chiaveFornitore, nomeScheda, type ColoreTessuto } from "@/lib/colori";
 
 /**
  * Colore della scheda scelto tra quelli disponibili del tessuto (con il codice del fornitore, che
@@ -32,11 +32,13 @@ export default function SceltaColoreTessuto({ value, codice, colori, tessuto, fo
           const on = codice === c.codice;
           return (
             <button key={c.codice} type="button" aria-pressed={on}
-              onClick={() => { setLibero(false); onChange(on ? "" : c.nome ?? "", on ? null : c.codice); }}
+              onClick={() => { setLibero(false); onChange(on ? "" : nomeScheda(c), on ? null : c.codice); }}
+              title={c.nome && c.nome !== c.doubleu ? `${chiaveFornitore(fornitore)} ${c.codice} ${c.nome}` : undefined}
               className={`h-9 pl-2 pr-2.5 rounded-full border text-[13px] inline-flex items-center gap-1.5 transition-colors ${on ? "bg-[#0E1B2C] border-[#0E1B2C] text-white" : "bg-white border-[#D6D1C4] text-[#0E1B2C] hover:border-[#0E1B2C]/40"}`}>
               <Pallino hex={c.hex} size={16} />
               <span className="font-mono font-semibold">{c.codice}</span>
-              {c.nome && <span>{c.nome}</span>}
+              {nomeScheda(c) && <span>{nomeScheda(c)}</span>}
+              {c.doubleu && c.nome && c.nome !== c.doubleu && <span className={on ? "text-white/70" : "text-[#5F6878]"}>· {c.nome}</span>}
             </button>
           );
         })}

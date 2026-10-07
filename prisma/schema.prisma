@@ -43,6 +43,7 @@ model Materiale {
   note         String?
   foto         String? // URL della foto del cartellino o del campione
   colori       String? // JSON: codici colore del fornitore disponibili, es. ["99","100","02"]
+  coloriNomi   String? // JSON: nomi validi solo per questo tessuto, es. {"180":{"nome":"Lampone","hex":"#C2185B"}}
   cartellaFoto String? // URL della foto della cartella colori
   cartellaData String? // data riportata sulla cartella, es. "06/26"
   createdAt    DateTime          @default(now())
@@ -174,6 +175,7 @@ model ColoreFornitore {
   codice    String
   nome      String
   hex       String?
+  doubleu   String? // colore DOUBLEU (lista chiusa in lib/colori.ts): nome per clienti e filtri
   createdAt DateTime @default(now())
 
   @@unique([fornitore, codice])
