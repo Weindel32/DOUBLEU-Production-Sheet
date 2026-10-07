@@ -52,7 +52,7 @@ export default async function MobileSchedePage({ searchParams }: {
                     <span className="block font-semibold truncate">{s.nomeArticolo}</span>
                     <span className="block text-[13px] text-[#5F6878] truncate">
                       <span className="font-mono">{s.codiceModello || s.codice}</span>
-                      {s.cliente && <> · {s.cliente.nome}</>}
+                      {s.cliente && <> · <span className="font-semibold text-[#1F3A68]">{s.cliente.nome}</span></>}
                       {totale > 0 && <> · {totale} pz</>}
                     </span>
                   </span>

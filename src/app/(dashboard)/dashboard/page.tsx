@@ -115,7 +115,9 @@ export default async function DashboardPage() {
                   <div>
                     <div className="font-medium text-[#0E1B2C] text-sm">{s.nomeArticolo}</div>
                     <div className="text-xs text-[#4A5566] mt-0.5">
-                      {s.codice} · {s.cliente?.nome || "Nessun cliente"} · {formatData(s.updatedAt)}
+                      {s.codice} · {s.cliente?.nome
+                        ? <span className="font-semibold text-[#1F3A68]">{s.cliente.nome}</span>
+                        : "Nessun cliente"} · {formatData(s.updatedAt)}
                     </div>
                   </div>
                   {stato && (
