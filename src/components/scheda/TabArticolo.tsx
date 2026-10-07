@@ -164,8 +164,8 @@ const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ 
       set("codiceModello", v);
       setModelloMsg(null);
       onMetaChange?.({ codiceModello: v });
-      // Modello scelto su una scheda senza categoria: la prendo dal modello.
-      if (m && !values.categoria) scegli("categoria", m.categoria);
+      // La categoria della scheda segue quella del modello scelto (anche fuori filtro).
+      if (m && m.categoria !== values.categoria) scegli("categoria", m.categoria);
       await onSave({ codiceModello: v || null });
       return;
     }
@@ -294,6 +294,7 @@ const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ 
             <div className="flex flex-col gap-1.5 text-[13px] text-[#4A5566]">
               <label htmlFor={`modello-${scheda.id}`}>Modello (modellista)</label>
               <CampoModello id={`modello-${scheda.id}`} value={values.codiceModello} modelli={modelli}
+                categoria={values.categoria} genere={values.genere}
                 onChange={(v) => set("codiceModello", v)} onBlur={() => handleBlur("codiceModello")} />
             </div>
             <Field label="Codice scheda">
