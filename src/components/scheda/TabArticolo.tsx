@@ -11,6 +11,7 @@ import { preparaImmagine } from "@/lib/immagini";
 import type { SchedaCompleta } from "@/types";
 import SceltaColoreTessuto from "@/components/scheda/SceltaColoreTessuto";
 import { coloriTessuto, dizionarioFornitore, leggiCodici, leggiNomiTessuto, type VoceColore } from "@/lib/colori";
+import type { ClienteOrderApp } from "@/lib/orderApp";
 
 interface Props {
   scheda: SchedaCompleta;
@@ -19,6 +20,8 @@ interface Props {
   materiali: { id: string; nome: string; tipo: string; costoMetro: number | null; peso: string | null; unitaPeso: string | null; larghezza: string | null; fornitore?: string | null; colori?: string | null; coloriNomi?: string | null }[];
   /** Nomi dei codici colore per fornitore: i colori del tessuto si scelgono da qui. */
   vociColori?: VoceColore[];
+  /** Clienti dell'Order App non ancora collegati: sceglierne uno lo collega e lo assegna. */
+  clientiOrderApp?: ClienteOrderApp[];
   /** Nome, codice e categoria vivono anche nell'intestazione della scheda. */
   onMetaChange?: (meta: { nomeArticolo?: string; codice?: string; categoria?: string; codiceModello?: string }) => void;
   /** Archivio modelli, per suggerire il codice e proporre di aggiungere quelli nuovi. */
@@ -55,7 +58,10 @@ export interface TabArticoloHandle {
 const CATEGORIE_SENZA_COLLO_MANICHE = ["Short", "Skirt", "Sweatpants"];
 const CATEGORIE_COSTINA = ["Hoodie", "Zip Hoodie", "Sweatshirt", "Sweatpants"];
 
-const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ scheda, onSave, clienti, materiali, onMetaChange, modelli: modelliIniziali = [], vociColori = [] }, ref) {
+const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ scheda, onSave, clienti, materiali, onMetaChange, modelli: modelliIniziali = [], vociColori = [], clientiOrderApp = [] }, ref) {
+  const [clientiLocali, setClientiLocali] = useState(clienti);
+  const [daOrderApp, setDaOrderApp] = useState(clientiOrderApp);
+  const [clienteErrore, setClienteErrore] = useState<string | null>(null);
   const [immagini, setImmagini] = useState<string[]>(scheda.immagini || []);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -177,6 +183,22 @@ const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ 
       return;
     }
     await onSave({ [field]: values[field] || null });
+  };
+
+  // Un cliente dell'Order App si collega alla prima scelta, poi è un cliente come gli altri.
+  const scegliCliente = async (valore: string) => {
+    setClienteErrore(null);
+    if (!valore.startsWith("oa:")) return scegli("clienteId", valore);
+    const res = await fetch("/api/clienti/collega", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderAppId: valore.slice(3) }),
+    });
+    if (!res.ok) { setClienteErrore((await res.json().catch(() => null))?.error || "Cliente non collegato"); return; }
+    const c: { id: string; nome: string; orderAppId: string } = await res.json();
+    setClientiLocali((l) => [...l.filter((x) => x.id !== c.id), { id: c.id, nome: c.nome }].sort((a, b) => a.nome.localeCompare(b.nome)));
+    setDaOrderApp((l) => l.filter((x) => x.id !== c.orderAppId));
+    scegli("clienteId", c.id);
   };
 
   // Scelta immediata (chip, segmentati, select): stato + salvataggio nello stesso gesto.
@@ -332,15 +354,25 @@ const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ 
 
           <Field label="Cliente / club" group>
             <div className="flex items-center gap-2">
-              <select value={values.clienteId} onChange={(e) => scegli("clienteId", e.target.value)} aria-label="Cliente" className={inputCls}>
+              <select value={values.clienteId} onChange={(e) => scegliCliente(e.target.value)} aria-label="Cliente" className={inputCls}>
                 <option value="">Nessun cliente</option>
-                {clienti.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
+                {daOrderApp.length > 0 ? (
+                  <>
+                    <optgroup label="Clienti">
+                      {clientiLocali.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
+                    </optgroup>
+                    <optgroup label="Dall'Order App">
+                      {daOrderApp.map((c) => <option key={c.id} value={`oa:${c.id}`}>{c.nome}{c.citta ? ` · ${c.citta}` : ""}</option>)}
+                    </optgroup>
+                  </>
+                ) : clientiLocali.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
               </select>
               <Link href="/clienti/nuovo" target="_blank" aria-label="Crea nuovo cliente"
                 className="w-11 h-11 flex-shrink-0 rounded-[10px] border border-[#D6D1C4] bg-white text-[#1F3A68] flex items-center justify-center hover:border-[#1F3A68]">
                 <ExternalLink size={16} />
               </Link>
             </div>
+            {clienteErrore && <p role="alert" className="text-xs text-red-800 mt-1">{clienteErrore}</p>}
           </Field>
         </div>
       </SectionCard>
