@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { Package, Plus, Palette } from "lucide-react";
 import MaterialiActions from "./MaterialiActions";
-import { calcolaCostoAlMetro, calcolaGrammaturaCommerciale, formatEuro } from "@/lib/utils";
+import { calcolaCostoAlMetro, calcolaGrammaturaCommerciale, calcolaMetriPerKg, formatEuro } from "@/lib/utils";
 import { chiaveFornitore, coloriTessuto, COLORI_DOUBLEU, dizionarioFornitore, leggiCodici, leggiNomiTessuto } from "@/lib/colori";
 import BadgeColori from "@/components/materiali/BadgeColori";
 import FiltriMateriali from "@/components/materiali/FiltriMateriali";
@@ -90,12 +90,14 @@ export default async function MaterialiPage({ searchParams }: {
               const unita = m.unitaMisura ?? "metro";
               const alMetro = calcolaCostoAlMetro(m);
               const grammatura = calcolaGrammaturaCommerciale(m);
+              const metriKg = calcolaMetriPerKg(m);
               const href = `/materiali/${m.id}/modifica`;
               const sotto = [m.fornitore, m.codice].filter(Boolean).join(" · ");
               const misure = [
                 m.peso ? `${m.peso} ${m.unitaPeso ?? "g/m²"}` : null,
                 m.larghezza ? `${m.larghezza} cm` : null,
                 grammatura !== null && m.unitaPeso !== "g/m²" ? `${grammatura.toFixed(0)} g/m²` : null,
+                m.tipo === "Tessuto" ? `${metriKg !== null ? metriKg.toFixed(2).replace(".", ",") : "–"} m/kg` : null,
               ].filter(Boolean).join(" · ");
               return (
                 <li key={m.id} className={`${GRIGLIA} px-5 py-2.5 border-b border-[#EFEBE2] last:border-0`}>
