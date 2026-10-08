@@ -14,6 +14,7 @@ export interface RigaMateriale {
   composizione: string | null;
   foto: string | null;
   prezzo: { valore: number | null; unita: string };
+  metriKg: number | null;
 }
 
 /** Elenco con ricerca istantanea: nome, fornitore, codice, composizione. */
@@ -49,6 +50,7 @@ export default function ElencoMateriali({ materiali }: { materiali: RigaMaterial
               <span className="text-right flex-shrink-0">
                 <span className="block font-mono font-semibold text-[15px]">{m.prezzo.valore !== null ? formatEuro(m.prezzo.valore) : "—"}</span>
                 <span className="block text-xs text-[#5F6878]">{m.prezzo.unita}</span>
+                {m.tipo === "Tessuto" && <span className="block text-xs text-[#5F6878]">{m.metriKg !== null ? m.metriKg.toFixed(2).replace(".", ",") : "–"} m/kg</span>}
               </span>
               <ChevronRight size={18} className="text-[#C9C3B5] flex-shrink-0" />
             </Link>

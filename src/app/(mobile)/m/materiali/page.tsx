@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import Testata from "@/components/mobile/Testata";
 import ElencoMateriali from "@/components/mobile/ElencoMateriali";
 import { prezzoListino } from "@/lib/materiali";
+import { calcolaMetriPerKg } from "@/lib/utils";
 
 export default async function MaterialiMobile({ searchParams }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -13,7 +14,7 @@ export default async function MaterialiMobile({ searchParams }: {
   const materiali = await prisma.materiale.findMany({ orderBy: { nome: "asc" } });
   const righe = materiali.map((m) => ({
     id: m.id, nome: m.nome, tipo: m.tipo, fornitore: m.fornitore, codice: m.codice, foto: m.foto,
-    composizione: m.composizione, prezzo: prezzoListino(m),
+    composizione: m.composizione, prezzo: prezzoListino(m), metriKg: calcolaMetriPerKg(m),
   }));
   return (
     <>

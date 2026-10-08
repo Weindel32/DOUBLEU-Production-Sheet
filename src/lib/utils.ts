@@ -194,6 +194,12 @@ export function calcolaKgPerMetroLineare(mat: MaterialePesoInfo): number | null 
   return (peso * larghezza) / 100000;
 }
 
+/** Metri lineari in 1 kg (1000 / g/m), a 2 decimali. Null se dati insufficienti. */
+export function calcolaMetriPerKg(mat: MaterialePesoInfo): number | null {
+  const kgPerM = calcolaKgPerMetroLineare(mat);
+  return kgPerM ? Math.round(100 / kgPerM) / 100 : null;
+}
+
 export interface MaterialeCostoInfo extends MaterialePesoInfo {
   costoMetro?: number | null;
   prezzoKg?: number | null;
