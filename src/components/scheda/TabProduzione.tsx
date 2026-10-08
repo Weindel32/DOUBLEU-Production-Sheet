@@ -5,7 +5,7 @@ import { Plus, Trash2, Upload, Lock } from "lucide-react";
 import type { SchedaCompleta, ConsumoMateriale, Accessorio } from "@/types";
 import {
   calcolaTotaleQuantita, ACCESSORI_STANDARD, parseNumIt, calcolaKgPerMetroLineare, calcolaCostoUnitarioConsumo,
-  calcolaRiepilogoCosti, prezzoDaMargine, formatEuro, type RiepilogoCosti,
+  calcolaRiepilogoCosti, prezzoDaMargine, formatEuro, type RiepilogoCosti, calcolaAcquistoMateriale, SCARTO_ACQUISTO,
 } from "@/lib/utils";
 import { Field, SectionCard, EuroInput, numStr, inputCls, textareaCls } from "@/components/ui/Form";
 
@@ -36,6 +36,7 @@ export interface TabProduzioneHandle {
 }
 
 const parseNum = parseNumIt;
+const num1 = (n: number) => n.toLocaleString("it-IT", { maximumFractionDigits: 1 });
 
 const ACCESSORI_RAPIDI = ["Zip", "Laccio", "Etichetta", "Puntali", "Bottone", "Elastico", "Packaging"];
 const MARGINI_OBIETTIVO = [35, 45, 55];
@@ -215,6 +216,14 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
     { label: "Ricamo", value: costoRicamo, set: setCostoRicamo },
   ];
 
+  const acquisti = consumi.flatMap((c) => {
+    const mat = materialiDisponibili.find((m) => m.id === c.materialeId);
+    const a = mat ? calcolaAcquistoMateriale(mat, c.consumoPerCapo, totalePezzi) : null;
+    return a ? [a] : [];
+  });
+  const spesaOrdine = acquisti.reduce((t, a) => t + (a.stima ?? 0), 0);
+  const senzaPrezzo = acquisti.filter((a) => a.stima === null).length;
+
   const subtotale = (n: number) => (
     <span className="font-mono text-[15px] font-semibold text-[#A8461F]">{formatEuro(n)} / capo</span>
   );
@@ -246,6 +255,7 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
                 const isPz = mat?.unitaMisura === "pz";
                 const isKg = mat?.unitaMisura === "kg";
                 const kgPerM = mat ? calcolaKgPerMetroLineare(mat) : null;
+                const acquisto = mat ? calcolaAcquistoMateriale(mat, c.consumoPerCapo, totalePezzi) : null;
                 return (
                   <div key={i} className="border-t border-[#EFEBE2] py-1.5">
                     <div className={RIGA_COLS}>
@@ -269,16 +279,31 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
                         <Trash2 size={17} />
                       </button>
                     </div>
-                    {isKg && c.consumoPerCapo > 0 && (
+                    {isKg && c.consumoPerCapo > 0 && kgPerM === null && (
+                      <div className="text-xs text-[#A8461F] mt-1">Inserisci peso e altezza nel materiale per il costo al metro</div>
+                    )}
+                    {acquisto && (
                       <div className="text-xs text-[#5F6878] mt-1">
-                        {kgPerM === null
-                          ? <span className="text-[#A8461F]">Inserisci peso e altezza nel materiale per il costo al metro</span>
-                          : totalePezzi > 0 && `${(totalePezzi * c.consumoPerCapo * kgPerM).toFixed(1)} kg per l'ordine`}
+                        {totalePezzi} capi
+                        {acquisto.unita === "kg" && ` · ${num1(acquisto.metri!)} m = ${num1(acquisto.netto)} kg`}
+                        {acquisto.unita === "m" && ` · ${num1(acquisto.netto)} m`}
+                        {acquisto.unita !== "pz" && ` · +${SCARTO_ACQUISTO * 100}%`}
+                        {" → da comprare "}<strong className="text-[#0E1B2C]">{acquisto.daComprare} {acquisto.unita}</strong>
+                        {" · stima "}{acquisto.stima !== null ? <strong className="text-[#0E1B2C]">{formatEuro(acquisto.stima)}</strong> : <span className="text-[#A8461F]">manca il prezzo</span>}
                       </div>
                     )}
                   </div>
                 );
               })}
+              {acquisti.length > 0 && (
+                <div className="border-t border-[#E4E0D6] mt-1 pt-2.5 flex flex-wrap items-baseline justify-between gap-x-3 text-sm">
+                  <span className="text-[#4A5566]">
+                    Acquisto materiali per l&apos;ordine <span className="text-xs text-[#5F6878]">(tessuti +{SCARTO_ACQUISTO * 100}%)</span>
+                    {senzaPrezzo > 0 && <span className="text-xs text-[#A8461F]"> · {senzaPrezzo} senza prezzo, esclus{senzaPrezzo === 1 ? "o" : "i"}</span>}
+                  </span>
+                  <strong className="font-mono text-[15px] text-[#0E1B2C]">{formatEuro(spesaOrdine)}</strong>
+                </div>
+              )}
               <button type="button" onClick={aggiungiConsumo} disabled={materialiDisponibili.length === 0}
                 className="mt-1 h-11 px-2 flex items-center gap-1.5 text-sm font-semibold text-[#1F3A68] disabled:opacity-40">
                 <Plus size={16} /> Aggiungi materiale

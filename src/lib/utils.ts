@@ -245,6 +245,46 @@ export function calcolaCostoUnitarioConsumo(mat: MaterialeCostoInfo | null | und
   return calcolaCostoAlMetro(mat) ?? 0;
 }
 
+/** Scarto aggiunto alla quantità di tessuto da comprare per un ordine. */
+export const SCARTO_ACQUISTO = 0.05;
+
+export interface AcquistoMateriale {
+  unita: "kg" | "m" | "pz";
+  /** Metri lineari netti per l'ordine (capi × consumo), solo tessuti. */
+  metri: number | null;
+  /** Quantità netta nell'unità di acquisto, senza scarto. */
+  netto: number;
+  /** Quantità da ordinare: netto + scarto (solo tessuti), arrotondata per eccesso. */
+  daComprare: number;
+  /** Spesa stimata su daComprare, null se manca il prezzo. */
+  stima: number | null;
+}
+
+/**
+ * Quanto comprare di un materiale per un ordine di `capi` pezzi, nell'unità in cui lo si
+ * acquista (kg, metri o pezzi), con la spesa stimata. Null se mancano i dati: consumo,
+ * capi, oppure peso e altezza per un tessuto al kg.
+ */
+export function calcolaAcquistoMateriale(mat: MaterialeCostoInfo, consumoPerCapo: number, capi: number): AcquistoMateriale | null {
+  if (!(consumoPerCapo > 0) || !(capi > 0)) return null;
+  const totale = capi * consumoPerCapo;
+  const perEccesso = (n: number) => Math.ceil(parseFloat(n.toFixed(6)));
+  if (mat.unitaMisura === "pz") {
+    const daComprare = perEccesso(totale);
+    return { unita: "pz", metri: null, netto: totale, daComprare, stima: mat.costoMetro ? daComprare * mat.costoMetro : null };
+  }
+  if (mat.unitaMisura === "kg") {
+    const kgPerM = calcolaKgPerMetroLineare(mat);
+    if (kgPerM === null) return null;
+    const netto = totale * kgPerM;
+    const daComprare = perEccesso(netto * (1 + SCARTO_ACQUISTO));
+    return { unita: "kg", metri: totale, netto, daComprare, stima: mat.prezzoKg ? daComprare * mat.prezzoKg : null };
+  }
+  const daComprare = perEccesso(totale * (1 + SCARTO_ACQUISTO));
+  const alMetro = calcolaCostoAlMetro(mat);
+  return { unita: "m", metri: totale, netto: totale, daComprare, stima: alMetro ? daComprare * alMetro : null };
+}
+
 export interface RiepilogoCosti {
   materiali: number;
   accessori: number;
