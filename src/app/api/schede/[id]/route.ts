@@ -16,6 +16,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const body = await req.json();
 
   const data: Record<string, unknown> = { ...body };
+  // Nessun cliente = null: "" non esiste tra i clienti e il vincolo farebbe fallire l'aggiornamento.
+  if (data.clienteId === "") data.clienteId = null;
 
   if (body.tabellaMisure !== undefined)
     data.tabellaMisure = body.tabellaMisure ? JSON.stringify(body.tabellaMisure) : null;
