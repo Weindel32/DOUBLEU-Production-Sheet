@@ -113,7 +113,13 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
     setSezioneAttiva(id);
   };
 
+  // Salvataggi sovrapposti (il tasto Salva ne lancia uno per sezione) si giudicano insieme:
+  // l'indicatore cambia solo quando sono finiti tutti, e basta un errore per mostrarlo.
+  const inCorso = useRef(0);
+  const erroreLotto = useRef<string | null>(null);
+
   const handleSave = useCallback(async (data: Partial<SchedaCompleta>) => {
+    if (inCorso.current++ === 0) erroreLotto.current = null;
     setSaving(true);
     try {
       const res = await fetch(`/api/schede/${scheda.id}`, {
@@ -123,15 +129,16 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
       });
       if (!res.ok) {
         const body = await res.json().catch(() => null);
-        setSaveError(body?.error || `Salvataggio non riuscito (errore ${res.status})`);
-        return;
+        erroreLotto.current ??= body?.error || `Salvataggio non riuscito (errore ${res.status})`;
       }
-      setSaveError(null);
-      setSavedAt(formatOra(new Date()));
     } catch {
-      setSaveError("Salvataggio non riuscito: controlla la connessione");
+      erroreLotto.current ??= "Salvataggio non riuscito: controlla la connessione";
     } finally {
-      setSaving(false);
+      if (--inCorso.current === 0) {
+        setSaving(false);
+        setSaveError(erroreLotto.current);
+        if (!erroreLotto.current) setSavedAt(formatOra(new Date()));
+      }
     }
   }, [scheda.id]);
 
