@@ -102,10 +102,12 @@ const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ 
   const mostraCostina = CATEGORIE_COSTINA.includes(values.categoria);
 
   // Nome e codice sono obbligatori: vuoti non si salvano (resta il valore precedente).
+  // Gli altri campi vuoti vanno come null, come al salvataggio del singolo campo:
+  // un clienteId "" violerebbe il collegamento al cliente e farebbe fallire tutto il salvataggio.
   const salvaAll = async () => {
     const { nomeArticolo, codice, ...resto } = values;
     await onSave({
-      ...resto,
+      ...Object.fromEntries(Object.entries(resto).map(([k, v]) => [k, v.trim() ? v : null])),
       codiceModello: resto.codiceModello.trim() || null,
       ...(nomeArticolo.trim() ? { nomeArticolo: nomeArticolo.trim() } : {}),
       ...(codice.trim() ? { codice: codice.trim() } : {}),
