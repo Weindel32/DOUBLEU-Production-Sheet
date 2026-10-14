@@ -1,5 +1,5 @@
 // PDF approvvigionamento di un ordine: interno (dettaglio per referenza + totale con stime)
-// o per i fornitori (una pagina ciascuno: articolo, colore, quantità; niente prezzi né club).
+// o lista acquisti da portare dal fornitore (una pagina ciascuno: articolo, colore, quantità; niente prezzi né club).
 
 import { Document, Page, Text, View, renderToBuffer } from "@react-pdf/renderer";
 import type { AcquistiOrdine } from "@/lib/approvvigionamentoServer";
@@ -66,13 +66,13 @@ function Documento({ dati, interno }: { dati: AcquistiOrdine; interno: boolean }
 
   if (!interno)
     return (
-      <Document title={`Richiesta materiali ${ordineId}`} author="Double U">
+      <Document title={`Lista acquisti ${ordineId}`} author="Double U">
         {riepilogo.fornitori.map((g) => (
           <Page key={g.fornitore || "nessuno"} size="A4" style={s.page}>
-            <Intestazione titolo="RICHIESTA MATERIALI" interno={false} />
+            <Intestazione titolo="LISTA ACQUISTI" interno={false} />
             <Campi campi={[["Fornitore", g.fornitore || "Fornitore non indicato"], ["Rif. ordine DOUBLEU", ordineId]]} />
             <TabellaFornitore g={g} interno={false} />
-            <Text style={s.note}>Quantità da fornire. Per conferma disponibilità e tempi di consegna fare riferimento al numero d&apos;ordine DOUBLEU.</Text>
+            <Text style={s.note}>Quantità da acquistare per l&apos;ordine DOUBLEU indicato: tessuti con il {SCARTO_ACQUISTO * 100}% di scarto, arrotondati per eccesso.</Text>
             <Piede testo={piede} />
           </Page>
         ))}

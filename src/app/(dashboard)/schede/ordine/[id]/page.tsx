@@ -52,8 +52,8 @@ export default async function AcquistiOrdinePage({ params, searchParams }: {
           {chip("Con prezzi", base, prezzi)}
           {chip("Senza prezzi", `${base}?prezzi=0`, !prezzi)}
         </div>
-        <PulsantePdf key={pdf} url={pdf} nomeFile={`${prezzi ? "Approvvigionamento" : "Richiesta materiali"} ${ordineId}.pdf`}
-          etichetta={`PDF ${prezzi ? "interno" : "fornitori"}`} className="w-full sm:w-auto" />
+        <PulsantePdf key={pdf} url={pdf} nomeFile={`${prezzi ? "Approvvigionamento" : "Lista acquisti"} ${ordineId}.pdf`}
+          etichetta={`PDF ${prezzi ? "interno" : "lista acquisti"}`} className="w-full sm:w-auto" />
       </div>
 
       {stimate.length > 0 && (
@@ -125,8 +125,6 @@ export default async function AcquistiOrdinePage({ params, searchParams }: {
               <div className="px-5 py-3 border-b border-[#E4E0D6] bg-[#FBFAF7] flex flex-wrap items-center justify-between gap-3">
                 <h2 className="font-display text-[17px] font-bold text-[#0E1B2C] flex-1">{g.fornitore || "Fornitore non indicato"}</h2>
                 {prezzi && <span className="font-mono text-[15px] font-semibold text-[#0E1B2C]">{formatEuro(g.stima)}</span>}
-                <PulsantePdf url={`/api/approvvigionamento/${encodeURIComponent(ordineId)}?prezzi=0&fornitore=${encodeURIComponent(g.fornitore)}`}
-                  nomeFile={`Richiesta materiali ${ordineId} ${g.fornitore || "fornitore"}.pdf`} etichetta={`PDF per ${g.fornitore || "fornitore"}`} variante="bordo" />
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-[15px] min-w-[640px] table-fixed">
