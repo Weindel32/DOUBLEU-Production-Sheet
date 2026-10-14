@@ -11,7 +11,7 @@ import {
 import TabArticolo, { type TabArticoloHandle } from "./TabArticolo";
 import TabPersonalizzazione, { type TabPersonalizzazioneHandle } from "./TabPersonalizzazione";
 import TabMisure, { type TabMisureHandle } from "./TabMisure";
-import TabProduzione, { type TabProduzioneHandle } from "./TabProduzione";
+import TabProduzione, { type TabProduzioneHandle, type AcquistoRiepilogo } from "./TabProduzione";
 import TabCampioni from "./TabCampioni";
 import { Segmented } from "@/components/ui/Form";
 import type { SchedaCompleta, QuantitaTaglia, Campione } from "@/types";
@@ -87,6 +87,7 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
 
   const sezioni = SEZIONI.filter((s) => !s.soloOrdine || !isCosto);
   const totalePezzi = isCosto ? 0 : calcolaTotaleQuantita(quantita);
+  const [acquisti, setAcquisti] = useState<AcquistoRiepilogo[]>([]);
 
   // Evidenzia nell'indice la sezione che si sta leggendo.
   useEffect(() => {
@@ -310,7 +311,7 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
             )}
 
             <TabProduzione ref={tabProduzioneRef} scheda={scheda} onSave={handleSave} materialiDisponibili={materialiDisponibili}
-              soloCosti={isCosto} quantita={quantita} onRiepilogoChange={setRiepilogo} />
+              soloCosti={isCosto} quantita={quantita} onRiepilogoChange={setRiepilogo} onAcquistiChange={setAcquisti} />
 
             <section id="sez-campioni" className="scheda-section">
               <TabCampioni scheda={scheda} onSave={handleSave} onTotaleChange={(totale, numero) => setSviluppo({ totale, numero })} />
@@ -356,6 +357,24 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
                   <span className="text-[#B7C4D8]">Ordine · {totalePezzi} pz</span>
                   <span className="font-mono">{formatEuro(riepilogo.totale * totalePezzi)}</span>
                 </div>
+              )}
+              {!isCosto && acquisti.length > 0 && (
+                <>
+                  <div className="h-px bg-white/15" />
+                  <div className="text-[11px] font-semibold uppercase tracking-wider text-[#B7C4D8]">Da acquistare</div>
+                  {acquisti.map((a, i) => (
+                    <div key={`${a.nome}${i}`} className="flex justify-between gap-3 text-sm">
+                      <span className="truncate">{a.nome}</span>
+                      <span className="font-mono font-semibold whitespace-nowrap">{a.quantita}</span>
+                    </div>
+                  ))}
+                  {scheda.ordineOrderAppId && (
+                    <Link href={`/schede/ordine/${encodeURIComponent(scheda.ordineOrderAppId)}`}
+                      className="text-sm font-semibold text-white underline underline-offset-2 decoration-white/40 hover:decoration-white">
+                      Acquisti di tutto l&apos;ordine →
+                    </Link>
+                  )}
+                </>
               )}
               <button type="button" onClick={() => vaiA("sez-costi")}
                 className="h-11 rounded-[10px] bg-white text-[#0E1B2C] text-sm font-semibold hover:bg-[#F6F4EF]">

@@ -31,7 +31,11 @@ interface Props {
   quantita?: Record<string, number>;
   /** Il riepilogo vive nel riquadro fisso della pagina: gli passo i numeri a ogni modifica. */
   onRiepilogoChange?: (r: RiepilogoCosti) => void;
+  /** Materiali da comprare per questa referenza, per il riquadro fisso. */
+  onAcquistiChange?: (a: AcquistoRiepilogo[]) => void;
 }
+
+export interface AcquistoRiepilogo { nome: string; quantita: string; stima: number | null }
 
 export interface TabProduzioneHandle {
   save: () => Promise<void>;
@@ -47,7 +51,7 @@ const MARGINI_OBIETTIVO = [35, 45, 55];
 const RIGA_COLS = "grid grid-cols-[minmax(0,2.4fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_44px] gap-2.5 items-center";
 
 const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzione(
-  { scheda, onSave, materialiDisponibili, soloCosti, onRiepilogoChange, quantita }, ref,
+  { scheda, onSave, materialiDisponibili, soloCosti, onRiepilogoChange, onAcquistiChange, quantita }, ref,
 ) {
   const [noteProduzione, setNoteProduzione] = useState(scheda.noteProduzione || "");
   const [tolleranzaTaglio, setTolleranzaTaglio] = useState(scheda.tolleranzaTaglio || "");
@@ -218,11 +222,18 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
     { label: "Ricamo", value: costoRicamo, set: setCostoRicamo },
   ];
 
-  const acquisti = consumi.flatMap((c) => {
+  const acquistiNominati = consumi.flatMap((c) => {
     const mat = materialiDisponibili.find((m) => m.id === c.materialeId);
     const a = mat ? calcolaAcquistoMateriale(mat, c.consumoPerCapo, totalePezzi) : null;
-    return a ? [a] : [];
+    return a && mat ? [{ ...a, nome: mat.nome }] : [];
   });
+  const acquisti = acquistiNominati;
+  const firmaAcquisti = acquistiNominati.map((a) => `${a.nome}:${a.daComprare}${a.unita}:${a.stima}`).join("|");
+  useEffect(() => {
+    onAcquistiChange?.(acquistiNominati.map((a) => ({ nome: a.nome, quantita: `${a.daComprare.toLocaleString("it-IT")} ${a.unita}`, stima: a.stima })));
+    // Dipendo dai valori (firma), non dall'array nuovo a ogni render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [firmaAcquisti]);
   const spesaOrdine = acquisti.reduce((t, a) => t + (a.stima ?? 0), 0);
   const senzaPrezzo = acquisti.filter((a) => a.stima === null).length;
 

@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { Plus, FileText, Search, ChevronRight } from "lucide-react";
+import { Plus, FileText, Search, ChevronRight, ShoppingCart } from "lucide-react";
 import {
   formatData, STATI_SCHEDA, TIPI_COSTO_DB, calcolaTotaleQuantita, formatEuro, totaleSviluppo,
   FASCE_MODELLO, FASCIA_STYLE, ordinaCategorie, statoOrdine,
@@ -296,6 +296,12 @@ export default async function ListaSchede({ vista, searchParams }: {
                       {[pezzi > 0 ? `${pezzi} pz` : null, bozze > 0 ? `${bozze} in bozza` : null].filter(Boolean).join(" · ") || "\u00a0"}
                     </div>
                   </div>
+                  {b.ordineId && (
+                    <Link href={`/schede/ordine/${encodeURIComponent(b.ordineId)}`}
+                      className="h-10 px-3.5 rounded-lg border border-[#D6D1C4] text-[13px] font-semibold text-[#0E1B2C] inline-flex items-center gap-1.5 hover:border-[#0E1B2C]/40">
+                      <ShoppingCart size={15} /> Acquisti
+                    </Link>
+                  )}
                   {b.ordineId && (
                     <Link href={`/schede/nuova?ordine=${encodeURIComponent(b.ordineId)}`}
                       className={`h-10 px-3.5 rounded-lg border text-[13px] font-semibold inline-flex items-center gap-1.5 ${mancanti > 0 ? "border-[#0E1B2C] text-[#0E1B2C] hover:bg-[#0E1B2C] hover:text-white" : "border-[#D6D1C4] text-[#4A5566] hover:border-[#0E1B2C]/40"}`}>
