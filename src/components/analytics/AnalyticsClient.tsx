@@ -13,11 +13,10 @@ import {
 } from "recharts";
 import { Printer } from "lucide-react";
 import type { AnalyticsData } from "@/app/(dashboard)/analytics/page";
+import { TAGLIE_ADULTO, TAGLIE_KIDS } from "@/lib/utils";
 
-const SIZE_ORDER = [
-  "XS", "S", "M", "L", "XL", "XXL", "XXXL",
-  "4A", "6A", "8A", "10A", "12A", "14A", "16A",
-];
+// Dalle taglie bambino alle adulto, in ordine di crescita: 4A … 16A, poi XS … XXXL.
+const SIZE_ORDER: string[] = [...TAGLIE_KIDS, ...TAGLIE_ADULTO];
 
 const GENERE_COLORS: Record<string, string> = {
   uomo: "#3b82f6",
