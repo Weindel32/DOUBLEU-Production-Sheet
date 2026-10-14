@@ -6,6 +6,7 @@ import type { SchedaCompleta, ConsumoMateriale, Accessorio } from "@/types";
 import {
   calcolaTotaleQuantita, ACCESSORI_STANDARD, parseNumIt, calcolaKgPerMetroLineare, calcolaCostoUnitarioConsumo,
   calcolaRiepilogoCosti, prezzoDaMargine, formatEuro, type RiepilogoCosti, calcolaAcquistoMateriale, SCARTO_ACQUISTO,
+  MARGINE_MINIMO, MARGINE_PIENO,
 } from "@/lib/utils";
 import { Field, SectionCard, EuroInput, numStr, inputCls, textareaCls } from "@/components/ui/Form";
 
@@ -217,7 +218,7 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
   };
 
   const margineColore = riepilogo.margine === null ? "text-[#5F6878]"
-    : riepilogo.margine >= 40 ? "text-[#1D6B4A]" : riepilogo.margine >= 30 ? "text-[#7A5B12]" : "text-[#A8461F]";
+    : riepilogo.margine >= MARGINE_PIENO ? "text-[#1D6B4A]" : riepilogo.margine >= MARGINE_MINIMO ? "text-[#7A5B12]" : "text-[#A8461F]";
 
   const lavorazioni = [
     { label: "Taglio", value: costoTaglio, set: setCostoTaglio },

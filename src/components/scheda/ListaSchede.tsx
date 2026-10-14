@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Plus, FileText, Search, ChevronRight, ShoppingCart } from "lucide-react";
 import {
   formatData, STATI_SCHEDA, TIPI_COSTO_DB, formatEuro, totaleSviluppo,
-  FASCE_MODELLO, FASCIA_STYLE, ordinaCategorie, statoOrdine,
+  FASCE_MODELLO, FASCIA_STYLE, ordinaCategorie, statoOrdine, MARGINE_MINIMO,
 } from "@/lib/utils";
 import { ordiniOrderApp, type OrdineOrderApp } from "@/lib/orderApp";
 import { capiScheda, statoReferenza } from "@/lib/referenze";
@@ -14,7 +14,7 @@ import type { Campione } from "@/types";
 type Filtri = { stato?: string; margine?: string; campioni?: string; fascia?: string; q?: string };
 type Vista = "articoli" | "ordini";
 
-const SOGLIA_MARGINE = 30;
+const SOGLIA_MARGINE = MARGINE_MINIMO;
 const SENZA_MODELLO = "Senza modello";
 
 const TESTI: Record<Vista, { titolo: string; base: string; nuovo: string; nuovoHref: string; vuoto: string; singolare: string; plurale: string }> = {
