@@ -106,7 +106,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     nome: scheda.nomeArticolo,
     esecutiva: scheda.stato === "esecutiva",
     testata: [
-      ["Modello", scheda.codiceModello], ["Codice scheda", scheda.codice], ["Cliente / Club", scheda.cliente?.nome ?? "—"],
+      ["Modello", scheda.codiceModello], ["Codice scheda", scheda.codice],
+      // Il club resta interno: al produttore e al modellista va solo il numero d'ordine DOUBLEU.
+      interno ? ["Cliente / Club", scheda.cliente?.nome ?? "—"] : ["Ordine DOUBLEU", scheda.ordineOrderAppId],
       ["Collezione", scheda.collezione || "—"], ["Data creazione", new Date(scheda.createdAt).toLocaleDateString("it-IT")], ["Versione", scheda.versione],
     ],
     immagini: immagini.filter((i): i is NonNullable<typeof i> => !!i),
@@ -119,7 +121,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       ["Collo", scheda.collo], ["Maniche", scheda.maniche],
     ],
     noteSpecifiche: scheda.noteSpecifiche,
-    loghi: scheda.loghi.map((l) => ({ nome: l.logo.nome, tecnica: l.tecnica, posizione: l.posizione, dimensione: l.dimensione, note: l.note })),
+    // Nel PDF tecnico i loghi non hanno nome (spesso è quello del club): Logo 1, Logo 2…
+    loghi: scheda.loghi.map((l, i) => ({ nome: interno ? l.logo.nome : `Logo ${i + 1}`, tecnica: l.tecnica, posizione: l.posizione, dimensione: l.dimensione, note: l.note })),
     colori: righeColori(scheda.colorePrincipale, scheda.coloreSecondario),
     notePersonalizzazione: scheda.notePersonalizzazione,
     misure: taglie.length === 0 ? null : isElastico
