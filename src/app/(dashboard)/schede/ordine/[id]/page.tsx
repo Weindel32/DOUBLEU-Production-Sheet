@@ -20,6 +20,7 @@ export default async function AcquistiOrdinePage({ params, searchParams }: {
   const base = `/schede/ordine/${encodeURIComponent(ordineId)}`;
   const pdf = `/api/approvvigionamento/${encodeURIComponent(ordineId)}?prezzi=${prezzi ? 1 : 0}`;
   const senzaPeso = riepilogo.fornitori.flatMap((g) => g.righe).filter((r) => !r.acquisto);
+  const stimate = riepilogo.referenze.filter((d) => d.stimati);
   const cella = "px-3 py-2.5";
 
   const chip = (label: string, href: string, attivo: boolean) => (
@@ -56,6 +57,13 @@ export default async function AcquistiOrdinePage({ params, searchParams }: {
         </a>
       </div>
 
+      {stimate.length > 0 && (
+        <div className="rounded-xl border border-[#C9D5E8] bg-[#EEF2F8] px-4 py-3 text-sm text-[#1F3A68]">
+          <span className="font-semibold">Conto provvisorio:</span> {stimate.map((d) => d.nomeArticolo).join(", ")}{" "}
+          {stimate.length === 1 ? "usa" : "usano"} i capi dell&apos;ordine perché le taglie non sono ancora arrivate.
+        </div>
+      )}
+
       {(riepilogo.escluse.length > 0 || senzaPeso.length > 0) && (
         <div role="alert" className="rounded-xl border border-[#E8C98A] bg-[#FBF3DF] px-4 py-3 text-sm text-[#7A5B12] space-y-1">
           <div className="flex items-center gap-2 font-semibold"><AlertTriangle size={16} /> Non tutto è nel conto</div>
@@ -84,7 +92,7 @@ export default async function AcquistiOrdinePage({ params, searchParams }: {
               <section key={d.id} className="bg-white border border-[#E4E0D6] rounded-2xl overflow-hidden">
                 <div className="px-4 py-2.5 border-b border-[#E4E0D6] bg-[#FBFAF7] flex items-baseline justify-between gap-3">
                   <Link href={`/schede/${d.id}`} className="font-semibold text-[#0E1B2C] hover:text-[#1F3A68] hover:underline underline-offset-2 truncate">{d.nomeArticolo}</Link>
-                  <span className="text-[13px] text-[#5F6878] whitespace-nowrap"><span className="font-mono">{d.codice}</span> · {d.capi} capi</span>
+                  <span className="text-[13px] text-[#5F6878] whitespace-nowrap"><span className="font-mono">{d.codice}</span> · {d.capi} capi{d.stimati && <span className="text-[#7A5B12]"> stimati</span>}</span>
                 </div>
                 <ul className="divide-y divide-[#EFEBE2]">
                   {d.righe.map((r, i) => (

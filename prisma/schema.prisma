@@ -70,6 +70,8 @@ model Scheda {
   cliente       Cliente? @relation(fields: [clienteId], references: [id])
   // Ordine dell'Order App a cui appartiene la referenza (es. "DU-2026-1625"): raggruppa le schede
   ordineOrderAppId String?
+  // Articolo dell'ordine da cui nasce la referenza: porta nome, capi e taglie dall'Order App
+  articoloOrderAppId String?
 
   // Tab 1 - Articolo
   categoria   String?

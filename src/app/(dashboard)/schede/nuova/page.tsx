@@ -21,6 +21,7 @@ export default async function NuovaSchedaPage({ searchParams }: {
   ]);
   const ordineIniziale = str("ordine");
   const ordiniScelta = ordini.filter((o) => ordineAttivo(o) || o.id === ordineIniziale);
+  const conScheda = await prisma.scheda.findMany({ where: { articoloOrderAppId: { not: null } }, select: { articoloOrderAppId: true } });
   return <NuovaSchedaForm tipoIniziale={normalizzaTipo(str("tipo"))} modelloIniziale={str("modello")} modelli={modelli} costiEsistenti={costi}
-    ordini={ordiniScelta} ordineIniziale={ordineIniziale} />;
+    ordini={ordiniScelta} ordineIniziale={ordineIniziale} articoliConScheda={conScheda.map((s) => s.articoloOrderAppId!)} />;
 }

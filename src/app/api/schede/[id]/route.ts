@@ -24,6 +24,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const ordine = await datiOrdine(body.ordineOrderAppId || null);
     if ("error" in ordine) return NextResponse.json({ error: ordine.error }, { status: 400 });
     Object.assign(data, ordine);
+    // Cambiando ordine la referenza di prima non vale più, a meno che non arrivi insieme quella nuova.
+    if (body.articoloOrderAppId === undefined) data.articoloOrderAppId = null;
   }
 
   if (body.tabellaMisure !== undefined)

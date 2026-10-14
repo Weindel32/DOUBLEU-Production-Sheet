@@ -37,6 +37,7 @@ export async function POST(req: NextRequest) {
         collezione: body.collezione,
         clienteId: ordine?.clienteId ?? (body.clienteId || null),
         ordineOrderAppId: ordine?.ordineOrderAppId ?? null,
+        articoloOrderAppId: ordine?.ordineOrderAppId && typeof body.articoloOrderAppId === "string" ? body.articoloOrderAppId : null,
         categoria: body.categoria,
         vestibilita: body.vestibilita,
         genere: body.genere,

@@ -24,6 +24,17 @@ export interface SchedaAcquisto {
   tessutoSecondario?: string | null;
   coloreBase?: string | null;
   coloreBaseCodice?: string | null;
+  /** Capi della referenza nell'ordine, usati come stima quando la scheda non ha ancora le taglie. */
+  capiOrdine?: number | null;
+  /** Motivo per tenerla fuori dal conto anche se ha i dati (es. non è più nell'ordine). */
+  esclusa?: string | null;
+}
+
+/** Capi della scheda: le sue taglie, o i capi dell'ordine come stima. */
+export function capiAcquisto(s: SchedaAcquisto) {
+  const proprie = calcolaTotaleQuantita(s.quantitaTaglia ?? {});
+  if (proprie > 0) return { capi: proprie, stimati: false };
+  return { capi: s.capiOrdine ?? 0, stimati: !!s.capiOrdine };
 }
 
 export interface Fabbisogno {
@@ -41,7 +52,7 @@ export interface Fabbisogno {
  * codice fornitore) e per la costina (stesso colore base, il codice è del fornitore del principale).
  */
 export function fabbisognoScheda(s: SchedaAcquisto, materiali: MaterialeAcquisto[]): Fabbisogno[] {
-  const capi = calcolaTotaleQuantita(s.quantitaTaglia ?? {});
+  const { capi } = capiAcquisto(s);
   if (!(capi > 0)) return [];
   return (s.consumoMateriale ?? []).flatMap((c) => {
     const materiale = materiali.find((m) => m.id === c.materialeId);
@@ -72,6 +83,8 @@ export interface DettaglioReferenza {
   codice: string;
   nomeArticolo: string;
   capi: number;
+  /** Capi presi dall'ordine perché la scheda non ha ancora le taglie. */
+  stimati: boolean;
   righe: (Fabbisogno & { netto: ReturnType<typeof nettoMateriale> })[];
 }
 
@@ -106,14 +119,19 @@ export function riepilogoAcquisti(schede: SchedaAcquisto[], materiali: Materiale
   const escluse: RiepilogoAcquisti["escluse"] = [];
   const referenze: DettaglioReferenza[] = [];
   for (const s of schede) {
+    if (s.esclusa) {
+      escluse.push({ id: s.id, codice: s.codice, nomeArticolo: s.nomeArticolo, motivo: s.esclusa });
+      continue;
+    }
     const f = fabbisognoScheda(s, materiali);
+    const { capi, stimati } = capiAcquisto(s);
     if (f.length === 0) {
-      const motivo = !(calcolaTotaleQuantita(s.quantitaTaglia ?? {}) > 0) ? "mancano le quantità per taglia" : "manca il consumo dei materiali";
+      const motivo = !(capi > 0) ? "mancano le quantità per taglia" : "manca il consumo dei materiali";
       escluse.push({ id: s.id, codice: s.codice, nomeArticolo: s.nomeArticolo, motivo });
       continue;
     }
     referenze.push({
-      id: s.id, codice: s.codice, nomeArticolo: s.nomeArticolo, capi: calcolaTotaleQuantita(s.quantitaTaglia ?? {}),
+      id: s.id, codice: s.codice, nomeArticolo: s.nomeArticolo, capi, stimati,
       righe: f.map((x) => ({ ...x, netto: nettoMateriale(x.materiale, x.quantita) })),
     });
     for (const x of f) {

@@ -4,8 +4,40 @@
 
 export interface ClienteOrderApp { id: string; nome: string; citta: string | null; categoria: string | null }
 
-/** Una referenza dell'ordine: un articolo di un kit. */
-export interface ReferenzaOrderApp { id: string; kit: string | null; categoria: string | null; descrizione: string | null; colore: string | null }
+/** Una referenza dell'ordine: un articolo di un kit (o lo stesso articolo ripetuto, unito). */
+export interface ReferenzaOrderApp {
+  id: string;
+  /** Tutti gli articoli dell'Order App uniti in questa referenza: una scheda collegata a uno qualsiasi è di questa. */
+  ids: string[];
+  kit: string | null;
+  categoria: string | null;
+  descrizione: string | null;
+  colore: string | null;
+  /** Capi della referenza nell'ordine: somma delle taglie, o il totale indicato quando le taglie non ci sono ancora. */
+  capi: number | null;
+  /** Quantità per taglia come nella scheda (S, M… e 6A, 8A… per i bambini); null finché il club non le manda. */
+  taglie: Record<string, number> | null;
+}
+
+type TaglieOrderApp = Record<string, number | null> | null;
+
+/** Taglie dell'articolo: adulto così come sono, bambino "6" → "6A" come nella scheda; "__qty" è il totale senza taglie. */
+function leggiTaglie(adulto: TaglieOrderApp, bambino: TaglieOrderApp) {
+  const taglie: Record<string, number> = {};
+  for (const [t, q] of Object.entries(adulto ?? {})) if (t !== "__qty" && q && q > 0) taglie[t] = q;
+  for (const [t, q] of Object.entries(bambino ?? {})) if (t !== "__qty" && q && q > 0) taglie[/^\d+$/.test(t) ? `${t}A` : t] = q;
+  const somma = Object.values(taglie).reduce((a, b) => a + b, 0);
+  const totale = (adulto?.__qty ?? 0) + (bambino?.__qty ?? 0);
+  return { taglie: somma > 0 ? taglie : null, capi: somma > 0 ? somma : totale > 0 ? totale : null };
+}
+
+/** Nome della referenza per la scheda: "Polo senza bottoni · Adulto" → "Polo senza bottoni". */
+export const nomeReferenza = (r: { descrizione: string | null; categoria: string | null }) =>
+  (r.descrizione ?? r.categoria ?? "").split(" · ")[0].trim();
+
+/** La referenza di un ordine a cui è collegata una scheda (per uno qualsiasi dei suoi articoli). */
+export const trovaReferenza = (referenze: ReferenzaOrderApp[], articoloId: string | null | undefined) =>
+  articoloId ? referenze.find((r) => r.ids.includes(articoloId)) : undefined;
 
 export interface OrdineOrderApp {
   id: string; // es. "DU-2026-1625"
@@ -61,8 +93,15 @@ function unisciUguali(righe: ReferenzaOrderApp[]): ReferenzaOrderApp[] {
   for (const r of righe) {
     const k = [r.descrizione ?? r.categoria, r.colore].map((v) => (v ?? "").trim().toLowerCase()).join("|");
     const prima = perChiave.get(k);
-    if (!prima) perChiave.set(k, { ...r });
-    else if (r.kit && !(prima.kit ?? "").split(" · ").includes(r.kit)) prima.kit = prima.kit ? `${prima.kit} · ${r.kit}` : r.kit;
+    if (!prima) { perChiave.set(k, { ...r, ids: [...r.ids], taglie: r.taglie && { ...r.taglie } }); continue; }
+    if (r.kit && !(prima.kit ?? "").split(" · ").includes(r.kit)) prima.kit = prima.kit ? `${prima.kit} · ${r.kit}` : r.kit;
+    // Due pantaloncini uguali nel kit sono il doppio dei capi: quantità e taglie si sommano.
+    prima.ids.push(...r.ids);
+    if (r.capi) prima.capi = (prima.capi ?? 0) + r.capi;
+    if (r.taglie) {
+      prima.taglie ??= {};
+      for (const [t, q] of Object.entries(r.taglie)) prima.taglie[t] = (prima.taglie[t] ?? 0) + q;
+    }
   }
   return [...perChiave.values()];
 }
@@ -74,8 +113,8 @@ export async function ordiniOrderApp(): Promise<OrdineOrderApp[]> {
       "orders?select=id,client,client_id,date,status,lost",
     ),
     leggi<{ id: string; order_id: string; name: string | null; position: number | null }>("kits?select=id,order_id,name,position"),
-    leggi<{ id: string; kit_id: string; category: string | null; description: string | null; color: string | null }>(
-      "articles?select=id,kit_id,category,description,color",
+    leggi<{ id: string; kit_id: string; category: string | null; description: string | null; color: string | null; sizes_adult: TaglieOrderApp; sizes_kids: TaglieOrderApp }>(
+      "articles?select=id,kit_id,category,description,color,sizes_adult,sizes_kids",
     ),
   ]);
   if (!ordini) return [];
@@ -95,7 +134,8 @@ export async function ordiniOrderApp(): Promise<OrdineOrderApp[]> {
       referenze: unisciUguali((kitPerOrdine.get(o.id) ?? [])
         .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
         .flatMap((k) => (articoliPerKit.get(k.id) ?? []).map((a) => ({
-          id: a.id, kit: k.name, categoria: a.category, descrizione: a.description?.trim() || null, colore: a.color?.trim() || null,
+          id: a.id, ids: [a.id], kit: k.name, categoria: a.category, descrizione: a.description?.trim() || null, colore: a.color?.trim() || null,
+          ...leggiTaglie(a.sizes_adult, a.sizes_kids),
         })))),
     }))
     .sort((a, b) => chiaveData(b.data).localeCompare(chiaveData(a.data)) || b.id.localeCompare(a.id));

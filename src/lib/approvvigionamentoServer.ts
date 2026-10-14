@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { ordiniOrderApp } from "@/lib/orderApp";
 import { riepilogoAcquisti, type SchedaAcquisto } from "@/lib/approvvigionamento";
+import { statoReferenza } from "@/lib/referenze";
 import { TIPI_COSTO_DB } from "@/lib/utils";
 import { chiaveFornitore, etichettaColore, leggiNomiTessuto } from "@/lib/colori";
 
@@ -21,12 +22,18 @@ export async function acquistiOrdine(ordineId: string) {
     prisma.coloreFornitore.findMany(),
     ordiniOrderApp(),
   ]);
+  const ordine = ordini.find((o) => o.id === ordineId) ?? null;
   const schede: SchedaAcquisto[] = schedeRows.map((s) => ({
     id: s.id, codice: s.codice, nomeArticolo: s.nomeArticolo,
     quantitaTaglia: parseJson(s.quantitaTaglia, null),
     consumoMateriale: parseJson(s.consumoMateriale, null),
     tessutoPrincipale: s.tessutoPrincipale, tessutoSecondario: s.tessutoSecondario,
     coloreBase: s.coloreBase, coloreBaseCodice: s.coloreBaseCodice,
+    ...(() => {
+      const stato = statoReferenza(s.articoloOrderAppId, ordine?.referenze ?? null);
+      return stato.tipo === "collegata" ? { capiOrdine: stato.referenza.capi }
+        : stato.tipo === "non-piu-nell-ordine" ? { esclusa: "non è più nell'ordine" } : {};
+    })(),
   }));
   const riepilogo = riepilogoAcquisti(schede, materiali);
 
@@ -46,7 +53,6 @@ export async function acquistiOrdine(ordineId: string) {
   const fornitori = riepilogo.fornitori.map((g) => ({ ...g, righe: g.righe.map(etichetta) }));
   const referenze = riepilogo.referenze.map((d) => ({ ...d, righe: d.righe.map(etichetta) }));
 
-  const ordine = ordini.find((o) => o.id === ordineId) ?? null;
   return {
     ordineId,
     ordine,

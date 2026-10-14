@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import SchedaDetail, { type SchedaCollegata } from "@/components/scheda/SchedaDetail";
 import { baseScheda, normalizzaTipo } from "@/lib/utils";
-import { clientiOrderApp, ordiniOrderApp, ordineBreve } from "@/lib/orderApp";
+import { clientiOrderApp, ordiniOrderApp, ordineBreve, trovaReferenza } from "@/lib/orderApp";
 
 function parseJson<T>(s: string | null, fallback: T): T {
   if (!s) return fallback;
@@ -43,6 +43,17 @@ export default async function SchedaPagina({ id, percorso }: { id: string; perco
     tipo === "costo" ? [] : ordiniOrderApp(),
   ]);
 
+  // Referenze dell'ordine della scheda: null se l'ordine non si legge ora, per non dare falsi avvisi.
+  const ordine = scheda.ordineOrderAppId ? ordiniOA.find((o) => o.id === scheda.ordineOrderAppId) : undefined;
+  const referenzeOrdine = ordine?.referenze ?? null;
+  const collegateAltrove = ordine
+    ? (await prisma.scheda.findMany({
+        where: { ordineOrderAppId: ordine.id, id: { not: scheda.id }, articoloOrderAppId: { not: null } },
+        select: { articoloOrderAppId: true },
+      })).map((s) => s.articoloOrderAppId!)
+    : [];
+  const capiOrdine = trovaReferenza(referenzeOrdine ?? [], scheda.articoloOrderAppId)?.capi ?? null;
+
   const origine: SchedaCollegata | null = origineRow;
   const ordiniCollegati: SchedaCollegata[] = ordiniRows.map((o) => ({
     id: o.id, codice: o.codice, nomeArticolo: o.nomeArticolo, stato: o.stato, cliente: o.cliente?.nome ?? null,
@@ -55,6 +66,7 @@ export default async function SchedaPagina({ id, percorso }: { id: string; perco
     collezione: n(scheda.collezione),
     clienteId: n(scheda.clienteId),
     ordineOrderAppId: n(scheda.ordineOrderAppId),
+    articoloOrderAppId: n(scheda.articoloOrderAppId),
     categoria: n(scheda.categoria),
     vestibilita: n(scheda.vestibilita),
     genere: n(scheda.genere),
@@ -111,6 +123,9 @@ export default async function SchedaPagina({ id, percorso }: { id: string; perco
       vociColori={vociColori}
       clientiOrderApp={clientiOA}
       ordiniOrderApp={ordiniOA.map(ordineBreve)}
+      referenzeOrdine={referenzeOrdine}
+      collegateAltrove={collegateAltrove}
+      capiOrdine={capiOrdine}
     />
   );
 }
