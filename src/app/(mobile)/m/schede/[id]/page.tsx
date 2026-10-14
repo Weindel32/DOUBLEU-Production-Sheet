@@ -6,6 +6,10 @@ import { formatData, calcolaTotaleQuantita, TAGLIE_ADULTO, TAGLIE_KIDS, CATEGORI
 import Testata from "@/components/mobile/Testata";
 import { etichettaColore } from "@/lib/colori";
 import { riferimentoColori } from "@/lib/coloriServer";
+import Link from "next/link";
+import { Printer, ShoppingCart } from "lucide-react";
+import { ordiniOrderApp, nomeReferenza } from "@/lib/orderApp";
+import { capiScheda, statoReferenza } from "@/lib/referenze";
 
 function Blocco({ titolo, destra, children }: { titolo: string; destra?: ReactNode; children: ReactNode }) {
   return (
@@ -37,11 +41,20 @@ export default async function MobileSchedaDetailPage({ params }: { params: Promi
   const { id } = await params;
   const scheda = await prisma.scheda.findUnique({ where: { id }, include: { cliente: true } });
   if (!scheda) notFound();
-  const rif = await riferimentoColori(scheda.tessutoPrincipale);
+  const [rif, ordini] = await Promise.all([
+    riferimentoColori(scheda.tessutoPrincipale),
+    scheda.ordineOrderAppId ? ordiniOrderApp() : Promise.resolve([]),
+  ]);
+  const ordine = scheda.ordineOrderAppId ? ordini.find((o) => o.id === scheda.ordineOrderAppId) : undefined;
+  const ref = statoReferenza(scheda.articoloOrderAppId, ordine?.referenze ?? null);
+  const qui = `/m/schede/${scheda.id}`;
+  const stampa = `/api/schede/${scheda.id}/pdf?tipo=tecnico&da=m&torna=${encodeURIComponent(qui)}`;
 
   const quantita: Record<string, number> = scheda.quantitaTaglia ? JSON.parse(scheda.quantitaTaglia) : {};
   const tabellaMisure = scheda.tabellaMisure ? JSON.parse(scheda.tabellaMisure) : {};
   const totale = calcolaTotaleQuantita(quantita);
+  // Senza taglie: i capi dell'ordine, come stima.
+  const { capi, stimati } = capiScheda(quantita, ref.tipo === "collegata" ? ref.referenza : null);
   const immagini: string[] = scheda.immagini ? JSON.parse(scheda.immagini) : [];
   const taglieAttive = [...TAGLIE_ADULTO, ...TAGLIE_KIDS].filter((t) => quantita[t] || tabellaMisure[t]);
   const stato = STATI_SCHEDA.find((s) => s.value === scheda.stato);
@@ -65,6 +78,15 @@ export default async function MobileSchedaDetailPage({ params }: { params: Promi
           </div>
         )}
 
+        {ordine && (
+          <div className={`rounded-2xl border px-4 py-3 text-[14px] ${ref.tipo === "non-piu-nell-ordine" ? "border-[#E8B4A0] bg-[#FBEDE5] text-[#A8461F]" : "border-[#C9D5E8] bg-[#EEF2F8] text-[#1F3A68]"}`}>
+            <div className="font-semibold">{ordine.cliente} · <span className="font-mono">{ordine.id}</span></div>
+            {ref.tipo === "collegata" && <div>Referenza: {nomeReferenza(ref.referenza)}{ref.referenza.capi ? ` · ${ref.referenza.capi} capi nell'ordine` : ""}</div>}
+            {ref.tipo === "non-piu-nell-ordine" && <div><strong>Non più nell&apos;ordine</strong>: la referenza è stata tolta o sostituita. Va sistemata dal computer.</div>}
+            {ref.tipo === "da-collegare" && <div>Non ancora collegata a una referenza dell&apos;ordine.</div>}
+          </div>
+        )}
+
         <Blocco titolo="Articolo">
           <Righe righe={[
             { label: "Modello", value: scheda.codiceModello },
@@ -81,6 +103,12 @@ export default async function MobileSchedaDetailPage({ params }: { params: Promi
             { label: "Maniche", value: scheda.maniche },
           ]} />
         </Blocco>
+
+        {taglieAttive.length === 0 && stimati && (
+          <Blocco titolo="Quantità" destra={<span className="font-mono font-semibold text-[#1F3A68]">{capi} pz</span>}>
+            <p className="px-4 py-3 text-[14px] text-[#5F6878]">Taglie non ancora arrivate: {capi} capi dall&apos;ordine (stima).</p>
+          </Blocco>
+        )}
 
         {taglieAttive.length > 0 && (
           <Blocco titolo="Quantità" destra={totale > 0 && <span className="font-mono font-semibold text-[#1F3A68]">{totale} pz</span>}>
@@ -145,6 +173,18 @@ export default async function MobileSchedaDetailPage({ params }: { params: Promi
             <p className="px-4 py-3 text-[15px] leading-relaxed whitespace-pre-line">{scheda.noteProduzione}</p>
           </Blocco>
         )}
+
+        <div className="grid gap-2 pt-1">
+          <a href={stampa} className="h-12 rounded-xl bg-[#0E1B2C] text-white text-[15px] font-semibold flex items-center justify-center gap-2 active:bg-[#1F3A68]">
+            <Printer size={18} /> Stampa / invia scheda tecnica
+          </a>
+          {ordine && (
+            <Link href={`/m/acquisti/${encodeURIComponent(ordine.id)}`}
+              className="h-12 rounded-xl border border-[#D6D1C4] bg-white text-[#0E1B2C] text-[15px] font-semibold flex items-center justify-center gap-2 active:bg-[#FBFAF7]">
+              <ShoppingCart size={18} /> Da acquistare per l&apos;ordine
+            </Link>
+          )}
+        </div>
 
         <p className="text-center text-xs text-[#5F6878] pt-1">
           Creata il {formatData(scheda.createdAt.toISOString())} · aggiornata il {formatData(scheda.updatedAt.toISOString())}

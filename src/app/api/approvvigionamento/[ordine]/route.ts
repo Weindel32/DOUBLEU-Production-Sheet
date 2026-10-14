@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { acquistiOrdine } from "@/lib/approvvigionamentoServer";
 import { quantitaAcquisto } from "@/lib/approvvigionamento";
 import { SCARTO_ACQUISTO, formatEuro, statoOrdine } from "@/lib/utils";
+import { barraStampa, paginaVuota } from "@/lib/barraStampa";
 
 const esc = (t: string | null | undefined) => String(t ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const num1 = (n: number) => n.toLocaleString("it-IT", { maximumFractionDigits: 1 });
@@ -15,9 +16,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ ordi
   const { ordine: id } = await params;
   const ordineId = decodeURIComponent(id);
   const interno = req.nextUrl.searchParams.get("prezzi") !== "0";
+  const barra = barraStampa(req.nextUrl.searchParams);
   const { ordine, cliente, riepilogo } = await acquistiOrdine(ordineId);
   if (riepilogo.fornitori.length === 0)
-    return NextResponse.json({ error: "Niente da acquistare: mancano quantità o consumi nelle schede dell'ordine" }, { status: 404 });
+    return new NextResponse(paginaVuota(req.nextUrl.searchParams, "Niente da acquistare: mancano quantità o consumi nelle schede dell'ordine."), {
+      status: 404, headers: { "Content-Type": "text/html; charset=utf-8" },
+    });
 
   const oggi = new Date().toLocaleDateString("it-IT");
   const intestazione = (titolo: string, campi: [string, string | null | undefined][]) => `
@@ -97,7 +101,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ ordi
   }
 
   const html = `<!DOCTYPE html>
-<html lang="it"><head><meta charset="UTF-8">
+<html lang="it"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Approvvigionamento ${esc(ordineId)}${interno ? " – interno" : " – fornitori"}</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -129,9 +133,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ ordi
   .forn-head { font-weight: 800; font-size: 14px; color: #1a2236; padding: 4px 0 6px; }
   .grand { display: flex; justify-content: space-between; border-top: 2px solid #1a2236; padding-top: 8px; margin-top: 6px; font-weight: 700; font-size: 15px; }
   table { table-layout: fixed; }
+  .footer { flex-wrap: wrap; gap: 2px 12px; }
+  @media (max-width: 600px) { body { padding: 16px; } .barra-stampa { margin: -16px -16px 16px; } th { font-size: 10px; padding: 6px 4px; letter-spacing: 0; } td { padding: 7px 4px; } .meta { gap: 18px; flex-wrap: wrap; } }
   .footer { margin-top: 20px; padding-top: 10px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; color: #999; font-size: 9px; }
+${barra.css}
 </style></head>
-<body>${corpo}</body></html>`;
+<body>${barra.html}${corpo}</body></html>`;
 
   return new NextResponse(html, { headers: { "Content-Type": "text/html; charset=utf-8" } });
 }

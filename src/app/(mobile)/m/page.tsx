@@ -39,8 +39,8 @@ export default function MobileHome() {
         <Link href="/m/schede" className="flex items-center gap-3 bg-white border border-[#E4E0D6] rounded-2xl p-4 active:bg-[#FBFAF7]">
           <span className="w-11 h-11 rounded-xl bg-[#E3E9F3] text-[#1F3A68] flex items-center justify-center"><FileText size={22} /></span>
           <span className="flex-1">
-            <span className="block font-display font-bold text-[17px]">Schede produzione</span>
-            <span className="block text-[13px] text-[#5F6878]">Consulta misure, quantità e note</span>
+            <span className="block font-display font-bold text-[17px]">Ordini e schede</span>
+            <span className="block text-[13px] text-[#5F6878]">Schede per ordine, cosa acquistare, stampa e invio</span>
           </span>
         </Link>
 

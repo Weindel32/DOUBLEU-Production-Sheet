@@ -18,7 +18,7 @@ export default async function AcquistiOrdinePage({ params, searchParams }: {
   const prezzi = (await searchParams).prezzi !== "0";
   const { ordine, cliente, nSchede, riepilogo } = await acquistiOrdine(ordineId);
   const base = `/schede/ordine/${encodeURIComponent(ordineId)}`;
-  const pdf = `/api/approvvigionamento/${encodeURIComponent(ordineId)}?prezzi=${prezzi ? 1 : 0}`;
+  const pdf = `/api/approvvigionamento/${encodeURIComponent(ordineId)}?prezzi=${prezzi ? 1 : 0}&torna=${encodeURIComponent(base)}`;
   const senzaPeso = riepilogo.fornitori.flatMap((g) => g.righe).filter((r) => !r.acquisto);
   const stimate = riepilogo.referenze.filter((d) => d.stimati);
   const cella = "px-3 py-2.5";
