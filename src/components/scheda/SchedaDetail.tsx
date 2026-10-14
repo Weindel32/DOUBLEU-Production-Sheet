@@ -17,7 +17,7 @@ import { Segmented } from "@/components/ui/Form";
 import type { SchedaCompleta, QuantitaTaglia, Campione } from "@/types";
 import type { ModelloBreve } from "@/components/modelli/CampoModello";
 import type { VoceColore } from "@/lib/colori";
-import type { ClienteOrderApp } from "@/lib/orderApp";
+import type { ClienteOrderApp, OrdineBreve } from "@/lib/orderApp";
 
 export interface SchedaCollegata {
   id: string;
@@ -29,7 +29,7 @@ export interface SchedaCollegata {
 
 interface Props {
   scheda: SchedaCompleta;
-  clientiDisponibili: { id: string; nome: string }[];
+  clientiDisponibili: { id: string; nome: string; orderAppId?: string | null }[];
   loghiDisponibili: { id: string; nome: string; file: string; tipo: string }[];
   materialiDisponibili: { id: string; nome: string; tipo: string; costoMetro: number | null; prezzoKg: number | null; unitaMisura: string | null; peso: string | null; unitaPeso: string | null; larghezza: string | null; fornitore?: string | null; colori?: string | null; coloriNomi?: string | null }[];
   /** Ordine nato da un articolo di costo: l'articolo di partenza. */
@@ -39,6 +39,7 @@ interface Props {
   modelli?: ModelloBreve[];
   vociColori?: VoceColore[];
   clientiOrderApp?: ClienteOrderApp[];
+  ordiniOrderApp?: OrdineBreve[];
 }
 
 const SEZIONI = [
@@ -54,7 +55,7 @@ const STATI_OPZIONI = STATI_SCHEDA.map((s) => ({ value: s.value, label: s.label 
 
 const RIEPILOGO_VUOTO: RiepilogoCosti = { materiali: 0, accessori: 0, lavorazioni: 0, totale: 0, prezzoVendita: 0, margine: null };
 
-export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponibili, materialiDisponibili, origine, ordiniCollegati = [], modelli = [], vociColori = [], clientiOrderApp = [] }: Props) {
+export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponibili, materialiDisponibili, origine, ordiniCollegati = [], modelli = [], vociColori = [], clientiOrderApp = [], ordiniOrderApp = [] }: Props) {
   const router = useRouter();
   const tipo = normalizzaTipo(scheda.tipo);
   const isCosto = tipo === "costo";
@@ -291,7 +292,7 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
 
             <section id="sez-articolo" className="scheda-section">
               <TabArticolo ref={tabArticoloRef} scheda={scheda} onSave={handleSave} clienti={clientiDisponibili}
-                materiali={materialiDisponibili} modelli={modelli} vociColori={vociColori} clientiOrderApp={clientiOrderApp} onMetaChange={(m) => setMeta((prev) => ({ ...prev, ...m }))} />
+                materiali={materialiDisponibili} modelli={modelli} vociColori={vociColori} clientiOrderApp={clientiOrderApp} ordiniOrderApp={ordiniOrderApp} onMetaChange={(m) => setMeta((prev) => ({ ...prev, ...m }))} />
             </section>
 
             {!isCosto && (

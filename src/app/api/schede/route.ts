@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { normalizzaTipo, ACCESSORI_NUOVO_COSTO } from "@/lib/utils";
 import { generaCodice } from "@/lib/codici";
+import { datiOrdine } from "@/lib/clientiOrderApp";
 
 export async function GET() {
   const schede = await prisma.scheda.findMany({
@@ -21,6 +22,9 @@ export async function POST(req: NextRequest) {
       if (esistente)
         return NextResponse.json({ error: `Il codice ${codiceManuale} è già usato da un'altra scheda` }, { status: 409 });
     }
+    // Una referenza di un ordine dell'Order App prende da lì anche il cliente.
+    const ordine = body.ordineOrderAppId ? await datiOrdine(body.ordineOrderAppId) : null;
+    if (ordine && "error" in ordine) return NextResponse.json({ error: ordine.error }, { status: 400 });
     const codice = codiceManuale || await generaCodice(body.categoria || "Altro");
     const scheda = await prisma.scheda.create({
       data: {
@@ -31,7 +35,8 @@ export async function POST(req: NextRequest) {
         codiceModello: typeof body.codiceModello === "string" && body.codiceModello.trim() ? body.codiceModello.trim() : null,
         versione: body.versione || "1.0",
         collezione: body.collezione,
-        clienteId: body.clienteId || null,
+        clienteId: ordine?.clienteId ?? (body.clienteId || null),
+        ordineOrderAppId: ordine?.ordineOrderAppId ?? null,
         categoria: body.categoria,
         vestibilita: body.vestibilita,
         genere: body.genere,

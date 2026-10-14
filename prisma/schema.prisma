@@ -13,7 +13,7 @@ model Cliente {
   telefono   String?
   indirizzo  String?
   note       String?
-  orderAppId String?  @unique // id del cliente nell'Order App, che ha l'anagrafica completa
+  orderAppId String?  @unique // id del cliente nell'Order App, che ha l'anagrafica: qui serve solo il nome
   citta      String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
@@ -68,6 +68,8 @@ model Scheda {
   collezione    String?
   clienteId     String?
   cliente       Cliente? @relation(fields: [clienteId], references: [id])
+  // Ordine dell'Order App a cui appartiene la referenza (es. "DU-2026-1625"): raggruppa le schede
+  ordineOrderAppId String?
 
   // Tab 1 - Articolo
   categoria   String?
@@ -132,6 +134,8 @@ model Scheda {
 
   loghi     LogoScheda[]
   materiali MaterialeScheda[]
+
+  @@index([ordineOrderAppId])
 }
 
 model LogoScheda {
