@@ -244,12 +244,12 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
           <Save size={16} /> <span className="hidden xl:inline">Salva</span>
         </button>
         {!isCosto && (
-          <a href={`/api/schede/${scheda.id}/pdf?tipo=tecnico`} target="_blank" rel="noreferrer"
+          <a href={`/api/schede/${scheda.id}/pdf?tipo=tecnico&torna=${encodeURIComponent(`${base}/${scheda.id}`)}`} target="_blank" rel="noreferrer"
             className="h-11 px-3 xl:px-4 flex-shrink-0 rounded-[10px] border border-[#D6D1C4] bg-white text-sm font-medium text-[#0E1B2C] flex items-center gap-2 hover:border-[#0E1B2C]/40">
             <FileDown size={16} /> <span><span className="hidden xl:inline">PDF </span>Produttore</span>
           </a>
         )}
-        <a href={`/api/schede/${scheda.id}/pdf?tipo=interno`} target="_blank" rel="noreferrer"
+        <a href={`/api/schede/${scheda.id}/pdf?tipo=interno&torna=${encodeURIComponent(`${base}/${scheda.id}`)}`} target="_blank" rel="noreferrer"
           className="h-11 px-3 xl:px-4 flex-shrink-0 rounded-[10px] bg-[#0E1B2C] text-sm font-semibold text-white flex items-center gap-2 hover:bg-[#1F3A68]">
           <FileDown size={16} /> <span><span className="hidden xl:inline">PDF </span>Interno</span>
         </a>

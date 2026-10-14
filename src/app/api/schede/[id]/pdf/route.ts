@@ -4,6 +4,7 @@ import { CATEGORIE_ELASTICO, calcolaCostoUnitarioConsumo, normalizzaTipo, totale
 import type { ConsumoMateriale, Campione } from "@/types";
 import { etichettaColore } from "@/lib/colori";
 import { riferimentoColori } from "@/lib/coloriServer";
+import { barraStampa, paginaVuota } from "@/lib/barraStampa";
 
 const PALETTE_HEX: Record<string, string> = {
   "Nero": "#000000", "Bianco": "#ffffff", "Grigio chiaro": "#d1d5db",
@@ -65,7 +66,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     include: { cliente: true, loghi: { include: { logo: true } }, materiali: { include: { materiale: true } } },
   });
 
-  if (!scheda) return NextResponse.json({ error: "Non trovata" }, { status: 404 });
+  if (!scheda) return new NextResponse(paginaVuota(req.nextUrl.searchParams, "Scheda non trovata."), {
+    status: 404, headers: { "Content-Type": "text/html; charset=utf-8" },
+  });
 
   const tabellaMisure = scheda.tabellaMisure ? JSON.parse(scheda.tabellaMisure) : {};
   const quantitaTaglia = scheda.quantitaTaglia ? JSON.parse(scheda.quantitaTaglia) : {};
@@ -87,6 +90,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const totalePezzi = Object.values(quantitaTaglia as Record<string, number>).reduce((s, q) => s + q, 0);
 
   const isInterno = tipo === "interno";
+  const barra = barraStampa(req.nextUrl.searchParams);
   const taglie = Object.keys(quantitaTaglia);
   const isElastico = CATEGORIE_ELASTICO.includes(scheda.categoria || "");
   const specsElastico = tabellaMisure.__specs as { altezza?: string; tipo?: string; costruzione?: string; applicazione?: string } | undefined;
@@ -265,6 +269,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 <html lang="it">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>${isInterno ? "Scheda Interna" : "Scheda Tecnica"} – ${scheda.nomeArticolo}</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -305,9 +310,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   .footer { margin-top: 20px; padding-top: 10px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; color: #999; font-size: 9px; }
   .img-grid { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
   .img-grid img { max-height: 220px; max-width: 220px; object-fit: contain; border: 1px solid #e5e7eb; border-radius: 6px; background: #f9fafb; }
+${barra.css}
 </style>
 </head>
 <body>
+${barra.html}
 
 <div class="header">
   <div>
