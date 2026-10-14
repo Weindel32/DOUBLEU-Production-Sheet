@@ -45,7 +45,9 @@ export function credenzialiValide(utente: string, password: string): boolean {
   // Entrambi i confronti sempre eseguiti: stesso tempo con utente giusto o sbagliato.
   const okUtente = uguali(utente, utenteAtteso());
   const okPassword = uguali(password, passwordAttesa());
-  return okUtente && okPassword;
+  // Senza AUTH_PASSWORD configurata nessuno entra: altrimenti basterebbe
+  // l'utente di default con la password vuota.
+  return okUtente && okPassword && passwordAttesa() !== "";
 }
 
 export async function creaSessione(utente: string): Promise<string> {
