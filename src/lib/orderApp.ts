@@ -52,6 +52,21 @@ export const chiaveData = (d: string | null) => {
   return m ? `${m[3]}${m[2].padStart(2, "0")}${m[1].padStart(2, "0")}` : "";
 };
 
+/**
+ * Lo stesso articolo ripetuto nell'ordine (es. due pantaloncini nello stesso kit, o in due kit)
+ * è una sola referenza: una sola scheda di produzione. I kit in cui compare si elencano insieme.
+ */
+function unisciUguali(righe: ReferenzaOrderApp[]): ReferenzaOrderApp[] {
+  const perChiave = new Map<string, ReferenzaOrderApp>();
+  for (const r of righe) {
+    const k = [r.descrizione ?? r.categoria, r.colore].map((v) => (v ?? "").trim().toLowerCase()).join("|");
+    const prima = perChiave.get(k);
+    if (!prima) perChiave.set(k, { ...r });
+    else if (r.kit && !(prima.kit ?? "").split(" · ").includes(r.kit)) prima.kit = prima.kit ? `${prima.kit} · ${r.kit}` : r.kit;
+  }
+  return [...perChiave.values()];
+}
+
 /** Ordini dell'Order App con le loro referenze, dal più recente. Gli ordini persi restano: possono avere schede. */
 export async function ordiniOrderApp(): Promise<OrdineOrderApp[]> {
   const [ordini, kits, articoli] = await Promise.all([
@@ -77,11 +92,11 @@ export async function ordiniOrderApp(): Promise<OrdineOrderApp[]> {
       data: o.date,
       stato: o.status,
       perso: !!o.lost,
-      referenze: (kitPerOrdine.get(o.id) ?? [])
+      referenze: unisciUguali((kitPerOrdine.get(o.id) ?? [])
         .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
         .flatMap((k) => (articoliPerKit.get(k.id) ?? []).map((a) => ({
           id: a.id, kit: k.name, categoria: a.category, descrizione: a.description?.trim() || null, colore: a.color?.trim() || null,
-        }))),
+        })))),
     }))
     .sort((a, b) => chiaveData(b.data).localeCompare(chiaveData(a.data)) || b.id.localeCompare(a.id));
 }
