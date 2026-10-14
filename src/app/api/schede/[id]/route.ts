@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { datiOrdine } from "@/lib/clientiOrderApp";
 
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -18,6 +19,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const data: Record<string, unknown> = { ...body };
   // Nessun cliente = null: "" non esiste tra i clienti e il vincolo farebbe fallire l'aggiornamento.
   if (data.clienteId === "") data.clienteId = null;
+  // Scegliere l'ordine dell'Order App assegna anche il suo cliente; togliere l'ordine lascia il cliente.
+  if (body.ordineOrderAppId !== undefined) {
+    const ordine = await datiOrdine(body.ordineOrderAppId || null);
+    if ("error" in ordine) return NextResponse.json({ error: ordine.error }, { status: 400 });
+    Object.assign(data, ordine);
+  }
 
   if (body.tabellaMisure !== undefined)
     data.tabellaMisure = body.tabellaMisure ? JSON.stringify(body.tabellaMisure) : null;

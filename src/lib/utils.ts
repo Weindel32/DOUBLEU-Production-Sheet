@@ -12,6 +12,13 @@ export const STATI_SCHEDA = [
 
 export type StatoScheda = typeof STATI_SCHEDA[number]["value"];
 
+/** Stato di un ordine dell'Order App (PREVENTIVO, IN PRODUZIONE…) scritto per esteso: "In produzione". */
+export const statoOrdine = (s: string | null | undefined) => (s ? s.charAt(0) + s.slice(1).toLowerCase() : "");
+
+/** "DU-2026-1625 · 05/10/2026 · Confermato · 12 ref." per scegliere un ordine dell'Order App. */
+export const etichettaOrdine = (o: { id: string; data: string | null; stato: string | null; nReferenze: number }) =>
+  [o.id, o.data, statoOrdine(o.stato), o.nReferenze ? `${o.nReferenze} ref.` : null].filter(Boolean).join(" · ");
+
 export const TAGLIE_ADULTO = ["XS", "S", "M", "L", "XL", "XXL", "XXXL"] as const;
 export const TAGLIE_KIDS = ["4A", "6A", "8A", "10A", "12A", "14A", "16A"] as const;
 export const TAGLIE = [...TAGLIE_ADULTO, ...TAGLIE_KIDS] as const;

@@ -68,6 +68,7 @@ export interface SchedaCompleta {
   collezione?: string;
   cliente?: { id: string; nome: string } | null;
   clienteId?: string | null;
+  ordineOrderAppId?: string | null;
   categoria?: string | null;
   vestibilita?: string | null;
   genere?: string | null;

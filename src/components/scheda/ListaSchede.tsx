@@ -1,10 +1,11 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { Plus, FileText, Search } from "lucide-react";
+import { Plus, FileText, Search, ChevronRight } from "lucide-react";
 import {
   formatData, STATI_SCHEDA, TIPI_COSTO_DB, calcolaTotaleQuantita, formatEuro, totaleSviluppo,
-  FASCE_MODELLO, FASCIA_STYLE, ordinaCategorie,
+  FASCE_MODELLO, FASCIA_STYLE, ordinaCategorie, statoOrdine,
 } from "@/lib/utils";
+import { ordiniOrderApp, type OrdineOrderApp } from "@/lib/orderApp";
 import SchedaRowMenu from "@/components/scheda/SchedaRowMenu";
 import { riepilogoScheda } from "@/lib/costiScheda";
 import type { Campione } from "@/types";
@@ -21,7 +22,7 @@ const TESTI: Record<Vista, { titolo: string; base: string; nuovo: string; nuovoH
     vuoto: "Crea il primo articolo per calcolarne il costo per capo.", singolare: "articolo", plurale: "articoli",
   },
   ordini: {
-    titolo: "Schede produzione", base: "/schede", nuovo: "Nuovo ordine", nuovoHref: "/schede/nuova",
+    titolo: "Schede produzione", base: "/schede", nuovo: "Nuova scheda", nuovoHref: "/schede/nuova",
     vuoto: "Crea la prima scheda di produzione, o parti da un articolo di costo.", singolare: "scheda", plurale: "schede",
   },
 };
@@ -46,7 +47,7 @@ export default async function ListaSchede({ vista, searchParams }: {
     return qs ? `${t.base}?${qs}` : t.base;
   };
 
-  const [schede, materiali, conteggiOrdini, modelli] = await Promise.all([
+  const [schede, materiali, conteggiOrdini, modelli, ordiniOA] = await Promise.all([
     prisma.scheda.findMany({
       where: vista === "articoli" ? { tipo: { in: TIPI_COSTO_DB } } : { tipo: { notIn: TIPI_COSTO_DB } },
       orderBy: { updatedAt: "desc" },
@@ -59,7 +60,9 @@ export default async function ListaSchede({ vista, searchParams }: {
     vista === "articoli"
       ? prisma.modello.findMany({ select: { codice: true, categoria: true, fascia: true } })
       : Promise.resolve([]),
+    vista === "ordini" ? ordiniOrderApp() : Promise.resolve([] as OrdineOrderApp[]),
   ]);
+  const ordineDi = new Map(ordiniOA.map((o) => [o.id, o]));
   const ordiniPerArticolo = new Map(conteggiOrdini.map((c) => [c.origineId, c._count._all]));
   const modelloDi = new Map(modelli.map((m) => [m.codice, m]));
 
@@ -85,7 +88,8 @@ export default async function ListaSchede({ vista, searchParams }: {
     (!filtri.fascia || modello?.fascia === filtri.fascia) &&
     (filtri.margine !== "basso" || (costi.margine !== null && costi.margine < SOGLIA_MARGINE)) &&
     (filtri.campioni !== "si" || nCampioni > 0) &&
-    (!q || [s.codice, s.codiceModello, s.nomeArticolo, s.cliente?.nome, s.categoria, s.collezione].some((v) => v?.toLowerCase().includes(q))),
+    (!q || [s.codice, s.codiceModello, s.nomeArticolo, s.cliente?.nome, s.categoria, s.collezione, s.ordineOrderAppId,
+      s.ordineOrderAppId ? ordineDi.get(s.ordineOrderAppId)?.cliente : null].some((v) => v?.toLowerCase().includes(q))),
   );
 
   const chip = (label: string, cambio: Filtri, attivo: boolean) => (
@@ -105,12 +109,109 @@ export default async function ListaSchede({ vista, searchParams }: {
         })),
         { categoria: SENZA_MODELLO, righe: filtrate.filter((r) => !r.modello) },
       ].filter((g) => g.righe.length > 0)
-    : [{ categoria: null, righe: filtrate }];
+    : [];
 
+  // Ordini: un blocco compatto per ordine dell'Order App, con dentro le sue referenze.
+  // Le schede senza ordine si raccolgono per cliente. I blocchi seguono l'ultima scheda modificata.
+  type Riga = (typeof filtrate)[number];
+  const blocchi = new Map<string, { ordine?: OrdineOrderApp; ordineId?: string; cliente: string | null; righe: Riga[] }>();
+  if (vista === "ordini") for (const r of filtrate) {
+    const k = r.s.ordineOrderAppId ? `o:${r.s.ordineOrderAppId}` : `c:${r.s.clienteId ?? ""}`;
+    const ordine = r.s.ordineOrderAppId ? ordineDi.get(r.s.ordineOrderAppId) : undefined;
+    const b = blocchi.get(k) ?? { ordine, ordineId: r.s.ordineOrderAppId ?? undefined, cliente: ordine?.cliente ?? r.s.cliente?.nome ?? null, righe: [] };
+    b.righe.push(r);
+    blocchi.set(k, b);
+  }
+  const blocchiOrdine = [...blocchi.values()];
+
+  const aperti = !!filtri.q || blocchiOrdine.length === 1;
   const nessunFiltro = !filtri.stato && !filtri.margine && !filtri.campioni && !filtri.fascia && !filtri.q;
   const isArticoli = vista === "articoli";
   const cella = "px-3 py-2.5";
   const numero = `${cella} text-right font-mono whitespace-nowrap`;
+
+  const tabella = (righe: Riga[]) => (
+    <div className="overflow-x-auto">
+      {/* Larghezze fisse: le colonne restano allineate tra un blocco e l'altro. */}
+      <table className="w-full text-[15px] min-w-[860px] table-fixed">
+        <colgroup>
+          <col className="w-[72px]" /><col className="w-[140px]" /><col />
+          <col className="w-[110px]" /><col className="w-[100px]" /><col className="w-[90px]" />
+          {isArticoli && <><col className="w-[120px]" /><col className="w-[76px]" /></>}
+          <col className="w-[120px]" /><col className="w-12" />
+        </colgroup>
+        <thead>
+          <tr className="border-b border-[#E4E0D6] text-left">
+            <th className="pl-4 pr-2 py-3 w-[72px]"><span className="sr-only">Foto</span></th>
+            <th className={cella}>Modello / codice</th>
+            <th className={cella}>Articolo</th>
+              <th className={`${cella} text-right`}>Costo / capo</th>
+            <th className={`${cella} text-right`}>Prezzo</th>
+            <th className={`${cella} text-right`}>Margine</th>
+            {isArticoli && <th className={`${cella} text-right`}>Sviluppo</th>}
+            {isArticoli && <th className={`${cella} text-right`}>Ordini</th>}
+            <th className={cella}>{isArticoli ? "Aggiornato" : "Stato"}</th>
+            <th className="px-3 py-3 w-12"><span className="sr-only">Azioni</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          {righe.map(({ s, costi, copertina, pezzi, sviluppo, nCampioni, nOrdini, modello }) => {
+            const stato = STATI_SCHEDA.find((x) => x.value === s.stato);
+            // Negli articoli categoria e fascia sono già nel blocco e nel badge.
+            const dettagli = isArticoli
+              ? (modello ? null : s.categoria)
+              : [s.categoria, s.genere, pezzi > 0 ? `${pezzi} pz` : null].filter(Boolean).join(" · ");
+            const margineCls = costi.margine === null ? "text-[#5F6878]" : costi.margine < SOGLIA_MARGINE ? "text-[#A8461F]" : "text-[#1D6B4A]";
+            const href = `${t.base}/${s.id}`;
+            return (
+              <tr key={s.id} className="border-b border-[#EFEBE2] last:border-0">
+                <td className="pl-4 pr-2 py-2.5">
+                  <Link href={href} tabIndex={-1} aria-hidden className="block w-14 h-14 rounded-[10px] bg-[#EEEBE3] overflow-hidden">
+                    {copertina && <img src={copertina} alt="" className="w-full h-full object-cover" />}
+                  </Link>
+                </td>
+                <td className={`${cella} font-mono text-sm whitespace-nowrap`}>
+                  {s.codiceModello
+                    ? <><span className="font-semibold text-[#0E1B2C]">{s.codiceModello}</span><div className="text-xs text-[#5F6878]">{s.codice}</div></>
+                    : <span className="text-[#0E1B2C]">{s.codice}</span>}
+                </td>
+                <td className={cella}>
+                  <Link href={href} className="font-semibold text-[#0E1B2C] hover:text-[#1F3A68] hover:underline underline-offset-2">
+                    {s.nomeArticolo}
+                  </Link>
+                  {modello && (
+                    <span className={`ml-2 align-middle text-xs font-semibold px-2 py-0.5 rounded-full ${FASCIA_STYLE[modello.fascia] ?? "bg-[#EEEBE3] text-[#4A5566]"}`}>
+                      {modello.fascia}
+                    </span>
+                  )}
+                  {dettagli && <div className="text-[13px] text-[#5F6878]">{dettagli}</div>}
+                </td>
+                <td className={numero}>{costi.totale > 0 ? formatEuro(costi.totale) : "—"}</td>
+                <td className={numero}>{costi.prezzoVendita > 0 ? formatEuro(costi.prezzoVendita) : "—"}</td>
+                <td className={`${numero} font-semibold ${margineCls}`}>
+                  {costi.margine === null ? "—" : `${costi.margine.toFixed(1).replace(".", ",")}%`}
+                </td>
+                {isArticoli && (
+                  <td className={`${numero} text-[#1F3A68]`}>
+                    {nCampioni > 0 ? formatEuro(sviluppo) : "—"}
+                    {nCampioni > 0 && <div className="text-xs text-[#5F6878] font-sans">{nCampioni} {nCampioni === 1 ? "campione" : "campioni"}</div>}
+                  </td>
+                )}
+                {isArticoli && <td className={numero}>{nOrdini || "—"}</td>}
+                <td className={cella}>
+                  {!isArticoli && stato && <span className={`badge badge-${s.stato}`}>{stato.label}</span>}
+                  <div className={`text-xs text-[#5F6878] ${isArticoli ? "" : "mt-1"}`}>{formatData(s.updatedAt)}</div>
+                </td>
+                <td className="px-2 py-2.5 text-right">
+                  <SchedaRowMenu id={s.id} nome={s.nomeArticolo} statoCorrente={s.stato} base={t.base} />
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
 
   return (
     <div className="p-6 lg:p-8 space-y-5">
@@ -119,6 +220,7 @@ export default async function ListaSchede({ vista, searchParams }: {
           <h1 className="font-display text-[34px] font-extrabold tracking-tight text-[#0E1B2C] leading-tight">{t.titolo}</h1>
           <p className="text-sm text-[#5F6878] mt-1">
             {schede.length} {schede.length === 1 ? t.singolare : t.plurale}
+            {!isArticoli && blocchiOrdine.length > 0 && ` · ${blocchiOrdine.length} ${blocchiOrdine.length === 1 ? "gruppo" : "gruppi"} per ordine`}
             {isArticoli && " · costo per capo per preventivi e ordini, sviluppo campioni a parte"}
           </p>
         </div>
@@ -129,7 +231,7 @@ export default async function ListaSchede({ vista, searchParams }: {
           {filtri.fascia && <input type="hidden" name="fascia" value={filtri.fascia} />}
           <label className="h-12 border border-[#D6D1C4] rounded-xl bg-white flex items-center gap-2.5 px-3.5 text-[#5F6878] focus-within:border-[#1F3A68]">
             <Search size={18} />
-            <input type="search" name="q" defaultValue={filtri.q} placeholder={isArticoli ? "Cerca codice o articolo" : "Cerca codice, articolo, cliente"} aria-label="Cerca"
+            <input type="search" name="q" defaultValue={filtri.q} placeholder={isArticoli ? "Cerca codice o articolo" : "Cerca ordine, club, articolo"} aria-label="Cerca"
               className="flex-1 min-w-0 border-0 !shadow-none bg-transparent p-0 text-[15px]" />
           </label>
         </form>
@@ -161,7 +263,7 @@ export default async function ListaSchede({ vista, searchParams }: {
         </div>
       ) : (
         <div className="space-y-5">
-          {gruppi.map((g) => (
+          {isArticoli ? gruppi.map((g) => (
             <section key={g.categoria ?? "tutte"} className="bg-white border border-[#E4E0D6] rounded-2xl overflow-hidden">
               {g.categoria && (
                 <div className="px-5 py-3 border-b border-[#E4E0D6] bg-[#FBFAF7] flex items-baseline justify-between">
@@ -169,91 +271,42 @@ export default async function ListaSchede({ vista, searchParams }: {
                   <span className="text-xs text-[#5F6878]">{g.righe.length} {g.righe.length === 1 ? t.singolare : t.plurale}</span>
                 </div>
               )}
-              <div className="overflow-x-auto">
-                {/* Larghezze fisse negli articoli: le colonne restano allineate tra un blocco e l'altro. */}
-                <table className={`w-full text-[15px] min-w-[860px] ${isArticoli ? "table-fixed" : ""}`}>
-                  {isArticoli && (
-                    <colgroup>
-                      <col className="w-[72px]" /><col className="w-[140px]" /><col />
-                      <col className="w-[110px]" /><col className="w-[100px]" /><col className="w-[90px]" />
-                      <col className="w-[120px]" /><col className="w-[76px]" /><col className="w-[110px]" /><col className="w-12" />
-                    </colgroup>
-                  )}
-                  <thead>
-                    <tr className="border-b border-[#E4E0D6] text-left">
-                      <th className="pl-4 pr-2 py-3 w-[72px]"><span className="sr-only">Foto</span></th>
-                      <th className={cella}>Modello / codice</th>
-                      <th className={cella}>Articolo</th>
-                      {!isArticoli && <th className={cella}>Cliente</th>}
-                      <th className={`${cella} text-right`}>Costo / capo</th>
-                      <th className={`${cella} text-right`}>Prezzo</th>
-                      <th className={`${cella} text-right`}>Margine</th>
-                      {isArticoli && <th className={`${cella} text-right`}>Sviluppo</th>}
-                      {isArticoli && <th className={`${cella} text-right`}>Ordini</th>}
-                      <th className={cella}>{isArticoli ? "Aggiornato" : "Stato"}</th>
-                      <th className="px-3 py-3 w-12"><span className="sr-only">Azioni</span></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {g.righe.map(({ s, costi, copertina, pezzi, sviluppo, nCampioni, nOrdini, modello }) => {
-                      const stato = STATI_SCHEDA.find((x) => x.value === s.stato);
-                      // Negli articoli categoria e fascia sono già nel blocco e nel badge.
-                      const dettagli = isArticoli
-                        ? (modello ? null : s.categoria)
-                        : [s.categoria, s.genere, pezzi > 0 ? `${pezzi} pz` : null].filter(Boolean).join(" · ");
-                      const margineCls = costi.margine === null ? "text-[#5F6878]" : costi.margine < SOGLIA_MARGINE ? "text-[#A8461F]" : "text-[#1D6B4A]";
-                      const href = `${t.base}/${s.id}`;
-                      return (
-                        <tr key={s.id} className="border-b border-[#EFEBE2] last:border-0">
-                          <td className="pl-4 pr-2 py-2.5">
-                            <Link href={href} tabIndex={-1} aria-hidden className="block w-14 h-14 rounded-[10px] bg-[#EEEBE3] overflow-hidden">
-                              {copertina && <img src={copertina} alt="" className="w-full h-full object-cover" />}
-                            </Link>
-                          </td>
-                          <td className={`${cella} font-mono text-sm whitespace-nowrap`}>
-                            {s.codiceModello
-                              ? <><span className="font-semibold text-[#0E1B2C]">{s.codiceModello}</span><div className="text-xs text-[#5F6878]">{s.codice}</div></>
-                              : <span className="text-[#0E1B2C]">{s.codice}</span>}
-                          </td>
-                          <td className={cella}>
-                            <Link href={href} className="font-semibold text-[#0E1B2C] hover:text-[#1F3A68] hover:underline underline-offset-2">
-                              {s.nomeArticolo}
-                            </Link>
-                            {modello && (
-                              <span className={`ml-2 align-middle text-xs font-semibold px-2 py-0.5 rounded-full ${FASCIA_STYLE[modello.fascia] ?? "bg-[#EEEBE3] text-[#4A5566]"}`}>
-                                {modello.fascia}
-                              </span>
-                            )}
-                            {dettagli && <div className="text-[13px] text-[#5F6878]">{dettagli}</div>}
-                          </td>
-                          {!isArticoli && <td className={`${cella} ${s.cliente ? "font-semibold text-[#1F3A68]" : "text-[#5F6878]"}`}>{s.cliente?.nome || "—"}</td>}
-                          <td className={numero}>{costi.totale > 0 ? formatEuro(costi.totale) : "—"}</td>
-                          <td className={numero}>{costi.prezzoVendita > 0 ? formatEuro(costi.prezzoVendita) : "—"}</td>
-                          <td className={`${numero} font-semibold ${margineCls}`}>
-                            {costi.margine === null ? "—" : `${costi.margine.toFixed(1).replace(".", ",")}%`}
-                          </td>
-                          {isArticoli && (
-                            <td className={`${numero} text-[#1F3A68]`}>
-                              {nCampioni > 0 ? formatEuro(sviluppo) : "—"}
-                              {nCampioni > 0 && <div className="text-xs text-[#5F6878] font-sans">{nCampioni} {nCampioni === 1 ? "campione" : "campioni"}</div>}
-                            </td>
-                          )}
-                          {isArticoli && <td className={numero}>{nOrdini || "—"}</td>}
-                          <td className={cella}>
-                            {!isArticoli && stato && <span className={`badge badge-${s.stato}`}>{stato.label}</span>}
-                            <div className={`text-xs text-[#5F6878] ${isArticoli ? "" : "mt-1"}`}>{formatData(s.updatedAt)}</div>
-                          </td>
-                          <td className="px-2 py-2.5 text-right">
-                            <SchedaRowMenu id={s.id} nome={s.nomeArticolo} statoCorrente={s.stato} base={t.base} />
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+              {tabella(g.righe)}
             </section>
-          ))}
+          )) : blocchiOrdine.map((b) => {
+            const pezzi = b.righe.reduce((tot, r) => tot + r.pezzi, 0);
+            const bozze = b.righe.filter((r) => r.s.stato === "bozza").length;
+            const mancanti = b.ordine ? Math.max(0, b.ordine.referenze.length - b.righe.length) : 0;
+            return (
+              <details key={b.ordineId ?? `c:${b.cliente}`} open={aperti} className="group bg-white border border-[#E4E0D6] rounded-2xl overflow-hidden">
+                <summary className="list-none [&::-webkit-details-marker]:hidden cursor-pointer px-5 py-3.5 flex flex-wrap items-center gap-x-4 gap-y-1 hover:bg-[#FBFAF7] group-open:border-b group-open:border-[#E4E0D6] group-open:bg-[#FBFAF7]">
+                  <ChevronRight size={18} className="text-[#5F6878] transition-transform group-open:rotate-90 flex-shrink-0" />
+                  <div className="flex-1 min-w-[220px]">
+                    <div className={`font-display text-[17px] font-bold ${b.cliente ? "text-[#1F3A68]" : "text-[#5F6878]"}`}>{b.cliente ?? "Senza cliente"}</div>
+                    <div className="text-[13px] text-[#5F6878]">
+                      {b.ordineId
+                        ? <><span className="font-mono text-[#0E1B2C]">{b.ordineId}</span>{b.ordine?.data && <> · {b.ordine.data}</>}{b.ordine?.stato && <> · {statoOrdine(b.ordine.stato)}</>}</>
+                        : "Senza ordine collegato"}
+                    </div>
+                  </div>
+                  <div className="text-sm text-[#0E1B2C] text-right">
+                    <span className="font-semibold">{b.righe.length} {b.righe.length === 1 ? "referenza" : "referenze"}</span>
+                    {b.ordine && b.ordine.referenze.length > 0 && <span className="text-[#5F6878]"> su {b.ordine.referenze.length}</span>}
+                    <div className="text-xs text-[#5F6878]">
+                      {[pezzi > 0 ? `${pezzi} pz` : null, bozze > 0 ? `${bozze} in bozza` : null].filter(Boolean).join(" · ") || "\u00a0"}
+                    </div>
+                  </div>
+                  {b.ordineId && (
+                    <Link href={`/schede/nuova?ordine=${encodeURIComponent(b.ordineId)}`}
+                      className={`h-10 px-3.5 rounded-lg border text-[13px] font-semibold inline-flex items-center gap-1.5 ${mancanti > 0 ? "border-[#0E1B2C] text-[#0E1B2C] hover:bg-[#0E1B2C] hover:text-white" : "border-[#D6D1C4] text-[#4A5566] hover:border-[#0E1B2C]/40"}`}>
+                      <Plus size={15} /> Referenza
+                    </Link>
+                  )}
+                </summary>
+                {tabella(b.righe)}
+              </details>
+            );
+          })}
         </div>
       )}
     </div>

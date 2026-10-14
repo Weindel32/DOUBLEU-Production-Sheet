@@ -3,19 +3,24 @@ import { prisma } from "@/lib/prisma";
 import { normalizzaTipo } from "@/lib/utils";
 import NuovaSchedaForm from "@/components/scheda/NuovaSchedaForm";
 import { costiPerModello } from "@/lib/costiModelli";
+import { ordiniOrderApp, ordineAttivo } from "@/lib/orderApp";
 
-/** ?tipo=costo|produzione e ?modello=CODICE (da "Modelli") precompilano il form. */
+/** ?tipo=costo|produzione, ?modello=CODICE (da "Modelli") e ?ordine=DU-… (dall'elenco ordini) precompilano il form. */
 export default async function NuovaSchedaPage({ searchParams }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const sp = await searchParams;
   const str = (k: string) => (typeof sp[k] === "string" ? (sp[k] as string) : "");
-  const [modelli, costi] = await Promise.all([
+  const [modelli, costi, ordini] = await Promise.all([
     prisma.modello.findMany({
       orderBy: { codice: "asc" },
       select: { codice: true, descrizione: true, categoria: true, fascia: true },
     }),
     costiPerModello(),
+    ordiniOrderApp(),
   ]);
-  return <NuovaSchedaForm tipoIniziale={normalizzaTipo(str("tipo"))} modelloIniziale={str("modello")} modelli={modelli} costiEsistenti={costi} />;
+  const ordineIniziale = str("ordine");
+  const ordiniScelta = ordini.filter((o) => ordineAttivo(o) || o.id === ordineIniziale);
+  return <NuovaSchedaForm tipoIniziale={normalizzaTipo(str("tipo"))} modelloIniziale={str("modello")} modelli={modelli} costiEsistenti={costi}
+    ordini={ordiniScelta} ordineIniziale={ordineIniziale} />;
 }

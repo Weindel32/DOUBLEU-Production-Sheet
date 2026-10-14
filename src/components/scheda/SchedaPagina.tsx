@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import SchedaDetail, { type SchedaCollegata } from "@/components/scheda/SchedaDetail";
 import { baseScheda, normalizzaTipo } from "@/lib/utils";
-import { clientiOrderApp } from "@/lib/orderApp";
+import { clientiOrderApp, ordiniOrderApp, ordineBreve } from "@/lib/orderApp";
 
 function parseJson<T>(s: string | null, fallback: T): T {
   if (!s) return fallback;
@@ -23,7 +23,7 @@ export default async function SchedaPagina({ id, percorso }: { id: string; perco
   const tipo = normalizzaTipo(scheda.tipo);
   if (baseScheda(tipo) !== percorso) redirect(`${baseScheda(tipo)}/${id}`);
 
-  const [clienti, loghi, materiali, origineRow, ordiniRows, modelli, vociColori, clientiOA] = await Promise.all([
+  const [clienti, loghi, materiali, origineRow, ordiniRows, modelli, vociColori, clientiOA, ordiniOA] = await Promise.all([
     prisma.cliente.findMany({ orderBy: { nome: "asc" } }),
     prisma.logo.findMany({ orderBy: { nome: "asc" } }),
     prisma.materiale.findMany({ orderBy: { nome: "asc" } }),
@@ -40,10 +40,8 @@ export default async function SchedaPagina({ id, percorso }: { id: string; perco
     prisma.modello.findMany({ orderBy: { codice: "asc" }, select: { codice: true, descrizione: true, categoria: true, fascia: true } }),
     prisma.coloreFornitore.findMany(),
     clientiOrderApp(),
+    tipo === "costo" ? [] : ordiniOrderApp(),
   ]);
-  // Dall'Order App solo i clienti non ancora collegati: quelli collegati sono già tra i clienti.
-  const collegati = new Set(clienti.map((c) => c.orderAppId).filter(Boolean));
-  const clientiDaOrderApp = clientiOA.filter((c) => !collegati.has(c.id));
 
   const origine: SchedaCollegata | null = origineRow;
   const ordiniCollegati: SchedaCollegata[] = ordiniRows.map((o) => ({
@@ -56,6 +54,7 @@ export default async function SchedaPagina({ id, percorso }: { id: string; perco
     tipo,
     collezione: n(scheda.collezione),
     clienteId: n(scheda.clienteId),
+    ordineOrderAppId: n(scheda.ordineOrderAppId),
     categoria: n(scheda.categoria),
     vestibilita: n(scheda.vestibilita),
     genere: n(scheda.genere),
@@ -110,7 +109,8 @@ export default async function SchedaPagina({ id, percorso }: { id: string; perco
       ordiniCollegati={ordiniCollegati}
       modelli={modelli}
       vociColori={vociColori}
-      clientiOrderApp={clientiDaOrderApp}
+      clientiOrderApp={clientiOA}
+      ordiniOrderApp={ordiniOA.map(ordineBreve)}
     />
   );
 }

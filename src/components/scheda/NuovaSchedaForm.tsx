@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Check, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import {
-  CATEGORIE, TIPI_SCHEDA, baseScheda, formatEuro, genereDaFascia, fasciaDaGenere, ordinaCategorie, type TipoScheda,
+  CATEGORIE, TIPI_SCHEDA, baseScheda, formatEuro, genereDaFascia, fasciaDaGenere, ordinaCategorie, etichettaOrdine, type TipoScheda,
 } from "@/lib/utils";
+import type { OrdineOrderApp, ReferenzaOrderApp } from "@/lib/orderApp";
 import { Field, ChipGroup, Segmented, inputCls } from "@/components/ui/Form";
 import CampoModello, { trovaModello, type ModelloBreve } from "@/components/modelli/CampoModello";
 import type { CostoModello } from "@/lib/costiModelli";
@@ -22,12 +23,21 @@ const VESTIBILITA = [
   { value: "Loose Fit", label: "Loose" }, { value: "Athletic Fit", label: "Athletic" },
 ];
 
-export default function NuovaSchedaForm({ tipoIniziale, modelloIniziale, modelli, costiEsistenti = {} }: {
+/** "Polo senza bottoni · Adulto" → nome "Polo senza bottoni", genere dal suffisso quando è Uomo/Donna. */
+function datiReferenza(r: ReferenzaOrderApp) {
+  const [nome, suffisso] = (r.descrizione ?? r.categoria ?? "").split(" · ");
+  return { nome: nome.trim(), genere: suffisso === "Uomo" || suffisso === "Donna" ? suffisso : undefined };
+}
+
+export default function NuovaSchedaForm({ tipoIniziale, modelloIniziale, modelli, costiEsistenti = {}, ordini = [], ordineIniziale = "" }: {
   tipoIniziale: TipoScheda;
   modelloIniziale: string;
   modelli: ModelloBreve[];
   /** Articoli di costo già creati, per codice modello (minuscolo): avvisano prima di un doppione. */
   costiEsistenti?: Record<string, CostoModello[]>;
+  /** Ordini dell'Order App: una scheda di produzione è una referenza di uno di questi. */
+  ordini?: OrdineOrderApp[];
+  ordineIniziale?: string;
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -49,6 +59,9 @@ export default function NuovaSchedaForm({ tipoIniziale, modelloIniziale, modelli
   // Il nome proposto dal modello si aggiorna cambiando modello, ma solo finché non lo si riscrive a mano.
   const [nomeDalModello, setNomeDalModello] = useState(() => !!trovaModello(modelli, modelloIniziale));
   const [aggiungiModello, setAggiungiModello] = useState(true);
+  const [ordineId, setOrdineId] = useState(() => (ordini.some((o) => o.id === ordineIniziale) ? ordineIniziale : ""));
+  const ordine = ordini.find((o) => o.id === ordineId);
+  const clientiOrdini = [...new Set(ordini.map((o) => o.cliente))].sort((a, b) => a.localeCompare(b, "it"));
 
   const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -72,6 +85,18 @@ export default function NuovaSchedaForm({ tipoIniziale, modelloIniziale, modelli
 
   const modelloNuovo = form.codiceModello.trim() !== "" && !trovaModello(modelli, form.codiceModello);
   const categorie = ordinaCategorie([...CATEGORIE, ...modelli.map((m) => m.categoria)]);
+
+  // Una referenza dell'ordine precompila nome, categoria e genere: il modello resta da scegliere.
+  const scegliReferenza = (r: ReferenzaOrderApp) => {
+    const { nome, genere } = datiReferenza(r);
+    setForm((f) => ({
+      ...f,
+      nomeArticolo: nome || f.nomeArticolo,
+      categoria: r.categoria && categorie.includes(r.categoria) ? r.categoria : f.categoria,
+      genere: genere ?? f.genere,
+    }));
+    setNomeDalModello(false);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,6 +126,7 @@ export default function NuovaSchedaForm({ tipoIniziale, modelloIniziale, modelli
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form, codice: form.codice.trim(), codiceModello: form.codiceModello.trim() || null, stato: "bozza", versione: "1.0",
+          ordineOrderAppId: form.tipo === "produzione" && ordineId ? ordineId : null,
         }),
       });
       const scheda = await res.json();
@@ -144,6 +170,43 @@ export default function NuovaSchedaForm({ tipoIniziale, modelloIniziale, modelli
             );
           })}
         </div>
+
+        {form.tipo === "produzione" && (
+          <div className="space-y-3">
+            <Field label="Ordine (Order App)">
+              <select value={ordineId} onChange={(e) => setOrdineId(e.target.value)} aria-label="Ordine" className={inputCls}>
+                <option value="">Nessun ordine</option>
+                {clientiOrdini.map((cl) => (
+                  <optgroup key={cl} label={cl}>
+                    {ordini.filter((o) => o.cliente === cl).map((o) => (
+                      <option key={o.id} value={o.id}>{etichettaOrdine({ ...o, nReferenze: o.referenze.length })}</option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+            </Field>
+            {ordine && ordine.referenze.length > 0 && (
+              <div>
+                <p className="text-[13px] text-[#4A5566] mb-1.5">
+                  Referenze di <span className="font-semibold text-[#1F3A68]">{ordine.cliente}</span>: toccane una per precompilare
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {ordine.referenze.map((r) => {
+                    const { nome } = datiReferenza(r);
+                    const on = nome === form.nomeArticolo;
+                    return (
+                      <button key={r.id} type="button" aria-pressed={on} onClick={() => scegliReferenza(r)}
+                        className={`min-h-10 px-3 py-1.5 rounded-lg border text-left text-[13px] leading-tight ${on ? "border-[#0E1B2C] bg-[#0E1B2C] text-white" : "border-[#D6D1C4] bg-white text-[#0E1B2C] hover:border-[#0E1B2C]/40"}`}>
+                        <span className="font-semibold">{r.descrizione ?? r.categoria}</span>
+                        {(r.kit || r.colore) && <span className={`block text-xs ${on ? "text-white/70" : "text-[#5F6878]"}`}>{[r.kit, r.colore].filter(Boolean).join(" · ")}</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="grid grid-cols-[200px_minmax(0,1fr)] gap-3 items-start">
           <div className="flex flex-col gap-1.5 text-[13px] text-[#4A5566]">

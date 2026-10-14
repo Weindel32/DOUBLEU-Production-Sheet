@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useRef, forwardRef, useImperativeHandle } from "react";
-import Link from "next/link";
-import { Upload, X, ExternalLink, Loader2, Camera } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Upload, X, Loader2, Camera } from "lucide-react";
 import { CATEGORIE, parseGrammaturaCommerciale } from "@/lib/utils";
 import { Field, ChipGroup, Segmented, SectionCard, inputCls, textareaCls } from "@/components/ui/Form";
 import CampoModello, { trovaModello, type ModelloBreve } from "@/components/modelli/CampoModello";
@@ -11,17 +11,20 @@ import { preparaImmagine } from "@/lib/immagini";
 import type { SchedaCompleta } from "@/types";
 import SceltaColoreTessuto from "@/components/scheda/SceltaColoreTessuto";
 import { coloriTessuto, dizionarioFornitore, leggiCodici, leggiNomiTessuto, type VoceColore } from "@/lib/colori";
-import type { ClienteOrderApp } from "@/lib/orderApp";
+import type { ClienteOrderApp, OrdineBreve } from "@/lib/orderApp";
+import { etichettaOrdine } from "@/lib/utils";
 
 interface Props {
   scheda: SchedaCompleta;
   onSave: (data: Partial<SchedaCompleta>) => Promise<void>;
-  clienti: { id: string; nome: string }[];
+  clienti: { id: string; nome: string; orderAppId?: string | null }[];
   materiali: { id: string; nome: string; tipo: string; costoMetro: number | null; peso: string | null; unitaPeso: string | null; larghezza: string | null; fornitore?: string | null; colori?: string | null; coloriNomi?: string | null }[];
   /** Nomi dei codici colore per fornitore: i colori del tessuto si scelgono da qui. */
   vociColori?: VoceColore[];
-  /** Clienti dell'Order App non ancora collegati: sceglierne uno lo collega e lo assegna. */
+  /** Clienti dell'Order App: sceglierne uno non ancora collegato lo collega e lo assegna. */
   clientiOrderApp?: ClienteOrderApp[];
+  /** Ordini dell'Order App: una scheda di produzione è una referenza di uno di questi. */
+  ordiniOrderApp?: OrdineBreve[];
   /** Nome, codice e categoria vivono anche nell'intestazione della scheda. */
   onMetaChange?: (meta: { nomeArticolo?: string; codice?: string; categoria?: string; codiceModello?: string }) => void;
   /** Archivio modelli, per suggerire il codice e proporre di aggiungere quelli nuovi. */
@@ -58,10 +61,13 @@ export interface TabArticoloHandle {
 const CATEGORIE_SENZA_COLLO_MANICHE = ["Short", "Skirt", "Sweatpants"];
 const CATEGORIE_COSTINA = ["Hoodie", "Zip Hoodie", "Sweatshirt", "Sweatpants"];
 
-const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ scheda, onSave, clienti, materiali, onMetaChange, modelli: modelliIniziali = [], vociColori = [], clientiOrderApp = [] }, ref) {
+const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ scheda, onSave, clienti, materiali, onMetaChange, modelli: modelliIniziali = [], vociColori = [], clientiOrderApp = [], ordiniOrderApp = [] }, ref) {
+  const router = useRouter();
+  const isCosto = scheda.tipo === "costo";
   const [clientiLocali, setClientiLocali] = useState(clienti);
-  const [daOrderApp, setDaOrderApp] = useState(clientiOrderApp);
   const [clienteErrore, setClienteErrore] = useState<string | null>(null);
+  const [ordineId, setOrdineId] = useState(scheda.ordineOrderAppId || "");
+  const ordine = ordiniOrderApp.find((o) => o.id === ordineId);
   const [immagini, setImmagini] = useState<string[]>(scheda.immagini || []);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -198,10 +204,28 @@ const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ 
     });
     if (!res.ok) { setClienteErrore((await res.json().catch(() => null))?.error || "Cliente non collegato"); return; }
     const c: { id: string; nome: string; orderAppId: string } = await res.json();
-    setClientiLocali((l) => [...l.filter((x) => x.id !== c.id), { id: c.id, nome: c.nome }].sort((a, b) => a.nome.localeCompare(b.nome)));
-    setDaOrderApp((l) => l.filter((x) => x.id !== c.orderAppId));
+    setClientiLocali((l) => [...l.filter((x) => x.id !== c.id), { id: c.id, nome: c.nome, orderAppId: c.orderAppId }]);
     scegli("clienteId", c.id);
   };
+
+  // L'ordine porta con sé il cliente: lo assegna il server, poi si ricarica l'intestazione.
+  const scegliOrdine = async (id: string) => {
+    setOrdineId(id);
+    await onSave({ ordineOrderAppId: id || null });
+    router.refresh();
+  };
+
+  // Clienti per nome, come nell'Order App: uno già collegato si sceglie col suo id locale.
+  const localePer = new Map(clientiLocali.filter((c) => c.orderAppId).map((c) => [c.orderAppId!, c]));
+  const opzioniClienti = [
+    ...clientiOrderApp.map((c) => ({ value: localePer.get(c.id)?.id ?? `oa:${c.id}`, nome: c.nome })),
+    ...clientiLocali.filter((c) => !c.orderAppId || !clientiOrderApp.some((o) => o.id === c.orderAppId)).map((c) => ({ value: c.id, nome: c.nome })),
+  ].sort((a, b) => a.nome.localeCompare(b.nome, "it"));
+  const nomeCliente = clientiLocali.find((c) => c.id === values.clienteId)?.nome;
+
+  // Ordini attivi raggruppati per cliente; quello già scelto resta visibile anche se chiuso.
+  const ordiniScelta = ordiniOrderApp.filter((o) => (!o.perso && o.stato !== "ANNULLATO") || o.id === ordineId);
+  const clientiOrdini = [...new Set(ordiniScelta.map((o) => o.cliente))].sort((a, b) => a.localeCompare(b, "it"));
 
   // Scelta immediata (chip, segmentati, select): stato + salvataggio nello stesso gesto.
   const scegli = (field: keyof typeof values, value: string) => {
@@ -354,28 +378,34 @@ const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ 
             </Field>
           </div>
 
-          <Field label="Cliente / club" group>
-            <div className="flex items-center gap-2">
+          {!isCosto && (
+            <Field label="Ordine (Order App)" group>
+              <select value={ordineId} onChange={(e) => scegliOrdine(e.target.value)} aria-label="Ordine" className={inputCls}>
+                <option value="">Nessun ordine</option>
+                {ordineId && !ordine && <option value={ordineId}>{ordineId}</option>}
+                {clientiOrdini.map((cl) => (
+                  <optgroup key={cl} label={cl}>
+                    {ordiniScelta.filter((o) => o.cliente === cl).map((o) => <option key={o.id} value={o.id}>{etichettaOrdine(o)}</option>)}
+                  </optgroup>
+                ))}
+              </select>
+              {ordiniOrderApp.length === 0 && <p className="text-xs text-[#5F6878] mt-1">Ordini dell&apos;Order App non disponibili.</p>}
+            </Field>
+          )}
+
+          {!isCosto && ordineId ? (
+            <Field label="Cliente / club">
+              <div className={`${inputCls} flex items-center font-semibold text-[#1F3A68] bg-[#FBFAF7]`}>{ordine?.cliente ?? nomeCliente ?? "—"}</div>
+            </Field>
+          ) : (
+            <Field label="Cliente / club" group>
               <select value={values.clienteId} onChange={(e) => scegliCliente(e.target.value)} aria-label="Cliente" className={inputCls}>
                 <option value="">Nessun cliente</option>
-                {daOrderApp.length > 0 ? (
-                  <>
-                    <optgroup label="Clienti">
-                      {clientiLocali.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
-                    </optgroup>
-                    <optgroup label="Dall'Order App">
-                      {daOrderApp.map((c) => <option key={c.id} value={`oa:${c.id}`}>{c.nome}{c.citta ? ` · ${c.citta}` : ""}</option>)}
-                    </optgroup>
-                  </>
-                ) : clientiLocali.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
+                {opzioniClienti.map((c) => <option key={c.value} value={c.value}>{c.nome}</option>)}
               </select>
-              <Link href="/clienti/nuovo" target="_blank" aria-label="Crea nuovo cliente"
-                className="w-11 h-11 flex-shrink-0 rounded-[10px] border border-[#D6D1C4] bg-white text-[#1F3A68] flex items-center justify-center hover:border-[#1F3A68]">
-                <ExternalLink size={16} />
-              </Link>
-            </div>
-            {clienteErrore && <p role="alert" className="text-xs text-red-800 mt-1">{clienteErrore}</p>}
-          </Field>
+              {clienteErrore && <p role="alert" className="text-xs text-red-800 mt-1">{clienteErrore}</p>}
+            </Field>
+          )}
         </div>
       </SectionCard>
 
