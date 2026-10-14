@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 import Link from "next/link";
-import { Printer, AlertTriangle, ChevronDown } from "lucide-react";
+import { AlertTriangle, ChevronDown } from "lucide-react";
+import PulsantePdf from "@/components/ui/PulsantePdf";
 import Testata from "@/components/mobile/Testata";
 import { acquistiOrdine } from "@/lib/approvvigionamentoServer";
 import { quantitaAcquisto } from "@/lib/approvvigionamento";
@@ -10,7 +11,7 @@ const num1 = (n: number) => n.toLocaleString("it-IT", { maximumFractionDigits: 1
 
 /**
  * Cosa comprare per un ordine, dal telefono (es. dal fornitore): quantità in grande, stime solo a richiesta.
- * Le stampe si aprono nella stessa finestra, con la barra per tornare qui o alla Home.
+ * I PDF si condividono dal foglio di iOS (stampa compresa) senza lasciare la pagina.
  */
 export default async function AcquistiMobile({ params, searchParams }: {
   params: Promise<{ ordine: string }>;
@@ -20,8 +21,8 @@ export default async function AcquistiMobile({ params, searchParams }: {
   const prezzi = (await searchParams).prezzi === "1";
   const { ordine, cliente, riepilogo } = await acquistiOrdine(ordineId);
   const qui = `/m/acquisti/${encodeURIComponent(ordineId)}`;
-  const stampa = (conPrezzi: boolean) =>
-    `/api/approvvigionamento/${encodeURIComponent(ordineId)}?prezzi=${conPrezzi ? 1 : 0}&da=m&torna=${encodeURIComponent(qui)}`;
+  const pdf = (conPrezzi: boolean, fornitore?: string) =>
+    `/api/approvvigionamento/${encodeURIComponent(ordineId)}?prezzi=${conPrezzi ? 1 : 0}${fornitore !== undefined ? `&fornitore=${encodeURIComponent(fornitore)}` : ""}`;
   const stimate = riepilogo.referenze.filter((d) => d.stimati);
   const senzaPeso = riepilogo.fornitori.flatMap((g) => g.righe).filter((r) => !r.acquisto);
 
@@ -83,6 +84,10 @@ export default async function AcquistiMobile({ params, searchParams }: {
                     </li>
                   ))}
                 </ul>
+                <div className="p-3 border-t border-[#EFEBE2] bg-[#FBFAF7]">
+                  <PulsantePdf url={pdf(false, g.fornitore)} nomeFile={`Richiesta materiali ${ordineId} ${g.fornitore || "fornitore"}.pdf`}
+                    etichetta={`Invia a ${g.fornitore || "fornitore"}`} />
+                </div>
               </section>
             ))}
 
@@ -119,13 +124,9 @@ export default async function AcquistiMobile({ params, searchParams }: {
             </details>
 
             <div className="grid gap-2 pt-1">
-              <a href={stampa(false)} className="h-12 rounded-xl bg-[#0E1B2C] text-white text-[15px] font-semibold flex items-center justify-center gap-2 active:bg-[#1F3A68]">
-                <Printer size={18} /> Stampa / invia ai fornitori
-              </a>
-              <a href={stampa(true)} className="h-12 rounded-xl border border-[#D6D1C4] bg-white text-[#0E1B2C] text-[15px] font-semibold flex items-center justify-center gap-2 active:bg-[#FBFAF7]">
-                <Printer size={18} /> Stampa interna (con stime)
-              </a>
-              <p className="text-center text-xs text-[#5F6878]">Si apre la versione per stampa: in alto Indietro e Home per tornare qui.</p>
+              <PulsantePdf url={pdf(true)} nomeFile={`Approvvigionamento ${ordineId}.pdf`} etichetta="PDF interno (con stime)" variante="bordo" />
+              <p className="text-center text-xs text-[#5F6878]">Si apre la condivisione di iPhone: Stampa, WhatsApp, Mail o Salva su File. Resti in questa pagina.
+                Ogni fornitore riceve solo il suo PDF, senza prezzi.</p>
             </div>
           </>
         )}

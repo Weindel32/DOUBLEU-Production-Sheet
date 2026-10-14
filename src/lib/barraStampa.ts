@@ -29,7 +29,7 @@ export function barraStampa(params: URLSearchParams) {
   <a href="${home}">Home</a>
   <button type="button" class="stampa" onclick="window.print()">Stampa / Invia</button>
 </div>
-${mobile ? '<p class="barra-aiuto">Per inviarlo: tocca Stampa / Invia, poi l\'icona Condividi in alto: parte come PDF (WhatsApp, Mail…).</p>' : ""}`;
+${mobile ? '<p class="barra-aiuto">Se Stampa / Invia non apre la stampa (app sulla schermata Home): tocca l\'icona Condividi in basso, poi Stampa; per inviarlo come PDF, in Condividi scegli Opzioni → PDF.</p>' : ""}`;
   return { css, html };
 }
 

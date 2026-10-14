@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 import Link from "next/link";
-import { ArrowLeft, Printer, AlertTriangle } from "lucide-react";
+import { ArrowLeft, AlertTriangle } from "lucide-react";
+import PulsantePdf from "@/components/ui/PulsantePdf";
 import { acquistiOrdine } from "@/lib/approvvigionamentoServer";
 import { quantitaAcquisto } from "@/lib/approvvigionamento";
 import { SCARTO_ACQUISTO, formatEuro, statoOrdine } from "@/lib/utils";
@@ -18,7 +19,7 @@ export default async function AcquistiOrdinePage({ params, searchParams }: {
   const prezzi = (await searchParams).prezzi !== "0";
   const { ordine, cliente, nSchede, riepilogo } = await acquistiOrdine(ordineId);
   const base = `/schede/ordine/${encodeURIComponent(ordineId)}`;
-  const pdf = `/api/approvvigionamento/${encodeURIComponent(ordineId)}?prezzi=${prezzi ? 1 : 0}&torna=${encodeURIComponent(base)}`;
+  const pdf = `/api/approvvigionamento/${encodeURIComponent(ordineId)}?prezzi=${prezzi ? 1 : 0}`;
   const senzaPeso = riepilogo.fornitori.flatMap((g) => g.righe).filter((r) => !r.acquisto);
   const stimate = riepilogo.referenze.filter((d) => d.stimati);
   const cella = "px-3 py-2.5";
@@ -51,10 +52,8 @@ export default async function AcquistiOrdinePage({ params, searchParams }: {
           {chip("Con prezzi", base, prezzi)}
           {chip("Senza prezzi", `${base}?prezzi=0`, !prezzi)}
         </div>
-        <a href={pdf} target="_blank" rel="noreferrer"
-          className="h-12 px-5 rounded-xl bg-[#0E1B2C] hover:bg-[#1F3A68] text-white text-[15px] font-semibold inline-flex items-center gap-2">
-          <Printer size={18} /> PDF {prezzi ? "interno" : "fornitori"}
-        </a>
+        <PulsantePdf key={pdf} url={pdf} nomeFile={`${prezzi ? "Approvvigionamento" : "Richiesta materiali"} ${ordineId}.pdf`}
+          etichetta={`PDF ${prezzi ? "interno" : "fornitori"}`} className="w-full sm:w-auto" />
       </div>
 
       {stimate.length > 0 && (
@@ -123,9 +122,11 @@ export default async function AcquistiOrdinePage({ params, searchParams }: {
           </div>
           {riepilogo.fornitori.map((g) => (
             <section key={g.fornitore || "nessuno"} className="bg-white border border-[#E4E0D6] rounded-2xl overflow-hidden">
-              <div className="px-5 py-3 border-b border-[#E4E0D6] bg-[#FBFAF7] flex items-baseline justify-between gap-3">
-                <h2 className="font-display text-[17px] font-bold text-[#0E1B2C]">{g.fornitore || "Fornitore non indicato"}</h2>
+              <div className="px-5 py-3 border-b border-[#E4E0D6] bg-[#FBFAF7] flex flex-wrap items-center justify-between gap-3">
+                <h2 className="font-display text-[17px] font-bold text-[#0E1B2C] flex-1">{g.fornitore || "Fornitore non indicato"}</h2>
                 {prezzi && <span className="font-mono text-[15px] font-semibold text-[#0E1B2C]">{formatEuro(g.stima)}</span>}
+                <PulsantePdf url={`/api/approvvigionamento/${encodeURIComponent(ordineId)}?prezzi=0&fornitore=${encodeURIComponent(g.fornitore)}`}
+                  nomeFile={`Richiesta materiali ${ordineId} ${g.fornitore || "fornitore"}.pdf`} etichetta={`PDF per ${g.fornitore || "fornitore"}`} variante="bordo" />
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-[15px] min-w-[640px] table-fixed">
