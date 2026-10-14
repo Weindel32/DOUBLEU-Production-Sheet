@@ -176,6 +176,8 @@ export default async function MobileSchedaDetailPage({ params }: { params: Promi
         <div className="grid gap-2 pt-1">
           <PulsantePdf url={`/api/schede/${scheda.id}/pdf?tipo=tecnico`} nomeFile={`Scheda tecnica ${scheda.codice} ${scheda.nomeArticolo}.pdf`}
             etichetta="Stampa / invia scheda tecnica" />
+          <PulsantePdf url={`/api/schede/${scheda.id}/pdf?tipo=interno`} nomeFile={`Scheda interna ${scheda.codice} ${scheda.nomeArticolo}.pdf`}
+            etichetta="Scheda interna (con costi)" variante="bordo" />
           {ordine && (
             <Link href={`/m/acquisti/${encodeURIComponent(ordine.id)}`}
               className="h-12 rounded-xl border border-[#D6D1C4] bg-white text-[#0E1B2C] text-[15px] font-semibold flex items-center justify-center gap-2 active:bg-[#FBFAF7]">
