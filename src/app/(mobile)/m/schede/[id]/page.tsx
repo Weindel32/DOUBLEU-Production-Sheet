@@ -7,7 +7,8 @@ import Testata from "@/components/mobile/Testata";
 import { etichettaColore } from "@/lib/colori";
 import { riferimentoColori } from "@/lib/coloriServer";
 import Link from "next/link";
-import { Printer, ShoppingCart } from "lucide-react";
+import { ShoppingCart } from "lucide-react";
+import PulsantePdf from "@/components/ui/PulsantePdf";
 import { ordiniOrderApp, nomeReferenza } from "@/lib/orderApp";
 import { capiScheda, statoReferenza } from "@/lib/referenze";
 
@@ -47,8 +48,6 @@ export default async function MobileSchedaDetailPage({ params }: { params: Promi
   ]);
   const ordine = scheda.ordineOrderAppId ? ordini.find((o) => o.id === scheda.ordineOrderAppId) : undefined;
   const ref = statoReferenza(scheda.articoloOrderAppId, ordine?.referenze ?? null);
-  const qui = `/m/schede/${scheda.id}`;
-  const stampa = `/api/schede/${scheda.id}/pdf?tipo=tecnico&da=m&torna=${encodeURIComponent(qui)}`;
 
   const quantita: Record<string, number> = scheda.quantitaTaglia ? JSON.parse(scheda.quantitaTaglia) : {};
   const tabellaMisure = scheda.tabellaMisure ? JSON.parse(scheda.tabellaMisure) : {};
@@ -175,9 +174,8 @@ export default async function MobileSchedaDetailPage({ params }: { params: Promi
         )}
 
         <div className="grid gap-2 pt-1">
-          <a href={stampa} className="h-12 rounded-xl bg-[#0E1B2C] text-white text-[15px] font-semibold flex items-center justify-center gap-2 active:bg-[#1F3A68]">
-            <Printer size={18} /> Stampa / invia scheda tecnica
-          </a>
+          <PulsantePdf url={`/api/schede/${scheda.id}/pdf?tipo=tecnico`} nomeFile={`Scheda tecnica ${scheda.codice} ${scheda.nomeArticolo}.pdf`}
+            etichetta="Stampa / invia scheda tecnica" />
           {ordine && (
             <Link href={`/m/acquisti/${encodeURIComponent(ordine.id)}`}
               className="h-12 rounded-xl border border-[#D6D1C4] bg-white text-[#0E1B2C] text-[15px] font-semibold flex items-center justify-center gap-2 active:bg-[#FBFAF7]">
