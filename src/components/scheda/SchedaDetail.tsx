@@ -310,7 +310,7 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
             )}
 
             <TabProduzione ref={tabProduzioneRef} scheda={scheda} onSave={handleSave} materialiDisponibili={materialiDisponibili}
-              soloCosti={isCosto} onRiepilogoChange={setRiepilogo} />
+              soloCosti={isCosto} quantita={quantita} onRiepilogoChange={setRiepilogo} />
 
             <section id="sez-campioni" className="scheda-section">
               <TabCampioni scheda={scheda} onSave={handleSave} onTotaleChange={(totale, numero) => setSviluppo({ totale, numero })} />

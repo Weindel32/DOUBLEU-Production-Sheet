@@ -27,6 +27,8 @@ interface Props {
   materialiDisponibili: MaterialeDisp[];
   /** Articolo di costo: solo costi, niente note di produzione, tolleranze e allegati. */
   soloCosti?: boolean;
+  /** Quantità per taglia come sono ora in "Misure e quantità": l'acquisto si ricalcola mentre le scrivi. */
+  quantita?: Record<string, number>;
   /** Il riepilogo vive nel riquadro fisso della pagina: gli passo i numeri a ogni modifica. */
   onRiepilogoChange?: (r: RiepilogoCosti) => void;
 }
@@ -45,7 +47,7 @@ const MARGINI_OBIETTIVO = [35, 45, 55];
 const RIGA_COLS = "grid grid-cols-[minmax(0,2.4fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_44px] gap-2.5 items-center";
 
 const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzione(
-  { scheda, onSave, materialiDisponibili, soloCosti, onRiepilogoChange }, ref,
+  { scheda, onSave, materialiDisponibili, soloCosti, onRiepilogoChange, quantita }, ref,
 ) {
   const [noteProduzione, setNoteProduzione] = useState(scheda.noteProduzione || "");
   const [tolleranzaTaglio, setTolleranzaTaglio] = useState(scheda.tolleranzaTaglio || "");
@@ -72,7 +74,7 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
   const [margineObiettivo, setMargineObiettivo] = useState(45);
   const [focusAcc, setFocusAcc] = useState<string | null>(null);
 
-  const quantitaTaglia = (scheda.quantitaTaglia as Record<string, number>) || {};
+  const quantitaTaglia = quantita ?? (scheda.quantitaTaglia as Record<string, number>) ?? {};
   const totalePezzi = soloCosti ? 0 : calcolaTotaleQuantita(quantitaTaglia);
 
   // Dopo "+ Zip" il cursore va dritto sul prezzo (l'unico dato che manca); dopo "Altro" sul nome.
