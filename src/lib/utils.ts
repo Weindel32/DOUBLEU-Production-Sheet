@@ -12,6 +12,11 @@ export const STATI_SCHEDA = [
 
 export type StatoScheda = typeof STATI_SCHEDA[number]["value"];
 
+/** Margine minimo sul prezzo di vendita (%): sotto è "a rischio" in elenchi, scheda e dashboard. */
+export const MARGINE_MINIMO = 35;
+/** Sopra questa soglia il margine è pieno (verde); tra minimo e pieno è giusto (ambra). */
+export const MARGINE_PIENO = 40;
+
 /** Stato di un ordine dell'Order App (PREVENTIVO, IN PRODUZIONE…) scritto per esteso: "In produzione". */
 export const statoOrdine = (s: string | null | undefined) => (s ? s.charAt(0) + s.slice(1).toLowerCase() : "");
 

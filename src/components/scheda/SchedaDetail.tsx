@@ -7,6 +7,7 @@ import { ArrowLeft, FileDown, Copy, CheckCircle, Trash2, Loader2, Save, AlertCir
 import {
   STATI_SCHEDA, StatoScheda, TIPI_SCHEDA, normalizzaTipo, baseScheda, formatData, formatOra, formatEuro,
   calcolaTotaleQuantita, totaleSviluppo, type RiepilogoCosti,
+  MARGINE_MINIMO, MARGINE_PIENO,
 } from "@/lib/utils";
 import TabArticolo, { type TabArticoloHandle } from "./TabArticolo";
 import TabPersonalizzazione, { type TabPersonalizzazioneHandle } from "./TabPersonalizzazione";
@@ -199,7 +200,7 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
   };
 
   const margineColore = riepilogo.margine === null ? "text-[#B7C4D8]"
-    : riepilogo.margine >= 40 ? "text-[#8FD6B0]" : riepilogo.margine >= 30 ? "text-[#F0D58C]" : "text-[#F2A488]";
+    : riepilogo.margine >= MARGINE_PIENO ? "text-[#8FD6B0]" : riepilogo.margine >= MARGINE_MINIMO ? "text-[#F0D58C]" : "text-[#F2A488]";
   const fmtMargine = riepilogo.margine === null ? "—" : `${riepilogo.margine.toFixed(1).replace(".", ",")}%`;
   const quote = riepilogo.totale > 0 ? [
     { label: "Materiali", v: riepilogo.materiali, c: "#E8A27E" },

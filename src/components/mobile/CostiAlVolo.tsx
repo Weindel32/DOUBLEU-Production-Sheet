@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Search, ChevronDown, Shirt } from "lucide-react";
-import { formatEuro, prezzoDaMargine, parseNumIt } from "@/lib/utils";
+import { formatEuro, prezzoDaMargine, parseNumIt, MARGINE_MINIMO, MARGINE_PIENO } from "@/lib/utils";
 
 export interface ArticoloCosto {
   id: string;
@@ -22,7 +22,7 @@ const MARGINI = [35, 45, 55];
 
 const pct = (m: number | null) => (m === null ? "—" : `${m.toFixed(1).replace(".", ",")}%`);
 const coloreMargine = (m: number | null) =>
-  m === null ? "text-[#5F6878]" : m >= 40 ? "text-[#1D6B4A]" : m >= 30 ? "text-[#7A5B12]" : "text-[#A8461F]";
+  m === null ? "text-[#5F6878]" : m >= MARGINE_PIENO ? "text-[#1D6B4A]" : m >= MARGINE_MINIMO ? "text-[#7A5B12]" : "text-[#A8461F]";
 
 /** Sola lettura: costo per capo, prezzo e margine, più "che margine faccio a questo prezzo?". */
 export default function CostiAlVolo({ articoli }: { articoli: ArticoloCosto[] }) {
