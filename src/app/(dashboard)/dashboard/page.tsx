@@ -79,10 +79,11 @@ export default async function DashboardPage() {
             <div className="flex flex-wrap items-center gap-2 mt-5 text-[13px]">
               <span className="text-[#9FB0C8]">Preventivi aperti · {d.preventivi.length}</span>
               {d.preventivi.map((p) => (
-                <Link key={p.id} href={`/schede?q=${encodeURIComponent(p.id)}`}
+                <Link key={p.id} href={p.schede ? `/schede?q=${encodeURIComponent(p.id)}` : `/schede/nuova?ordine=${encodeURIComponent(p.id)}`}
+                  title={p.id}
                   className="h-8 px-3 rounded-full bg-white/5 hover:bg-white/10 ring-1 ring-white/10 inline-flex items-center gap-1.5">
                   <span className="font-semibold text-white">{p.cliente}</span>
-                  <span className="font-mono text-[#9FB0C8]">{p.id}</span>
+                  <span className="text-[#9FB0C8]">· {p.schede ? `${p.schede} ${p.schede === 1 ? "scheda" : "schede"}` : "da impostare"}</span>
                 </Link>
               ))}
             </div>

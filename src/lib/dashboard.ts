@@ -136,7 +136,11 @@ export async function datiDashboard() {
 
   return {
     ordini: ordiniVista,
-    preventivi: preventivi.map((o) => ({ id: o.id, cliente: o.cliente, data: o.data, referenze: o.referenze.length })),
+    // Un preventivo senza schede porta a crearne una (già sull'ordine), non a un elenco vuoto.
+    preventivi: preventivi.map((o) => ({
+      id: o.id, cliente: o.cliente, data: o.data, referenze: o.referenze.length,
+      schede: schedeRows.filter((s) => s.ordineOrderAppId === o.id).length,
+    })),
     azioni,
     tessuto,
     margini,
