@@ -61,7 +61,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ ordi
     // Interno: prima cosa consuma ogni referenza (netto), poi cosa si compra (totale per fornitore).
     const dettaglio = riepilogo.referenze.map((d) => `
       <div class="ref">
-        <div class="ref-head"><span class="b">${esc(d.nomeArticolo)}</span><span class="small mono">${esc(d.codice)} &middot; ${d.capi} capi</span></div>
+        <div class="ref-head"><span class="b">${esc(d.nomeArticolo)}</span><span class="small mono">${esc(d.codice)} &middot; ${d.capi} capi${d.stimati ? " stimati" : ""}</span></div>
         <table><tbody>${d.righe.map((r) => {
           const n = r.netto;
           const q = !n ? `${num1(r.quantita)} m` : n.unita === "kg" ? `${num1(n.metri!)} m = ${num1(n.netto)} kg` : `${num1(n.netto)} ${n.unita}`;
@@ -83,7 +83,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ ordi
       <h3 style="margin-top:22px">Totale da acquistare <span class="small">(tessuti +${SCARTO_ACQUISTO * 100}% di scarto, arrotondati per eccesso)</span></h3>
       ${riepilogo.fornitori.map((g) => `<div class="forn"><div class="forn-head">${esc(g.fornitore || "Fornitore non indicato")}</div>${tabellaFornitore(g)}</div>`).join("")}
       <div class="grand"><span>Totale acquisti stimato${riepilogo.senzaPrezzo ? ` <span class="warn">(${riepilogo.senzaPrezzo} senza prezzo, esclusi)</span>` : ""}</span><span class="mono">${formatEuro(riepilogo.totale)}</span></div>
-      <p class="note">Stime sui prezzi in anagrafica materiali.</p>
+      <p class="note">Stime sui prezzi in anagrafica materiali.${riepilogo.referenze.some((d) => d.stimati) ? " Capi \"stimati\": presi dall'ordine, taglie non ancora arrivate: conto provvisorio." : ""}</p>
       ${piede}
     </section>`;
   } else {

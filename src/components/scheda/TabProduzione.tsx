@@ -29,6 +29,8 @@ interface Props {
   soloCosti?: boolean;
   /** Quantità per taglia come sono ora in "Misure e quantità": l'acquisto si ricalcola mentre le scrivi. */
   quantita?: Record<string, number>;
+  /** Capi della referenza nell'ordine: stima per l'acquisto finché non ci sono le taglie. */
+  capiOrdine?: number | null;
   /** Il riepilogo vive nel riquadro fisso della pagina: gli passo i numeri a ogni modifica. */
   onRiepilogoChange?: (r: RiepilogoCosti) => void;
   /** Materiali da comprare per questa referenza, per il riquadro fisso. */
@@ -51,7 +53,7 @@ const MARGINI_OBIETTIVO = [35, 45, 55];
 const RIGA_COLS = "grid grid-cols-[minmax(0,2.4fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_44px] gap-2.5 items-center";
 
 const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzione(
-  { scheda, onSave, materialiDisponibili, soloCosti, onRiepilogoChange, onAcquistiChange, quantita }, ref,
+  { scheda, onSave, materialiDisponibili, soloCosti, onRiepilogoChange, onAcquistiChange, quantita, capiOrdine }, ref,
 ) {
   const [noteProduzione, setNoteProduzione] = useState(scheda.noteProduzione || "");
   const [tolleranzaTaglio, setTolleranzaTaglio] = useState(scheda.tolleranzaTaglio || "");
@@ -79,7 +81,9 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
   const [focusAcc, setFocusAcc] = useState<string | null>(null);
 
   const quantitaTaglia = quantita ?? (scheda.quantitaTaglia as Record<string, number>) ?? {};
-  const totalePezzi = soloCosti ? 0 : calcolaTotaleQuantita(quantitaTaglia);
+  const pezziPropri = soloCosti ? 0 : calcolaTotaleQuantita(quantitaTaglia);
+  const pezziStimati = !soloCosti && pezziPropri === 0 && !!capiOrdine;
+  const totalePezzi = pezziStimati ? capiOrdine! : pezziPropri;
 
   // Dopo "+ Zip" il cursore va dritto sul prezzo (l'unico dato che manca); dopo "Altro" sul nome.
   useEffect(() => {
@@ -297,7 +301,7 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
                     )}
                     {acquisto && (
                       <div className="text-xs text-[#5F6878] mt-1">
-                        {totalePezzi} capi
+                        {totalePezzi} capi{pezziStimati && " (stima dall'ordine)"}
                         {acquisto.unita === "kg" && ` · ${num1(acquisto.metri!)} m = ${num1(acquisto.netto)} kg`}
                         {acquisto.unita === "m" && ` · ${num1(acquisto.netto)} m`}
                         {acquisto.unita !== "pz" && ` · +${SCARTO_ACQUISTO * 100}%`}

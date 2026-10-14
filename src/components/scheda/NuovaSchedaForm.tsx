@@ -29,7 +29,7 @@ function datiReferenza(r: ReferenzaOrderApp) {
   return { nome: nome.trim(), genere: suffisso === "Uomo" || suffisso === "Donna" ? suffisso : undefined };
 }
 
-export default function NuovaSchedaForm({ tipoIniziale, modelloIniziale, modelli, costiEsistenti = {}, ordini = [], ordineIniziale = "" }: {
+export default function NuovaSchedaForm({ tipoIniziale, modelloIniziale, modelli, costiEsistenti = {}, ordini = [], ordineIniziale = "", articoliConScheda = [] }: {
   tipoIniziale: TipoScheda;
   modelloIniziale: string;
   modelli: ModelloBreve[];
@@ -38,6 +38,8 @@ export default function NuovaSchedaForm({ tipoIniziale, modelloIniziale, modelli
   /** Ordini dell'Order App: una scheda di produzione è una referenza di uno di questi. */
   ordini?: OrdineOrderApp[];
   ordineIniziale?: string;
+  /** Articoli dell'Order App che hanno già una scheda: la referenza si segna come fatta. */
+  articoliConScheda?: string[];
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -60,6 +62,8 @@ export default function NuovaSchedaForm({ tipoIniziale, modelloIniziale, modelli
   const [nomeDalModello, setNomeDalModello] = useState(() => !!trovaModello(modelli, modelloIniziale));
   const [aggiungiModello, setAggiungiModello] = useState(true);
   const [ordineId, setOrdineId] = useState(() => (ordini.some((o) => o.id === ordineIniziale) ? ordineIniziale : ""));
+  // Referenza dell'ordine scelta: la scheda nasce collegata, con le taglie dell'ordine se ci sono.
+  const [referenza, setReferenza] = useState<ReferenzaOrderApp | null>(null);
   const ordine = ordini.find((o) => o.id === ordineId);
   const clientiOrdini = [...new Set(ordini.map((o) => o.cliente))].sort((a, b) => a.localeCompare(b, "it"));
 
@@ -96,6 +100,7 @@ export default function NuovaSchedaForm({ tipoIniziale, modelloIniziale, modelli
       genere: genere ?? f.genere,
     }));
     setNomeDalModello(false);
+    setReferenza(r);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -127,6 +132,9 @@ export default function NuovaSchedaForm({ tipoIniziale, modelloIniziale, modelli
         body: JSON.stringify({
           ...form, codice: form.codice.trim(), codiceModello: form.codiceModello.trim() || null, stato: "bozza", versione: "1.0",
           ordineOrderAppId: form.tipo === "produzione" && ordineId ? ordineId : null,
+          ...(form.tipo === "produzione" && ordineId && referenza && ordine?.referenze.some((r) => r.id === referenza.id)
+            ? { articoloOrderAppId: referenza.id, ...(referenza.taglie ? { quantitaTaglia: referenza.taglie } : {}) }
+            : {}),
         }),
       });
       const scheda = await res.json();
@@ -174,7 +182,7 @@ export default function NuovaSchedaForm({ tipoIniziale, modelloIniziale, modelli
         {form.tipo === "produzione" && (
           <div className="space-y-3">
             <Field label="Ordine (Order App)">
-              <select value={ordineId} onChange={(e) => setOrdineId(e.target.value)} aria-label="Ordine" className={inputCls}>
+              <select value={ordineId} onChange={(e) => { setOrdineId(e.target.value); setReferenza(null); }} aria-label="Ordine" className={inputCls}>
                 <option value="">Nessun ordine</option>
                 {clientiOrdini.map((cl) => (
                   <optgroup key={cl} label={cl}>
@@ -192,13 +200,14 @@ export default function NuovaSchedaForm({ tipoIniziale, modelloIniziale, modelli
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {ordine.referenze.map((r) => {
-                    const { nome } = datiReferenza(r);
-                    const on = nome === form.nomeArticolo;
+                    const on = referenza?.id === r.id;
+                    const fatta = r.ids.some((id) => articoliConScheda.includes(id));
                     return (
                       <button key={r.id} type="button" aria-pressed={on} onClick={() => scegliReferenza(r)}
                         className={`min-h-10 px-3 py-1.5 rounded-lg border text-left text-[13px] leading-tight ${on ? "border-[#0E1B2C] bg-[#0E1B2C] text-white" : "border-[#D6D1C4] bg-white text-[#0E1B2C] hover:border-[#0E1B2C]/40"}`}>
                         <span className="font-semibold">{r.descrizione ?? r.categoria}</span>
-                        {(r.kit || r.colore) && <span className={`block text-xs ${on ? "text-white/70" : "text-[#5F6878]"}`}>{[r.kit, r.colore].filter(Boolean).join(" · ")}</span>}
+                        {fatta && <span className={`ml-1.5 text-[11px] font-semibold ${on ? "text-white/80" : "text-[#1D6B4A]"}`}>✓ scheda fatta</span>}
+                        {(r.kit || r.colore || r.capi) && <span className={`block text-xs ${on ? "text-white/70" : "text-[#5F6878]"}`}>{[r.kit, r.colore, r.capi ? `${r.capi} capi${r.taglie ? "" : " (taglie da definire)"}` : null].filter(Boolean).join(" · ")}</span>}
                       </button>
                     );
                   })}

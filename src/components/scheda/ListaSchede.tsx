@@ -2,10 +2,11 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { Plus, FileText, Search, ChevronRight, ShoppingCart } from "lucide-react";
 import {
-  formatData, STATI_SCHEDA, TIPI_COSTO_DB, calcolaTotaleQuantita, formatEuro, totaleSviluppo,
+  formatData, STATI_SCHEDA, TIPI_COSTO_DB, formatEuro, totaleSviluppo,
   FASCE_MODELLO, FASCIA_STYLE, ordinaCategorie, statoOrdine,
 } from "@/lib/utils";
 import { ordiniOrderApp, type OrdineOrderApp } from "@/lib/orderApp";
+import { capiScheda, statoReferenza } from "@/lib/referenze";
 import SchedaRowMenu from "@/components/scheda/SchedaRowMenu";
 import { riepilogoScheda } from "@/lib/costiScheda";
 import type { Campione } from "@/types";
@@ -69,11 +70,16 @@ export default async function ListaSchede({ vista, searchParams }: {
   const righe = schede.map((s) => {
     const costi = riepilogoScheda(s, materiali);
     const campioni = parseJson<Campione[]>(s.campioni, []);
+    // Referenza dell'ordine: dà i capi stimati quando mancano le taglie e segnala le schede rimaste orfane.
+    const ref = statoReferenza(s.articoloOrderAppId, s.ordineOrderAppId ? ordineDi.get(s.ordineOrderAppId)?.referenze ?? null : null);
+    const { capi, stimati } = capiScheda(parseJson<Record<string, number>>(s.quantitaTaglia, {}), ref.tipo === "collegata" ? ref.referenza : null);
     return {
       s,
       costi,
       copertina: parseJson<string[]>(s.immagini, [])[0],
-      pezzi: calcolaTotaleQuantita(parseJson<Record<string, number>>(s.quantitaTaglia, {})),
+      pezzi: capi,
+      pezziStimati: stimati,
+      ref: ref.tipo,
       sviluppo: totaleSviluppo(campioni),
       nCampioni: campioni.length,
       nOrdini: ordiniPerArticolo.get(s.id) ?? 0,
@@ -155,12 +161,12 @@ export default async function ListaSchede({ vista, searchParams }: {
           </tr>
         </thead>
         <tbody>
-          {righe.map(({ s, costi, copertina, pezzi, sviluppo, nCampioni, nOrdini, modello }) => {
+          {righe.map(({ s, costi, copertina, pezzi, pezziStimati, ref, sviluppo, nCampioni, nOrdini, modello }) => {
             const stato = STATI_SCHEDA.find((x) => x.value === s.stato);
             // Negli articoli categoria e fascia sono già nel blocco e nel badge.
             const dettagli = isArticoli
               ? (modello ? null : s.categoria)
-              : [s.categoria, s.genere, pezzi > 0 ? `${pezzi} pz` : null].filter(Boolean).join(" · ");
+              : [s.categoria, s.genere, pezzi > 0 ? `${pezzi} pz${pezziStimati ? " stimati" : ""}` : null].filter(Boolean).join(" · ");
             const margineCls = costi.margine === null ? "text-[#5F6878]" : costi.margine < SOGLIA_MARGINE ? "text-[#A8461F]" : "text-[#1D6B4A]";
             const href = `${t.base}/${s.id}`;
             return (
@@ -183,6 +189,12 @@ export default async function ListaSchede({ vista, searchParams }: {
                     <span className={`ml-2 align-middle text-xs font-semibold px-2 py-0.5 rounded-full ${FASCIA_STYLE[modello.fascia] ?? "bg-[#EEEBE3] text-[#4A5566]"}`}>
                       {modello.fascia}
                     </span>
+                  )}
+                  {ref === "non-piu-nell-ordine" && (
+                    <span className="ml-2 align-middle text-xs font-semibold px-2 py-0.5 rounded-full bg-[#FBEDE5] text-[#A8461F]">Non più nell&apos;ordine</span>
+                  )}
+                  {ref === "da-collegare" && (
+                    <span className="ml-2 align-middle text-xs font-medium px-2 py-0.5 rounded-full bg-[#EEF2F8] text-[#1F3A68]">Da collegare</span>
                   )}
                   {dettagli && <div className="text-[13px] text-[#5F6878]">{dettagli}</div>}
                 </td>
@@ -274,9 +286,11 @@ export default async function ListaSchede({ vista, searchParams }: {
               {tabella(g.righe)}
             </section>
           )) : blocchiOrdine.map((b) => {
-            const pezzi = b.righe.reduce((tot, r) => tot + r.pezzi, 0);
+            const pezzi = b.righe.filter((r) => r.ref !== "non-piu-nell-ordine").reduce((tot, r) => tot + r.pezzi, 0);
             const bozze = b.righe.filter((r) => r.s.stato === "bozza").length;
-            const mancanti = b.ordine ? Math.max(0, b.ordine.referenze.length - b.righe.length) : 0;
+            const orfane = b.righe.filter((r) => r.ref === "non-piu-nell-ordine").length;
+            const valide = b.righe.length - orfane;
+            const mancanti = b.ordine ? Math.max(0, b.ordine.referenze.length - valide) : 0;
             return (
               <details key={b.ordineId ?? `c:${b.cliente}`} open={aperti} className="group bg-white border border-[#E4E0D6] rounded-2xl overflow-hidden">
                 <summary className="list-none [&::-webkit-details-marker]:hidden cursor-pointer px-5 py-3.5 flex flex-wrap items-center gap-x-4 gap-y-1 hover:bg-[#FBFAF7] group-open:border-b group-open:border-[#E4E0D6] group-open:bg-[#FBFAF7]">
@@ -290,10 +304,10 @@ export default async function ListaSchede({ vista, searchParams }: {
                     </div>
                   </div>
                   <div className="text-sm text-[#0E1B2C] text-right">
-                    <span className="font-semibold">{b.righe.length} {b.righe.length === 1 ? "referenza" : "referenze"}</span>
+                    <span className="font-semibold">{valide} {valide === 1 ? "referenza" : "referenze"}</span>
                     {b.ordine && b.ordine.referenze.length > 0 && <span className="text-[#5F6878]"> su {b.ordine.referenze.length}</span>}
                     <div className="text-xs text-[#5F6878]">
-                      {[pezzi > 0 ? `${pezzi} pz` : null, bozze > 0 ? `${bozze} in bozza` : null].filter(Boolean).join(" · ") || "\u00a0"}
+                      {[pezzi > 0 ? `${pezzi} pz` : null, bozze > 0 ? `${bozze} in bozza` : null, orfane > 0 ? `${orfane} non più nell'ordine` : null].filter(Boolean).join(" · ") || "\u00a0"}
                     </div>
                   </div>
                   {b.ordineId && (

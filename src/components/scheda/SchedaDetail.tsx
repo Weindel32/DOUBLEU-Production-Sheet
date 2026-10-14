@@ -17,7 +17,8 @@ import { Segmented } from "@/components/ui/Form";
 import type { SchedaCompleta, QuantitaTaglia, Campione } from "@/types";
 import type { ModelloBreve } from "@/components/modelli/CampoModello";
 import type { VoceColore } from "@/lib/colori";
-import type { ClienteOrderApp, OrdineBreve } from "@/lib/orderApp";
+import type { ClienteOrderApp, OrdineBreve, ReferenzaOrderApp } from "@/lib/orderApp";
+import AvvisiReferenza from "./AvvisiReferenza";
 
 export interface SchedaCollegata {
   id: string;
@@ -40,6 +41,11 @@ interface Props {
   vociColori?: VoceColore[];
   clientiOrderApp?: ClienteOrderApp[];
   ordiniOrderApp?: OrdineBreve[];
+  /** Referenze dell'ordine della scheda (null = nessun ordine o ordine non leggibile ora). */
+  referenzeOrdine?: ReferenzaOrderApp[] | null;
+  collegateAltrove?: string[];
+  /** Capi della referenza nell'ordine: stima per costi e acquisti finché la scheda non ha le taglie. */
+  capiOrdine?: number | null;
 }
 
 const SEZIONI = [
@@ -55,7 +61,7 @@ const STATI_OPZIONI = STATI_SCHEDA.map((s) => ({ value: s.value, label: s.label 
 
 const RIEPILOGO_VUOTO: RiepilogoCosti = { materiali: 0, accessori: 0, lavorazioni: 0, totale: 0, prezzoVendita: 0, margine: null };
 
-export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponibili, materialiDisponibili, origine, ordiniCollegati = [], modelli = [], vociColori = [], clientiOrderApp = [], ordiniOrderApp = [] }: Props) {
+export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponibili, materialiDisponibili, origine, ordiniCollegati = [], modelli = [], vociColori = [], clientiOrderApp = [], ordiniOrderApp = [], referenzeOrdine = null, collegateAltrove = [], capiOrdine = null }: Props) {
   const router = useRouter();
   const tipo = normalizzaTipo(scheda.tipo);
   const isCosto = tipo === "costo";
@@ -86,7 +92,10 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
   const tabProduzioneRef = useRef<TabProduzioneHandle>(null);
 
   const sezioni = SEZIONI.filter((s) => !s.soloOrdine || !isCosto);
-  const totalePezzi = isCosto ? 0 : calcolaTotaleQuantita(quantita);
+  // Senza taglie si usano i capi dell'ordine, come stima.
+  const pezziPropri = isCosto ? 0 : calcolaTotaleQuantita(quantita);
+  const pezziStimati = !isCosto && pezziPropri === 0 && !!capiOrdine;
+  const totalePezzi = pezziStimati ? capiOrdine! : pezziPropri;
   const [acquisti, setAcquisti] = useState<AcquistoRiepilogo[]>([]);
 
   // Evidenzia nell'indice la sezione che si sta leggendo.
@@ -291,6 +300,11 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
               </Link>
             )}
 
+            {!isCosto && scheda.ordineOrderAppId && (
+              <AvvisiReferenza scheda={scheda} referenze={referenzeOrdine} collegateAltrove={collegateAltrove}
+                quantita={quantita as Record<string, number>} onSave={handleSave} />
+            )}
+
             <section id="sez-articolo" className="scheda-section">
               <TabArticolo ref={tabArticoloRef} scheda={scheda} onSave={handleSave} clienti={clientiDisponibili}
                 materiali={materialiDisponibili} modelli={modelli} vociColori={vociColori} clientiOrderApp={clientiOrderApp} ordiniOrderApp={ordiniOrderApp} onMetaChange={(m) => setMeta((prev) => ({ ...prev, ...m }))} />
@@ -311,7 +325,7 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
             )}
 
             <TabProduzione ref={tabProduzioneRef} scheda={scheda} onSave={handleSave} materialiDisponibili={materialiDisponibili}
-              soloCosti={isCosto} quantita={quantita} onRiepilogoChange={setRiepilogo} onAcquistiChange={setAcquisti} />
+              soloCosti={isCosto} quantita={quantita} capiOrdine={capiOrdine} onRiepilogoChange={setRiepilogo} onAcquistiChange={setAcquisti} />
 
             <section id="sez-campioni" className="scheda-section">
               <TabCampioni scheda={scheda} onSave={handleSave} onTotaleChange={(totale, numero) => setSviluppo({ totale, numero })} />
@@ -354,7 +368,7 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
               </div>
               {totalePezzi > 0 && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-[#B7C4D8]">Ordine · {totalePezzi} pz</span>
+                  <span className="text-[#B7C4D8]">Ordine · {totalePezzi} pz{pezziStimati && " stimati"}</span>
                   <span className="font-mono">{formatEuro(riepilogo.totale * totalePezzi)}</span>
                 </div>
               )}
@@ -461,7 +475,7 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
         </div>
         {totalePezzi > 0 && (
           <div>
-            <div className="text-[11px] uppercase tracking-wider text-[#B7C4D8]">Ordine · {totalePezzi} pz</div>
+            <div className="text-[11px] uppercase tracking-wider text-[#B7C4D8]">Ordine · {totalePezzi} pz{pezziStimati && " stimati"}</div>
             <div className="font-mono text-xl font-semibold">{formatEuro(riepilogo.totale * totalePezzi)}</div>
           </div>
         )}
