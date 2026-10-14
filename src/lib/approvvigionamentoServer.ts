@@ -37,15 +37,14 @@ export async function acquistiOrdine(ordineId: string) {
     return leggiNomiTessuto(mat?.coloriNomi)[codice]?.nome
       ?? voci.find((v) => v.fornitore === chiaveFornitore(fornitore) && v.codice === codice)?.nome ?? null;
   };
-  const fornitori = riepilogo.fornitori.map((g) => ({
-    ...g,
-    righe: g.righe.map((r) => ({
-      ...r,
-      coloreEtichetta: r.colore || r.codiceColore
-        ? etichettaColore(r.colore, r.codiceColore, r.materiale.fornitore, nomeFornitore(r.materiale.id, r.materiale.fornitore ?? null, r.codiceColore))
-        : null,
-    })),
-  }));
+  const etichetta = <T extends { materiale: { id: string; fornitore?: string | null }; colore: string | null; codiceColore: string | null }>(r: T) => ({
+    ...r,
+    coloreEtichetta: r.colore || r.codiceColore
+      ? etichettaColore(r.colore, r.codiceColore, r.materiale.fornitore, nomeFornitore(r.materiale.id, r.materiale.fornitore ?? null, r.codiceColore))
+      : null,
+  });
+  const fornitori = riepilogo.fornitori.map((g) => ({ ...g, righe: g.righe.map(etichetta) }));
+  const referenze = riepilogo.referenze.map((d) => ({ ...d, righe: d.righe.map(etichetta) }));
 
   const ordine = ordini.find((o) => o.id === ordineId) ?? null;
   return {
@@ -53,7 +52,7 @@ export async function acquistiOrdine(ordineId: string) {
     ordine,
     cliente: ordine?.cliente ?? schedeRows.find((s) => s.cliente)?.cliente?.nome ?? null,
     nSchede: schedeRows.length,
-    riepilogo: { ...riepilogo, fornitori },
+    riepilogo: { ...riepilogo, fornitori, referenze },
   };
 }
 

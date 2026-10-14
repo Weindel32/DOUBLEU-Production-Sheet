@@ -3,7 +3,7 @@
 // materiale e colore si sommano, e solo sul totale si aggiungono scarto e arrotondamento:
 // 4 referenze nello stesso jersey sono un solo acquisto, non quattro arrotondati.
 
-import { calcolaAcquistoMateriale, calcolaTotaleQuantita, type AcquistoMateriale, type MaterialeCostoInfo } from "@/lib/utils";
+import { calcolaAcquistoMateriale, calcolaCostoAlMetro, calcolaTotaleQuantita, type AcquistoMateriale, type MaterialeCostoInfo } from "@/lib/utils";
 import { chiaveFornitore } from "@/lib/colori";
 
 export interface MaterialeAcquisto extends MaterialeCostoInfo {
@@ -31,6 +31,7 @@ export interface Fabbisogno {
   /** Colore DOUBLEU (es. "Navy") e codice colore del fornitore (es. "100"): solo per i tessuti della scheda. */
   colore: string | null;
   codiceColore: string | null;
+  consumoPerCapo: number;
   /** Netto per l'ordine: metri per i tessuti, pezzi per i materiali a pezzo. */
   quantita: number;
 }
@@ -51,9 +52,27 @@ export function fabbisognoScheda(s: SchedaAcquisto, materiali: MaterialeAcquisto
       materiale,
       colore: principale || costina ? s.coloreBase || null : null,
       codiceColore: principale ? s.coloreBaseCodice || null : null,
+      consumoPerCapo: c.consumoPerCapo,
       quantita: capi * c.consumoPerCapo,
     }];
   });
+}
+
+/** Netto nell'unità d'acquisto (kg per i tessuti al kg) e il suo costo, senza scarto né arrotondamento. */
+export function nettoMateriale(m: MaterialeAcquisto, quantita: number) {
+  const a = calcolaAcquistoMateriale(m, quantita, 1);
+  if (!a) return null;
+  const prezzo = a.unita === "kg" ? m.prezzoKg : a.unita === "pz" ? m.costoMetro : calcolaCostoAlMetro(m);
+  return { unita: a.unita, metri: a.metri, netto: a.netto, costo: prezzo ? a.netto * prezzo : null };
+}
+
+/** Una referenza dell'ordine con quello che consuma: la parte "dettaglio" del riepilogo. */
+export interface DettaglioReferenza {
+  id: string;
+  codice: string;
+  nomeArticolo: string;
+  capi: number;
+  righe: (Fabbisogno & { netto: ReturnType<typeof nettoMateriale> })[];
 }
 
 export interface RigaAcquisto {
@@ -79,11 +98,13 @@ export interface RiepilogoAcquisti {
   senzaPrezzo: number;
   /** Schede dell'ordine che non entrano nel calcolo, col motivo. */
   escluse: { id: string; codice: string; nomeArticolo: string; motivo: string }[];
+  referenze: DettaglioReferenza[];
 }
 
 export function riepilogoAcquisti(schede: SchedaAcquisto[], materiali: MaterialeAcquisto[]): RiepilogoAcquisti {
   const righe = new Map<string, RigaAcquisto>();
   const escluse: RiepilogoAcquisti["escluse"] = [];
+  const referenze: DettaglioReferenza[] = [];
   for (const s of schede) {
     const f = fabbisognoScheda(s, materiali);
     if (f.length === 0) {
@@ -91,6 +112,10 @@ export function riepilogoAcquisti(schede: SchedaAcquisto[], materiali: Materiale
       escluse.push({ id: s.id, codice: s.codice, nomeArticolo: s.nomeArticolo, motivo });
       continue;
     }
+    referenze.push({
+      id: s.id, codice: s.codice, nomeArticolo: s.nomeArticolo, capi: calcolaTotaleQuantita(s.quantitaTaglia ?? {}),
+      righe: f.map((x) => ({ ...x, netto: nettoMateriale(x.materiale, x.quantita) })),
+    });
     for (const x of f) {
       const k = [x.materiale.id, x.codiceColore ?? "", (x.colore ?? "").toLowerCase()].join("|");
       const r = righe.get(k) ?? { materiale: x.materiale, colore: x.colore, codiceColore: x.codiceColore, acquisto: null, quantitaNetta: 0, referenze: [] };
@@ -123,6 +148,7 @@ export function riepilogoAcquisti(schede: SchedaAcquisto[], materiali: Materiale
     totale: fornitori.reduce((t, g) => t + g.stima, 0),
     senzaPrezzo: fornitori.reduce((t, g) => t + g.senzaPrezzo, 0),
     escluse,
+    referenze,
   };
 }
 

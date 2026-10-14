@@ -6,6 +6,7 @@ import { quantitaAcquisto } from "@/lib/approvvigionamento";
 import { SCARTO_ACQUISTO, formatEuro, statoOrdine } from "@/lib/utils";
 
 const num1 = (n: number) => n.toLocaleString("it-IT", { maximumFractionDigits: 1 });
+const num2 = (n: number) => n.toLocaleString("it-IT", { maximumFractionDigits: 2 });
 
 /** Approvvigionamento di un ordine: quanto materiale comprare, per fornitore, sommando tutte le sue schede. */
 export default async function AcquistiOrdinePage({ params, searchParams }: {
@@ -42,7 +43,7 @@ export default async function AcquistiOrdinePage({ params, searchParams }: {
             <span className="font-mono text-[#0E1B2C]">{ordineId}</span>
             {ordine?.data && <> · {ordine.data}</>}
             {ordine?.stato && <> · {statoOrdine(ordine.stato)}</>}
-            {` · ${nSchede} ${nSchede === 1 ? "scheda" : "schede"} · tessuti +${SCARTO_ACQUISTO * 100}% di scarto, arrotondati per eccesso`}
+            {` · ${nSchede} ${nSchede === 1 ? "scheda" : "schede"} · nel totale tessuti +${SCARTO_ACQUISTO * 100}% di scarto`}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -77,6 +78,41 @@ export default async function AcquistiOrdinePage({ params, searchParams }: {
         </div>
       ) : (
         <>
+          <h2 className="font-display text-xl font-bold text-[#0E1B2C] pt-1">Dettaglio per referenza</h2>
+          <div className="grid gap-3 lg:grid-cols-2">
+            {riepilogo.referenze.map((d) => (
+              <section key={d.id} className="bg-white border border-[#E4E0D6] rounded-2xl overflow-hidden">
+                <div className="px-4 py-2.5 border-b border-[#E4E0D6] bg-[#FBFAF7] flex items-baseline justify-between gap-3">
+                  <Link href={`/schede/${d.id}`} className="font-semibold text-[#0E1B2C] hover:text-[#1F3A68] hover:underline underline-offset-2 truncate">{d.nomeArticolo}</Link>
+                  <span className="text-[13px] text-[#5F6878] whitespace-nowrap"><span className="font-mono">{d.codice}</span> · {d.capi} capi</span>
+                </div>
+                <ul className="divide-y divide-[#EFEBE2]">
+                  {d.righe.map((r, i) => (
+                    <li key={i} className="px-4 py-2.5 flex items-start gap-3 text-sm">
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-[#0E1B2C]">{r.materiale.nome}</div>
+                        <div className="text-[13px] text-[#5F6878]">
+                          {r.coloreEtichetta ?? <span className="text-[#A8461F]">colore da definire</span>}
+                          {` · ${num2(r.consumoPerCapo)} ${r.netto?.unita === "pz" ? "pz" : "m"}/capo`}
+                        </div>
+                      </div>
+                      <div className="text-right font-mono whitespace-nowrap">
+                        <div className="text-[#0E1B2C]">
+                          {!r.netto ? `${num1(r.quantita)} m` : r.netto.unita === "kg" ? `${num1(r.netto.metri!)} m = ${num1(r.netto.netto)} kg` : `${num1(r.netto.netto)} ${r.netto.unita}`}
+                        </div>
+                        {prezzi && r.netto?.costo != null && <div className="text-[13px] text-[#5F6878]">{formatEuro(r.netto.costo)}</div>}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ))}
+          </div>
+
+          <div className="pt-3">
+            <h2 className="font-display text-xl font-bold text-[#0E1B2C]">Totale da acquistare</h2>
+            <p className="text-sm text-[#5F6878]">Stesso materiale e colore sommati su tutto l&apos;ordine, con lo scarto e arrotondati per eccesso: è quello che si ordina.</p>
+          </div>
           {riepilogo.fornitori.map((g) => (
             <section key={g.fornitore || "nessuno"} className="bg-white border border-[#E4E0D6] rounded-2xl overflow-hidden">
               <div className="px-5 py-3 border-b border-[#E4E0D6] bg-[#FBFAF7] flex items-baseline justify-between gap-3">
@@ -84,7 +120,8 @@ export default async function AcquistiOrdinePage({ params, searchParams }: {
                 {prezzi && <span className="font-mono text-[15px] font-semibold text-[#0E1B2C]">{formatEuro(g.stima)}</span>}
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full text-[15px] min-w-[760px]">
+                <table className="w-full text-[15px] min-w-[640px] table-fixed">
+                  <colgroup><col /><col className="w-[30%]" /><col className="w-[170px]" /><col className="w-[120px]" />{prezzi && <col className="w-[120px]" />}</colgroup>
                   <thead>
                     <tr className="border-b border-[#E4E0D6] text-left text-[13px] text-[#5F6878]">
                       <th className={`${cella} font-medium`}>Materiale</th>
@@ -92,7 +129,6 @@ export default async function AcquistiOrdinePage({ params, searchParams }: {
                       <th className={`${cella} font-medium text-right`}>Netto</th>
                       <th className={`${cella} font-medium text-right`}>Da comprare</th>
                       {prezzi && <th className={`${cella} font-medium text-right`}>Stima</th>}
-                      <th className={`${cella} font-medium`}>Referenze</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -114,11 +150,6 @@ export default async function AcquistiOrdinePage({ params, searchParams }: {
                               {a?.stima != null ? formatEuro(a.stima) : <span className="text-[#A8461F] text-sm font-sans">manca il prezzo</span>}
                             </td>
                           )}
-                          <td className={`${cella} text-sm`}>
-                            {r.referenze.map((ref, i) => (
-                              <span key={ref.id}>{i > 0 && ", "}<Link href={`/schede/${ref.id}`} className="text-[#1F3A68] hover:underline underline-offset-2">{ref.nomeArticolo}</Link></span>
-                            ))}
-                          </td>
                         </tr>
                       );
                     })}
