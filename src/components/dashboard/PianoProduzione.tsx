@@ -36,7 +36,9 @@ export default function PianoProduzione({ ordineId, piano, consegna }: { ordineI
     ? (consegna ? null : <span className="text-[#5F6878]">consegna al club da fissare</span>)
     : piano.ritardo > 0
       ? <span className="font-semibold text-[#A8461F]">{piano.ritardo} {piano.ritardo === 1 ? "giorno" : "giorni"} dopo la consegna ({consegna})</span>
-      : <span className="font-semibold text-[#1D6B4A]">{-piano.ritardo} {piano.ritardo === -1 ? "giorno" : "giorni"} prima della consegna ({consegna})</span>;
+      : piano.ritardo === 0
+        ? <span className="font-semibold text-[#1D6B4A]">in linea con la consegna ({consegna})</span>
+        : <span className="font-semibold text-[#1D6B4A]">{-piano.ritardo} {piano.ritardo === -1 ? "giorno" : "giorni"} prima della consegna ({consegna})</span>;
 
   return (
     <div className="rounded-xl bg-[#F6F4EF] px-3.5 py-2.5 text-[13px] text-[#4A5566]">
