@@ -6,7 +6,8 @@ import {
   FASCE_MODELLO, FASCIA_STYLE, ordinaCategorie, statoOrdine, MARGINE_MINIMO,
 } from "@/lib/utils";
 import { ordiniOrderApp, type OrdineOrderApp } from "@/lib/orderApp";
-import { capiScheda, statoReferenza } from "@/lib/referenze";
+import { capiScheda, chiaveParte, ETICHETTA_PARTE, parteCoperta, partiReferenza, statoReferenza } from "@/lib/referenze";
+import { salvaRicollegamenti } from "@/lib/clientiOrderApp";
 import SchedaRowMenu from "@/components/scheda/SchedaRowMenu";
 import { riepilogoScheda } from "@/lib/costiScheda";
 import type { Campione } from "@/types";
@@ -71,10 +72,11 @@ export default async function ListaSchede({ vista, searchParams }: {
     const costi = riepilogoScheda(s, materiali);
     const campioni = parseJson<Campione[]>(s.campioni, []);
     // Referenza dell'ordine: dà i capi stimati quando mancano le taglie e segnala le schede rimaste orfane.
-    const ref = statoReferenza(s.articoloOrderAppId, s.ordineOrderAppId ? ordineDi.get(s.ordineOrderAppId)?.referenze ?? null : null);
+    const ref = statoReferenza(s, s.ordineOrderAppId ? ordineDi.get(s.ordineOrderAppId)?.referenze ?? null : null);
     const { capi, stimati } = capiScheda(parseJson<Record<string, number>>(s.quantitaTaglia, {}), ref.tipo === "collegata" ? ref.referenza : null);
     return {
       s,
+      stato: ref,
       costi,
       copertina: parseJson<string[]>(s.immagini, [])[0],
       pezzi: capi,
@@ -87,6 +89,8 @@ export default async function ListaSchede({ vista, searchParams }: {
       modello: s.codiceModello ? modelloDi.get(s.codiceModello) : undefined,
     };
   });
+
+  await salvaRicollegamenti(righe.map((r) => ({ id: r.s.id, stato: r.stato })));
 
   const q = filtri.q?.trim().toLowerCase();
   const filtrate = righe.filter(({ s, costi, nCampioni, modello }) =>
@@ -161,7 +165,9 @@ export default async function ListaSchede({ vista, searchParams }: {
           </tr>
         </thead>
         <tbody>
-          {righe.map(({ s, costi, copertina, pezzi, pezziStimati, ref, sviluppo, nCampioni, nOrdini, modello }) => {
+          {righe.map(({ s, stato: statoRef, costi, copertina, pezzi, pezziStimati, ref, sviluppo, nCampioni, nOrdini, modello }) => {
+            // Adulto o Bambino solo quando la referenza li ha entrambi: altrimenti non c'è niente da distinguere.
+            const parte = statoRef.tipo === "collegata" && partiReferenza(statoRef.referenza).length > 1 ? statoRef.parte : null;
             const stato = STATI_SCHEDA.find((x) => x.value === s.stato);
             // Negli articoli categoria e fascia sono già nel blocco e nel badge.
             const dettagli = isArticoli
@@ -189,6 +195,9 @@ export default async function ListaSchede({ vista, searchParams }: {
                     <span className={`ml-2 align-middle text-xs font-semibold px-2 py-0.5 rounded-full ${FASCIA_STYLE[modello.fascia] ?? "bg-[#EEEBE3] text-[#4A5566]"}`}>
                       {modello.fascia}
                     </span>
+                  )}
+                  {parte && (
+                    <span className={`ml-2 align-middle text-xs font-semibold px-2 py-0.5 rounded-full ${parte === "bambino" ? FASCIA_STYLE.Kids : FASCIA_STYLE.Adulto}`}>{ETICHETTA_PARTE[parte]}</span>
                   )}
                   {ref === "non-piu-nell-ordine" && (
                     <span className="ml-2 align-middle text-xs font-semibold px-2 py-0.5 rounded-full bg-[#FBEDE5] text-[#A8461F]">Non più nell&apos;ordine</span>
@@ -290,7 +299,12 @@ export default async function ListaSchede({ vista, searchParams }: {
             const bozze = b.righe.filter((r) => r.s.stato === "bozza").length;
             const orfane = b.righe.filter((r) => r.ref === "non-piu-nell-ordine").length;
             const valide = b.righe.length - orfane;
-            const mancanti = b.ordine ? Math.max(0, b.ordine.referenze.length - valide) : 0;
+            // Ogni referenza chiede una scheda per parte: adulto, e bambino se ci sono taglie bambino.
+            const coperte = b.righe.flatMap((r) => r.stato.tipo === "collegata" ? [chiaveParte(r.s.articoloOrderAppId!, r.stato.parte)] : []);
+            const necessarie = b.ordine ? b.ordine.referenze.flatMap((r) => partiReferenza(r).map((p) => ({ r, p }))) : [];
+            const daCollegare = b.righe.filter((r) => r.ref === "da-collegare").length;
+            const scoperte = necessarie.filter(({ r, p }) => !parteCoperta(r, p, coperte));
+            const mancanti = Math.max(0, scoperte.length - daCollegare);
             return (
               <details key={b.ordineId ?? `c:${b.cliente}`} open={aperti} className="group bg-white border border-[#E4E0D6] rounded-2xl overflow-hidden">
                 <summary className="list-none [&::-webkit-details-marker]:hidden cursor-pointer px-5 py-3.5 flex flex-wrap items-center gap-x-4 gap-y-1 hover:bg-[#FBFAF7] group-open:border-b group-open:border-[#E4E0D6] group-open:bg-[#FBFAF7]">
@@ -305,9 +319,10 @@ export default async function ListaSchede({ vista, searchParams }: {
                   </div>
                   <div className="text-sm text-[#0E1B2C] text-right">
                     <span className="font-semibold">{valide} {valide === 1 ? "referenza" : "referenze"}</span>
-                    {b.ordine && b.ordine.referenze.length > 0 && <span className="text-[#5F6878]"> su {b.ordine.referenze.length}</span>}
+                    {necessarie.length > 0 && <span className="text-[#5F6878]"> su {necessarie.length}</span>}
                     <div className="text-xs text-[#5F6878]">
-                      {[pezzi > 0 ? `${pezzi} pz` : null, bozze > 0 ? `${bozze} in bozza` : null, orfane > 0 ? `${orfane} non più nell'ordine` : null].filter(Boolean).join(" · ") || "\u00a0"}
+                      {[pezzi > 0 ? `${pezzi} pz` : null, bozze > 0 ? `${bozze} in bozza` : null, orfane > 0 ? `${orfane} non più nell'ordine` : null,
+                        mancanti > 0 ? `${mancanti} da creare` : null].filter(Boolean).join(" · ") || "\u00a0"}
                     </div>
                   </div>
                   {b.ordineId && (

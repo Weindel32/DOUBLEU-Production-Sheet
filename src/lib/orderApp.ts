@@ -17,19 +17,37 @@ export interface ReferenzaOrderApp {
   capi: number | null;
   /** Quantità per taglia come nella scheda (S, M… e 6A, 8A… per i bambini); null finché il club non le manda. */
   taglie: Record<string, number> | null;
+  /** Le stesse taglie divise: adulto e bambino sono due prodotti, con due schede e due codici. */
+  taglieAdulto: Record<string, number> | null;
+  taglieBambino: Record<string, number> | null;
+  /** Kit, descrizione e colore di ogni articolo unito: ritrovano la referenza se l'id cambia. */
+  firme: string[];
 }
 
 type TaglieOrderApp = Record<string, number | null> | null;
 
 /** Taglie dell'articolo: adulto così come sono, bambino "6" → "6A" come nella scheda; "__qty" è il totale senza taglie. */
 function leggiTaglie(adulto: TaglieOrderApp, bambino: TaglieOrderApp) {
-  const taglie: Record<string, number> = {};
-  for (const [t, q] of Object.entries(adulto ?? {})) if (t !== "__qty" && q && q > 0) taglie[t] = q;
-  for (const [t, q] of Object.entries(bambino ?? {})) if (t !== "__qty" && q && q > 0) taglie[/^\d+$/.test(t) ? `${t}A` : t] = q;
-  const somma = Object.values(taglie).reduce((a, b) => a + b, 0);
+  const taglieAdulto: Record<string, number> = {};
+  const taglieBambino: Record<string, number> = {};
+  for (const [t, q] of Object.entries(adulto ?? {})) if (t !== "__qty" && q && q > 0) taglieAdulto[t] = q;
+  for (const [t, q] of Object.entries(bambino ?? {})) if (t !== "__qty" && q && q > 0) taglieBambino[/^\d+$/.test(t) ? `${t}A` : t] = q;
+  const taglie = { ...taglieAdulto, ...taglieBambino };
+  const somma = sommaTaglie(taglie);
   const totale = (adulto?.__qty ?? 0) + (bambino?.__qty ?? 0);
-  return { taglie: somma > 0 ? taglie : null, capi: somma > 0 ? somma : totale > 0 ? totale : null };
+  return {
+    taglie: somma > 0 ? taglie : null,
+    taglieAdulto: sommaTaglie(taglieAdulto) > 0 ? taglieAdulto : null,
+    taglieBambino: sommaTaglie(taglieBambino) > 0 ? taglieBambino : null,
+    capi: somma > 0 ? somma : totale > 0 ? totale : null,
+  };
 }
+
+export const sommaTaglie = (t: Record<string, number> | null | undefined) => Object.values(t ?? {}).reduce((a, b) => a + b, 0);
+
+/** Impronta di un articolo dell'ordine: kit, descrizione e colore, senza maiuscole e spazi ai bordi. */
+export const firmaArticolo = (kit: string | null, descrizione: string | null, colore: string | null) =>
+  [kit, descrizione, colore].map((v) => (v ?? "").trim().toLowerCase()).join("|");
 
 /** Nome della referenza per la scheda: "Polo senza bottoni · Adulto" → "Polo senza bottoni". */
 export const nomeReferenza = (r: { descrizione: string | null; categoria: string | null }) =>
@@ -87,6 +105,13 @@ export const chiaveData = (d: string | null) => {
   return m ? `${m[3]}${m[2].padStart(2, "0")}${m[1].padStart(2, "0")}` : "";
 };
 
+function sommaInsieme(a: Record<string, number> | null, b: Record<string, number> | null) {
+  if (!b) return a;
+  const somma = { ...(a ?? {}) };
+  for (const [t, q] of Object.entries(b)) somma[t] = (somma[t] ?? 0) + q;
+  return somma;
+}
+
 /**
  * Lo stesso articolo ripetuto nell'ordine (es. due pantaloncini nello stesso kit, o in due kit)
  * è una sola referenza: una sola scheda di produzione. I kit in cui compare si elencano insieme.
@@ -96,15 +121,21 @@ function unisciUguali(righe: ReferenzaOrderApp[]): ReferenzaOrderApp[] {
   for (const r of righe) {
     const k = [r.descrizione ?? r.categoria, r.colore].map((v) => (v ?? "").trim().toLowerCase()).join("|");
     const prima = perChiave.get(k);
-    if (!prima) { perChiave.set(k, { ...r, ids: [...r.ids], taglie: r.taglie && { ...r.taglie } }); continue; }
+    if (!prima) {
+      perChiave.set(k, {
+        ...r, ids: [...r.ids], firme: [...r.firme],
+        taglie: r.taglie && { ...r.taglie }, taglieAdulto: r.taglieAdulto && { ...r.taglieAdulto }, taglieBambino: r.taglieBambino && { ...r.taglieBambino },
+      });
+      continue;
+    }
     if (r.kit && !(prima.kit ?? "").split(" · ").includes(r.kit)) prima.kit = prima.kit ? `${prima.kit} · ${r.kit}` : r.kit;
     // Due pantaloncini uguali nel kit sono il doppio dei capi: quantità e taglie si sommano.
     prima.ids.push(...r.ids);
+    prima.firme.push(...r.firme);
     if (r.capi) prima.capi = (prima.capi ?? 0) + r.capi;
-    if (r.taglie) {
-      prima.taglie ??= {};
-      for (const [t, q] of Object.entries(r.taglie)) prima.taglie[t] = (prima.taglie[t] ?? 0) + q;
-    }
+    prima.taglie = sommaInsieme(prima.taglie, r.taglie);
+    prima.taglieAdulto = sommaInsieme(prima.taglieAdulto, r.taglieAdulto);
+    prima.taglieBambino = sommaInsieme(prima.taglieBambino, r.taglieBambino);
   }
   return [...perChiave.values()];
 }
@@ -139,7 +170,8 @@ export async function ordiniOrderApp(): Promise<OrdineOrderApp[]> {
       referenze: unisciUguali((kitPerOrdine.get(o.id) ?? [])
         .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
         .flatMap((k) => (articoliPerKit.get(k.id) ?? []).map((a) => ({
-          id: a.id, ids: [a.id], kit: k.name, categoria: a.category, descrizione: a.description?.trim() || null, colore: a.color?.trim() || null,
+          id: a.id, ids: [a.id], firme: [firmaArticolo(k.name, a.description, a.color)],
+          kit: k.name, categoria: a.category, descrizione: a.description?.trim() || null, colore: a.color?.trim() || null,
           ...leggiTaglie(a.sizes_adult, a.sizes_kids),
         })))),
     }))

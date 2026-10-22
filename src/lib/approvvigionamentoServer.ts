@@ -13,12 +13,13 @@ function parseJson<T>(s: string | null, fallback: T): T {
 type RigaScheda = {
   id: string; codice: string; nomeArticolo: string; quantitaTaglia: string | null; consumoMateriale: string | null;
   tessutoPrincipale: string | null; tessutoSecondario: string | null; coloreBase: string | null; coloreBaseCodice: string | null;
-  articoloOrderAppId: string | null;
+  articoloOrderAppId: string | null; firmaOrderApp: string | null; genere: string | null;
 };
 
 /** Scheda del database → dati per il calcolo acquisti: capi stimati dall'ordine, fuori se non è più nell'ordine. */
 export function schedaAcquisto(s: RigaScheda, ordine: OrdineOrderApp | null | undefined): SchedaAcquisto {
-  const stato = statoReferenza(s.articoloOrderAppId, ordine?.referenze ?? null);
+  // Capi della parte della referenza che la scheda produce (adulto o bambino).
+  const stato = statoReferenza(s, ordine?.referenze ?? null);
   return {
     id: s.id, codice: s.codice, nomeArticolo: s.nomeArticolo,
     quantitaTaglia: parseJson(s.quantitaTaglia, null),

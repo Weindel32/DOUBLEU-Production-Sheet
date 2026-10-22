@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-import { datiOrdine } from "@/lib/clientiOrderApp";
+import { datiOrdine, firmaArticoloOrdine } from "@/lib/clientiOrderApp";
 
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -26,6 +26,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     Object.assign(data, ordine);
     // Cambiando ordine la referenza di prima non vale più, a meno che non arrivi insieme quella nuova.
     if (body.articoloOrderAppId === undefined) data.articoloOrderAppId = null;
+  }
+  // Il collegamento alla referenza porta con sé la firma dell'articolo (kit, descrizione, colore).
+  if (data.articoloOrderAppId !== undefined) {
+    const ordineId = data.ordineOrderAppId !== undefined
+      ? data.ordineOrderAppId as string | null
+      : (await prisma.scheda.findUnique({ where: { id }, select: { ordineOrderAppId: true } }))?.ordineOrderAppId;
+    data.firmaOrderApp = await firmaArticoloOrdine(ordineId, data.articoloOrderAppId as string | null);
   }
 
   if (body.tabellaMisure !== undefined)

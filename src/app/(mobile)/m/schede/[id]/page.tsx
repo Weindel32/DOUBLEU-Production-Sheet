@@ -10,7 +10,7 @@ import Link from "next/link";
 import { ShoppingCart } from "lucide-react";
 import PulsantePdf from "@/components/ui/PulsantePdf";
 import { ordiniOrderApp, nomeReferenza } from "@/lib/orderApp";
-import { capiScheda, statoReferenza } from "@/lib/referenze";
+import { capiScheda, ETICHETTA_PARTE, partiReferenza, statoReferenza } from "@/lib/referenze";
 
 function Blocco({ titolo, destra, children }: { titolo: string; destra?: ReactNode; children: ReactNode }) {
   return (
@@ -47,7 +47,7 @@ export default async function MobileSchedaDetailPage({ params }: { params: Promi
     scheda.ordineOrderAppId ? ordiniOrderApp() : Promise.resolve([]),
   ]);
   const ordine = scheda.ordineOrderAppId ? ordini.find((o) => o.id === scheda.ordineOrderAppId) : undefined;
-  const ref = statoReferenza(scheda.articoloOrderAppId, ordine?.referenze ?? null);
+  const ref = statoReferenza(scheda, ordine?.referenze ?? null);
 
   const quantita: Record<string, number> = scheda.quantitaTaglia ? JSON.parse(scheda.quantitaTaglia) : {};
   const tabellaMisure = scheda.tabellaMisure ? JSON.parse(scheda.tabellaMisure) : {};
@@ -80,7 +80,7 @@ export default async function MobileSchedaDetailPage({ params }: { params: Promi
         {ordine && (
           <div className={`rounded-2xl border px-4 py-3 text-[14px] ${ref.tipo === "non-piu-nell-ordine" ? "border-[#E8B4A0] bg-[#FBEDE5] text-[#A8461F]" : "border-[#C9D5E8] bg-[#EEF2F8] text-[#1F3A68]"}`}>
             <div className="font-semibold">{ordine.cliente} · <span className="font-mono">{ordine.id}</span></div>
-            {ref.tipo === "collegata" && <div>Referenza: {nomeReferenza(ref.referenza)}{ref.referenza.capi ? ` · ${ref.referenza.capi} capi nell'ordine` : ""}</div>}
+            {ref.tipo === "collegata" && <div>Referenza: {nomeReferenza(ref.referenza)}{partiReferenza(ref.referenza).length > 1 || ref.parte === "bambino" ? ` · ${ETICHETTA_PARTE[ref.parte]}` : ""}{ref.referenza.capi ? ` · ${ref.referenza.capi} capi nell'ordine` : ""}</div>}
             {ref.tipo === "non-piu-nell-ordine" && <div><strong>Non più nell&apos;ordine</strong>: la referenza è stata tolta o sostituita. Va sistemata dal computer.</div>}
             {ref.tipo === "da-collegare" && <div>Non ancora collegata a una referenza dell&apos;ordine.</div>}
           </div>

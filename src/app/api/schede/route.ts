@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { normalizzaTipo, ACCESSORI_NUOVO_COSTO } from "@/lib/utils";
 import { generaCodice } from "@/lib/codici";
-import { datiOrdine } from "@/lib/clientiOrderApp";
+import { datiOrdine, firmaArticoloOrdine } from "@/lib/clientiOrderApp";
 
 export async function GET() {
   const schede = await prisma.scheda.findMany({
@@ -26,6 +26,7 @@ export async function POST(req: NextRequest) {
     const ordine = body.ordineOrderAppId ? await datiOrdine(body.ordineOrderAppId) : null;
     if (ordine && "error" in ordine) return NextResponse.json({ error: ordine.error }, { status: 400 });
     const codice = codiceManuale || await generaCodice(body.categoria || "Altro");
+    const articoloOrderAppId = ordine?.ordineOrderAppId && typeof body.articoloOrderAppId === "string" ? body.articoloOrderAppId : null;
     const scheda = await prisma.scheda.create({
       data: {
         codice,
@@ -37,7 +38,8 @@ export async function POST(req: NextRequest) {
         collezione: body.collezione,
         clienteId: ordine?.clienteId ?? (body.clienteId || null),
         ordineOrderAppId: ordine?.ordineOrderAppId ?? null,
-        articoloOrderAppId: ordine?.ordineOrderAppId && typeof body.articoloOrderAppId === "string" ? body.articoloOrderAppId : null,
+        articoloOrderAppId,
+        firmaOrderApp: await firmaArticoloOrdine(ordine?.ordineOrderAppId, articoloOrderAppId),
         categoria: body.categoria,
         vestibilita: body.vestibilita,
         genere: body.genere,
