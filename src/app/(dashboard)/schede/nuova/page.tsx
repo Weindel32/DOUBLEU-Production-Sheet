@@ -4,7 +4,7 @@ import { normalizzaTipo } from "@/lib/utils";
 import NuovaSchedaForm from "@/components/scheda/NuovaSchedaForm";
 import { costiPerModello } from "@/lib/costiModelli";
 import { ordiniOrderApp, ordineAttivo } from "@/lib/orderApp";
-import { chiaveParte, parteScheda } from "@/lib/referenze";
+import { chiaveParte, parteScheda, statoReferenza } from "@/lib/referenze";
 
 /** ?tipo=costo|produzione, ?modello=CODICE (da "Modelli") e ?ordine=DU-… (dall'elenco ordini) precompilano il form. */
 export default async function NuovaSchedaPage({ searchParams }: {
@@ -22,7 +22,15 @@ export default async function NuovaSchedaPage({ searchParams }: {
   ]);
   const ordineIniziale = str("ordine");
   const ordiniScelta = ordini.filter((o) => ordineAttivo(o) || o.id === ordineIniziale);
-  const conScheda = await prisma.scheda.findMany({ where: { articoloOrderAppId: { not: null } }, select: { articoloOrderAppId: true, genere: true } });
+  // Parti di referenza già coperte: l'id può essere cambiato nell'Order App, la firma ritrova l'articolo attuale.
+  const ordineDi = new Map(ordini.map((o) => [o.id, o]));
+  const conScheda = (await prisma.scheda.findMany({
+    where: { articoloOrderAppId: { not: null } },
+    select: { articoloOrderAppId: true, firmaOrderApp: true, genere: true, ordineOrderAppId: true },
+  })).flatMap((s) => {
+    const ref = statoReferenza(s, s.ordineOrderAppId ? ordineDi.get(s.ordineOrderAppId)?.referenze ?? null : null);
+    return [chiaveParte(ref.tipo === "collegata" ? ref.ricollegata ?? s.articoloOrderAppId! : s.articoloOrderAppId!, parteScheda(s.genere))];
+  });
   return <NuovaSchedaForm tipoIniziale={normalizzaTipo(str("tipo"))} modelloIniziale={str("modello")} modelli={modelli} costiEsistenti={costi}
-    ordini={ordiniScelta} ordineIniziale={ordineIniziale} articoliConScheda={conScheda.map((s) => chiaveParte(s.articoloOrderAppId!, parteScheda(s.genere)))} />;
+    ordini={ordiniScelta} ordineIniziale={ordineIniziale} articoliConScheda={conScheda} />;
 }
