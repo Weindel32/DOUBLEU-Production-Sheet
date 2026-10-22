@@ -11,6 +11,7 @@ import { statoReferenza, capiScheda, taglieDiverse, chiaveParte, parteCoperta, p
 import { nomeReferenza } from "@/lib/orderApp";
 import { riepilogoScheda } from "@/lib/costiScheda";
 import { MARGINE_MINIMO, TIPI_COSTO_DB } from "@/lib/utils";
+import { pianoProduzione } from "@/lib/produzione";
 
 const STATI_ATTIVI = ["CONFERMATO", "IN PRODUZIONE"];
 /** Preavviso quando l'ordine non ne indica uno. */
@@ -33,7 +34,7 @@ export function giorniAllaConsegna(data: string | null, oggi = new Date()) {
 export type Urgenza = "scaduto" | "preavviso" | "ok" | "senza-data";
 
 export interface AzioneDaFare {
-  tipo: "senza-scheda" | "da-collegare" | "orfana" | "taglie" | "consumi" | "prezzo" | "materiale";
+  tipo: "senza-scheda" | "da-collegare" | "orfana" | "taglie" | "consumi" | "prezzo" | "materiale" | "ritardo";
   testo: string;
   dettaglio: string;
   href: string;
@@ -41,12 +42,14 @@ export interface AzioneDaFare {
 }
 
 export async function datiDashboard() {
-  const [ordini, schedeRows, materiali, voci] = await Promise.all([
+  const [ordini, schedeRows, materiali, voci, piani] = await Promise.all([
     ordiniOrderApp(),
     prisma.scheda.findMany({ where: { tipo: { notIn: TIPI_COSTO_DB } }, orderBy: { updatedAt: "desc" } }),
     prisma.materiale.findMany(),
     prisma.coloreFornitore.findMany(),
+    prisma.pianoOrdine.findMany(),
   ]);
+  const pianoDi = new Map(piani.map((p) => [p.ordineOrderAppId, p]));
 
   const attivi = ordini
     .filter((o) => !o.perso && STATI_ATTIVI.includes(o.stato ?? ""))
@@ -104,8 +107,17 @@ export async function datiDashboard() {
         azioni.push({ tipo: "prezzo", testo: `${s.nomeArticolo}: manca il prezzo di vendita`, dettaglio: `${chi} · margine non calcolabile`, href: `/schede/${s.id}#sez-costi`, urgenza });
     }
 
+    // Tempi di produzione: dalla ricezione delle taglie (o dalla partenza scritta a mano) più i giorni lavorativi.
+    const salvato = pianoDi.get(o.id);
+    const produzione = pianoProduzione({
+      ricezione: o.ricezioneTaglie, inizioManuale: salvato?.inizioProduzione ?? null,
+      giorni: salvato?.giorniProduzione ?? null, consegna: o.consegna,
+    });
+    if (produzione.ritardo !== null && produzione.ritardo > 0)
+      azioni.push({ tipo: "ritardo", testo: `Pronto ${produzione.ritardo} ${produzione.ritardo === 1 ? "giorno" : "giorni"} dopo la consegna promessa`, dettaglio: chi, href: "/dashboard#ordini", urgenza: urgenza === "ok" || urgenza === "senza-data" ? "preavviso" : urgenza });
+
     return {
-      id: o.id, cliente: o.cliente, stato: o.stato, consegna: o.consegna, giorni, preavviso, urgenza,
+      id: o.id, cliente: o.cliente, stato: o.stato, consegna: o.consegna, giorni, preavviso, urgenza, produzione,
       referenze: necessarie.length, coperte: necessarie.length - scoperte.length + Math.min(daCollegare.length, scoperte.length), senzaScheda: senzaScheda + bambiniDaFare.length,
       esecutive: valide.filter(({ s }) => s.stato === "esecutiva").length,
       bozze: valide.filter(({ s }) => s.stato !== "esecutiva").length,

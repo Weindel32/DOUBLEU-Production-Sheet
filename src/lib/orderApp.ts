@@ -2,6 +2,8 @@
 // Servono ORDER_APP_SUPABASE_URL e ORDER_APP_SUPABASE_KEY su Vercel; senza, gli elenchi sono vuoti
 // e la Production Sheet funziona come prima con i suoi clienti.
 
+import { giornoItaliano } from "@/lib/produzione";
+
 export interface ClienteOrderApp { id: string; nome: string; citta: string | null; categoria: string | null }
 
 /** Una referenza dell'ordine: un articolo di un kit (o lo stesso articolo ripetuto, unito). */
@@ -67,6 +69,8 @@ export interface OrdineOrderApp {
   /** Consegna prevista (gg/mm/aaaa) e giorni di preavviso impostati nell'Order App. */
   consegna: string | null;
   preavviso: number | null;
+  /** Giorno (aaaa-mm-gg, ora italiana) in cui il club ha inviato le taglie dal modulo: da qui parte la produzione. */
+  ricezioneTaglie: string | null;
   referenze: ReferenzaOrderApp[];
 }
 
@@ -142,7 +146,7 @@ function unisciUguali(righe: ReferenzaOrderApp[]): ReferenzaOrderApp[] {
 
 /** Ordini dell'Order App con le loro referenze, dal più recente. Gli ordini persi restano: possono avere schede. */
 export async function ordiniOrderApp(): Promise<OrdineOrderApp[]> {
-  const [ordini, kits, articoli] = await Promise.all([
+  const [ordini, kits, articoli, moduli] = await Promise.all([
     leggi<{ id: string; client: string | null; client_id: string | null; date: string | null; status: string | null; lost: boolean | null; delivery_date: string | null; alert_days: number | null }>(
       "orders?select=id,client,client_id,date,status,lost,delivery_date,alert_days",
     ),
@@ -150,12 +154,19 @@ export async function ordiniOrderApp(): Promise<OrdineOrderApp[]> {
     leggi<{ id: string; kit_id: string; category: string | null; description: string | null; color: string | null; sizes_adult: TaglieOrderApp; sizes_kids: TaglieOrderApp }>(
       "articles?select=id,kit_id,category,description,color,sizes_adult,sizes_kids",
     ),
+    leggi<{ order_id: string; submitted_at: string | null }>("order_forms?select=order_id,submitted_at&submitted_at=not.is.null"),
   ]);
   if (!ordini) return [];
   const kitPerOrdine = new Map<string, { id: string; name: string | null; position: number | null }[]>();
   for (const k of kits ?? []) kitPerOrdine.set(k.order_id, [...(kitPerOrdine.get(k.order_id) ?? []), k]);
   const articoliPerKit = new Map<string, NonNullable<typeof articoli>>();
   for (const a of articoli ?? []) articoliPerKit.set(a.kit_id, [...(articoliPerKit.get(a.kit_id) ?? []), a]);
+  // Ultimo invio del modulo taglie: se il club le corregge, la produzione riparte da lì.
+  const ricezione = new Map<string, string>();
+  for (const m of moduli ?? []) {
+    const prima = ricezione.get(m.order_id);
+    if (m.submitted_at && (!prima || m.submitted_at > prima)) ricezione.set(m.order_id, m.submitted_at);
+  }
 
   return ordini
     .map((o) => ({
@@ -167,6 +178,7 @@ export async function ordiniOrderApp(): Promise<OrdineOrderApp[]> {
       perso: !!o.lost,
       consegna: o.delivery_date || null,
       preavviso: o.alert_days ?? null,
+      ricezioneTaglie: ricezione.has(o.id) ? giornoItaliano(ricezione.get(o.id)!) : null,
       referenze: unisciUguali((kitPerOrdine.get(o.id) ?? [])
         .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
         .flatMap((k) => (articoliPerKit.get(k.id) ?? []).map((a) => ({

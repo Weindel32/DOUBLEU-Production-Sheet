@@ -6,9 +6,10 @@ import {
 import { datiDashboard, type AzioneDaFare, type Urgenza } from "@/lib/dashboard";
 import { MARGINE_MINIMO, SCARTO_ACQUISTO, formatEuro, statoOrdine } from "@/lib/utils";
 import { quantitaAcquisto } from "@/lib/approvvigionamento";
+import PianoProduzione from "@/components/dashboard/PianoProduzione";
 
 const ICONA_AZIONE: Record<AzioneDaFare["tipo"], typeof Tag> = {
-  "senza-scheda": FilePlus2, "da-collegare": Link2, orfana: Unlink, taglie: Ruler, consumi: Scissors, prezzo: Tag, materiale: PackageX,
+  "senza-scheda": FilePlus2, "da-collegare": Link2, orfana: Unlink, taglie: Ruler, consumi: Scissors, prezzo: Tag, materiale: PackageX, ritardo: CalendarClock,
 };
 
 const URGENZA: Record<Urgenza, { chip: string; barra: string }> = {
@@ -93,7 +94,7 @@ export default async function DashboardPage() {
       </section>
 
       {/* ── Ordini in lavorazione ─────────────────────────── */}
-      <section>
+      <section id="ordini">
         <Titolo destra={<span className="text-[13px] text-[#5F6878]">confermati e in produzione · per data di consegna</span>}>Ordini in lavorazione</Titolo>
         {d.ordini.length === 0 ? (
           <div className="bg-white border border-[#E4E0D6] rounded-2xl p-10 text-center text-[#5F6878]">Nessun ordine confermato o in produzione.</div>
@@ -126,6 +127,8 @@ export default async function DashboardPage() {
                       <div className={`absolute inset-y-0 left-0 ${u.barra}`} style={{ width: `${avanzamento}%` }} />
                     </div>
                   </div>
+
+                  <PianoProduzione ordineId={o.id} piano={o.produzione} consegna={o.consegna} />
 
                   <dl className="grid grid-cols-3 gap-2 text-[12px]">
                     <div className="rounded-xl bg-[#F6F4EF] px-3 py-2">

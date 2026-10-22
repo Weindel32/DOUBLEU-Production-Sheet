@@ -190,3 +190,12 @@ model ColoreFornitore {
 
   @@unique([fornitore, codice])
 }
+
+// Piano di produzione di un ordine dell'Order App: giorni lavorativi (vuoto = 30) e, se le taglie
+// non sono arrivate dal modulo, il primo giorno di produzione scritto a mano (aaaa-mm-gg).
+model PianoOrdine {
+  ordineOrderAppId String   @id
+  giorniProduzione Int?
+  inizioProduzione String?
+  updatedAt        DateTime @updatedAt
+}
