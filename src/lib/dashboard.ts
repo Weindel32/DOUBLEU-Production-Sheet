@@ -6,7 +6,9 @@ import { prisma } from "@/lib/prisma";
 import { ordiniOrderApp, type OrdineOrderApp } from "@/lib/orderApp";
 import { riepilogoAcquisti } from "@/lib/approvvigionamento";
 import { schedaAcquisto, etichettatoreColori } from "@/lib/approvvigionamentoServer";
-import { statoReferenza, capiScheda, taglieDiverse } from "@/lib/referenze";
+import { salvaRicollegamenti } from "@/lib/clientiOrderApp";
+import { statoReferenza, capiScheda, taglieDiverse, chiaveParte, parteCoperta, partiReferenza } from "@/lib/referenze";
+import { nomeReferenza } from "@/lib/orderApp";
 import { riepilogoScheda } from "@/lib/costiScheda";
 import { MARGINE_MINIMO, TIPI_COSTO_DB } from "@/lib/utils";
 
@@ -55,28 +57,40 @@ export async function datiDashboard() {
   const attiviIds = new Set(attivi.map((a) => a.o.id));
 
   const azioni: AzioneDaFare[] = [];
+  const ricollegamenti: Parameters<typeof salvaRicollegamenti>[0] = [];
   const schedeAttive: { s: (typeof schedeRows)[number]; ordine: OrdineOrderApp }[] = [];
 
   const ordiniVista = attivi.map(({ o, giorni }) => {
     const preavviso = o.preavviso ?? PREAVVISO_DEFAULT;
     const urgenza: Urgenza = giorni === null ? "senza-data" : giorni < 0 ? "scaduto" : giorni <= preavviso ? "preavviso" : "ok";
     const mie = schedeRows.filter((s) => s.ordineOrderAppId === o.id);
-    const conStato = mie.map((s) => ({ s, ref: statoReferenza(s.articoloOrderAppId, o.referenze) }));
+    const conStato = mie.map((s) => ({ s, ref: statoReferenza(s, o.referenze) }));
+    ricollegamenti.push(...conStato.map(({ s, ref }) => ({ id: s.id, stato: ref })));
     const valide = conStato.filter((x) => x.ref.tipo !== "non-piu-nell-ordine");
     valide.forEach(({ s }) => schedeAttive.push({ s, ordine: o }));
 
-    const coperte = o.referenze.filter((r) => mie.some((s) => s.articoloOrderAppId && r.ids.includes(s.articoloOrderAppId)));
+    // Una scheda per parte di referenza: adulto, e bambino quando ci sono taglie bambino.
+    const chiavi = conStato.flatMap(({ s, ref }) => ref.tipo === "collegata" ? [chiaveParte(s.articoloOrderAppId!, ref.parte)] : []);
+    const necessarie = o.referenze.flatMap((r) => partiReferenza(r).map((p) => ({ r, p })));
+    const scoperte = necessarie.filter(({ r, p }) => !parteCoperta(r, p, chiavi));
     const daCollegare = conStato.filter((x) => x.ref.tipo === "da-collegare");
     const orfane = conStato.filter((x) => x.ref.tipo === "non-piu-nell-ordine");
+    // Bambino mancante accanto a un adulto già fatto: si crea dalla scheda adulto, che ha il pulsante.
+    const bambiniDaFare = scoperte.flatMap(({ r, p }) => {
+      const adulto = p === "bambino" ? conStato.find(({ s, ref }) => ref.tipo === "collegata" && ref.parte === "adulto" && r.ids.includes(s.articoloOrderAppId!)) : undefined;
+      return adulto ? [{ r, adulto: adulto.s }] : [];
+    });
     // Le schede non ancora collegate coprono probabilmente qualcosa: non le conto come mancanti.
-    const senzaScheda = Math.max(0, o.referenze.length - coperte.length - daCollegare.length);
-    const conTaglie = o.referenze.filter((r) => r.taglie).length;
+    const senzaScheda = Math.max(0, scoperte.length - bambiniDaFare.length - daCollegare.length);
+    const conTaglie = necessarie.filter(({ r }) => r.taglie).length;
     const provvisorio = valide.some(({ s, ref }) => capiScheda(parseJson(s.quantitaTaglia, {}), ref.tipo === "collegata" ? ref.referenza : null).stimati);
     const capi = o.referenze.reduce((t, r) => t + (r.capi ?? 0), 0);
     const chi = `${o.cliente} · ${o.id}`;
 
     if (senzaScheda > 0)
       azioni.push({ tipo: "senza-scheda", testo: `${senzaScheda} ${senzaScheda === 1 ? "referenza" : "referenze"} senza scheda`, dettaglio: chi, href: `/schede/nuova?ordine=${encodeURIComponent(o.id)}`, urgenza });
+    for (const { r, adulto } of bambiniDaFare)
+      azioni.push({ tipo: "senza-scheda", testo: `Manca la scheda Bambino di ${nomeReferenza(r) || adulto.nomeArticolo}`, dettaglio: chi, href: `/schede/${adulto.id}`, urgenza });
     for (const { s } of daCollegare)
       azioni.push({ tipo: "da-collegare", testo: `Collega ${s.nomeArticolo} alla sua referenza`, dettaglio: chi, href: `/schede/${s.id}`, urgenza });
     for (const { s } of orfane)
@@ -92,12 +106,14 @@ export async function datiDashboard() {
 
     return {
       id: o.id, cliente: o.cliente, stato: o.stato, consegna: o.consegna, giorni, preavviso, urgenza,
-      referenze: o.referenze.length, coperte: coperte.length + daCollegare.length, senzaScheda,
+      referenze: necessarie.length, coperte: necessarie.length - scoperte.length + Math.min(daCollegare.length, scoperte.length), senzaScheda: senzaScheda + bambiniDaFare.length,
       esecutive: valide.filter(({ s }) => s.stato === "esecutiva").length,
       bozze: valide.filter(({ s }) => s.stato !== "esecutiva").length,
       conTaglie, provvisorio, capi, orfane: orfane.length,
     };
   });
+
+  await salvaRicollegamenti(ricollegamenti);
 
   // Tessuto su tutti gli ordini in lavorazione: stesso calcolo della pagina Acquisti, sommato.
   const acquisti = riepilogoAcquisti(schedeAttive.map(({ s, ordine }) => schedaAcquisto(s, ordine)), materiali);

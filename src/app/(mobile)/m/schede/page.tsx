@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ChevronRight, ChevronDown, Shirt, ShoppingCart } from "lucide-react";
 import { formatData, STATI_SCHEDA, TIPI_COSTO_DB, statoOrdine } from "@/lib/utils";
 import { ordiniOrderApp, type OrdineOrderApp } from "@/lib/orderApp";
-import { capiScheda, statoReferenza } from "@/lib/referenze";
+import { capiScheda, partiReferenza, statoReferenza } from "@/lib/referenze";
 import Testata from "@/components/mobile/Testata";
 
 type Filtro = "tutte" | "esecutiva" | "bozza";
@@ -32,7 +32,7 @@ export default async function MobileSchedePage({ searchParams }: {
   const blocchi = new Map<string, { ordine?: OrdineOrderApp; ordineId?: string; cliente: string | null; righe: Riga[] }>();
   for (const s of schede) {
     const ordine = s.ordineOrderAppId ? ordineDi.get(s.ordineOrderAppId) : undefined;
-    const ref = statoReferenza(s.articoloOrderAppId, ordine?.referenze ?? null);
+    const ref = statoReferenza(s, ordine?.referenze ?? null);
     const { capi, stimati } = capiScheda(s.quantitaTaglia ? JSON.parse(s.quantitaTaglia) : {}, ref.tipo === "collegata" ? ref.referenza : null);
     const k = s.ordineOrderAppId ? `o:${s.ordineOrderAppId}` : `c:${s.clienteId ?? ""}`;
     const b = blocchi.get(k) ?? { ordine, ordineId: s.ordineOrderAppId ?? undefined, cliente: ordine?.cliente ?? s.cliente?.nome ?? null, righe: [] };
@@ -78,7 +78,7 @@ export default async function MobileSchedePage({ searchParams }: {
                     {b.ordineId ? <><span className="font-mono">{b.ordineId}</span>{b.ordine?.stato && ` · ${statoOrdine(b.ordine.stato)}`}</> : "Senza ordine collegato"}
                   </span>
                   <span className="block text-[13px] text-[#0E1B2C] mt-0.5">
-                    {valide.length}{b.ordine?.referenze.length ? ` su ${b.ordine.referenze.length}` : ""} {valide.length === 1 && !b.ordine ? "referenza" : "referenze"}
+                    {valide.length}{b.ordine?.referenze.length ? ` su ${b.ordine.referenze.reduce((t, r) => t + partiReferenza(r).length, 0)}` : ""} {valide.length === 1 && !b.ordine ? "referenza" : "referenze"}
                     {pezzi > 0 && ` · ${pezzi} pz${stimati ? " (stima)" : ""}`}
                   </span>
                 </span>

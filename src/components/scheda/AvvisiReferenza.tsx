@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Link2, AlertTriangle, RefreshCw, Info } from "lucide-react";
+import { Link2, AlertTriangle, RefreshCw, Info, Plus } from "lucide-react";
 import { nomeReferenza, type ReferenzaOrderApp } from "@/lib/orderApp";
-import { statoReferenza, suggerisciReferenza, taglieDiverse, testoTaglie } from "@/lib/referenze";
+import { ETICHETTA_PARTE, parteCoperta, parteScheda, partiReferenza, statoReferenza, suggerisciReferenza, taglieDiverse, testoTaglie } from "@/lib/referenze";
 import { calcolaTotaleQuantita } from "@/lib/utils";
 import { inputCls } from "@/components/ui/Form";
 import type { SchedaCompleta } from "@/types";
@@ -12,18 +12,22 @@ import type { SchedaCompleta } from "@/types";
  * In cima a una scheda di produzione legata a un ordine: a quale referenza dell'Order App corrisponde
  * e cosa è cambiato lì (nome, taglie). Niente si aggiorna da solo: ogni cambio è un tocco dell'utente.
  */
-export default function AvvisiReferenza({ scheda, referenze, collegateAltrove, quantita, onSave }: {
+export default function AvvisiReferenza({ scheda, referenze, collegateAltrove, quantita, onSave, onCreaBambino }: {
   scheda: SchedaCompleta;
   /** null = ordine non letto ora (Order App irraggiungibile): niente avvisi. */
   referenze: ReferenzaOrderApp[] | null;
-  /** Articoli già collegati ad altre schede dello stesso ordine: non si suggeriscono. */
+  /** Parti di referenza (chiaveParte) già prese da altre schede dello stesso ordine: non si suggeriscono. */
   collegateAltrove: string[];
   quantita: Record<string, number>;
   onSave: (data: Partial<SchedaCompleta>) => Promise<void>;
+  /** Crea la scheda Bambino della stessa referenza, copiando questa (adulto). */
+  onCreaBambino?: () => Promise<unknown>;
 }) {
   const [articoloId, setArticoloId] = useState(scheda.articoloOrderAppId ?? null);
-  const stato = statoReferenza(articoloId, referenze);
-  const suggerita = referenze ? suggerisciReferenza(scheda, referenze, new Set(collegateAltrove)) : undefined;
+  // Cambiando referenza la firma salvata non vale più: la ricalcola il server al salvataggio.
+  const stato = statoReferenza({ articoloOrderAppId: articoloId, firmaOrderApp: articoloId === scheda.articoloOrderAppId ? scheda.firmaOrderApp : null, genere: scheda.genere }, referenze);
+  const parte = parteScheda(scheda.genere);
+  const suggerita = referenze ? suggerisciReferenza(scheda, referenze, collegateAltrove) : undefined;
   const [scelta, setScelta] = useState(suggerita?.id ?? "");
   const [inCorso, setInCorso] = useState(false);
 
@@ -64,7 +68,7 @@ export default function AvvisiReferenza({ scheda, referenze, collegateAltrove, q
             {referenze.map((r) => (
               <option key={r.id} value={r.id}>
                 {nomeReferenza(r)}{r.kit ? ` · ${r.kit}` : ""}{r.capi ? ` · ${r.capi} capi` : ""}
-                {r.ids.some((id) => collegateAltrove.includes(id)) ? " · già usata" : ""}
+                {parteCoperta(r, parte, collegateAltrove) ? ` · ${ETICHETTA_PARTE[parte].toLowerCase()} già usata` : ""}
               </option>
             ))}
           </select>
@@ -78,11 +82,31 @@ export default function AvvisiReferenza({ scheda, referenze, collegateAltrove, q
     );
   }
 
-  // Collegata: cosa è cambiato nell'ordine rispetto alla scheda.
+  // Collegata: cosa è cambiato nell'ordine rispetto alla scheda. `r` ha solo taglie e capi della parte della scheda.
   const r = stato.referenza;
   const nome = nomeReferenza(r);
   const proprie = calcolaTotaleQuantita(quantita);
   const avvisi: React.ReactNode[] = [];
+  const parti = partiReferenza(r);
+
+  // Adulto e bambino sono due prodotti: la scheda adulto ricorda quella bambino finché non c'è.
+  if (parte === "adulto" && parti.includes("bambino") && !parteCoperta(r, "bambino", collegateAltrove))
+    avvisi.push(
+      <div key="bambino" className="flex flex-wrap items-center justify-between gap-2">
+        <span>
+          Nell&apos;ordine ci sono anche <strong>{calcolaTotaleQuantita(r.taglieBambino ?? {})} capi bambino</strong> ({testoTaglie(r.taglieBambino ?? {})}):
+          servono una scheda Bambino e il suo codice.
+        </span>
+        {onCreaBambino && (
+          <button type="button" onClick={async () => { setInCorso(true); if (!(await onCreaBambino())) setInCorso(false); }} disabled={inCorso}
+            className={`${bottone} bg-[#0E1B2C] text-white hover:bg-[#1F3A68]`}>
+            <Plus size={14} /> Crea scheda Bambino
+          </button>
+        )}
+      </div>,
+    );
+  if (parte === "bambino" && !r.taglieBambino)
+    avvisi.push(<span key="no-bambino">{r.taglieAdulto ? "Nell'ordine non ci sono taglie bambino per questa referenza." : "Le taglie bambino non sono ancora arrivate."}</span>);
 
   if (nome && nome !== scheda.nomeArticolo)
     avvisi.push(
@@ -114,7 +138,10 @@ export default function AvvisiReferenza({ scheda, referenze, collegateAltrove, q
     <div className="rounded-2xl border border-[#C9D5E8] bg-[#EEF2F8] px-5 py-3 text-sm text-[#1F3A68] space-y-2">
       <div className="flex items-center gap-2 text-[13px]">
         <Info size={15} className="flex-shrink-0" />
-        <span>Referenza dell&apos;ordine: <strong>{nome}</strong>{r.kit ? ` · ${r.kit}` : ""}{r.capi ? ` · ${r.capi} capi` : ""}</span>
+        <span>
+          Referenza dell&apos;ordine: <strong>{nome}</strong>{parti.length > 1 || parte === "bambino" ? ` · ${ETICHETTA_PARTE[parte]}` : ""}
+          {r.kit ? ` · ${r.kit}` : ""}{r.capi ? ` · ${r.capi} capi` : ""}
+        </span>
         <button type="button" onClick={() => { setScelta(r.id); setArticoloId(null); }} className="ml-auto text-xs underline underline-offset-2 hover:text-[#0E1B2C]">
           Cambia
         </button>

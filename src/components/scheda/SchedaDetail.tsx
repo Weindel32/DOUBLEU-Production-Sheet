@@ -178,7 +178,7 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
   };
 
   // Copia lato server dallo stato salvato: prima salvo tutto, così la copia include le ultime modifiche.
-  const copia = async (modo: "ordine" | "duplica") => {
+  const copia = async (modo: "ordine" | "duplica" | "bambino") => {
     await handleGlobalSave();
     const res = await fetch(`/api/schede/${scheda.id}/copia`, {
       method: "POST",
@@ -187,7 +187,7 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
     });
     const nuova = await res.json().catch(() => ({}));
     if (!res.ok || !nuova.id) {
-      setSaveError(nuova.error || (modo === "ordine" ? "Creazione ordine non riuscita" : "Duplicazione non riuscita"));
+      setSaveError(nuova.error || (modo === "ordine" ? "Creazione ordine non riuscita" : modo === "bambino" ? "Creazione scheda Bambino non riuscita" : "Duplicazione non riuscita"));
       return false;
     }
     window.location.href = `${baseScheda(nuova.tipo)}/${nuova.id}`;
@@ -303,7 +303,7 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
 
             {!isCosto && scheda.ordineOrderAppId && (
               <AvvisiReferenza scheda={scheda} referenze={referenzeOrdine} collegateAltrove={collegateAltrove}
-                quantita={quantita as Record<string, number>} onSave={handleSave} />
+                quantita={quantita as Record<string, number>} onSave={handleSave} onCreaBambino={() => copia("bambino")} />
             )}
 
             <section id="sez-articolo" className="scheda-section">

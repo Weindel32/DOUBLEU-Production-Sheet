@@ -70,6 +70,7 @@ export interface SchedaCompleta {
   clienteId?: string | null;
   ordineOrderAppId?: string | null;
   articoloOrderAppId?: string | null;
+  firmaOrderApp?: string | null;
   categoria?: string | null;
   vestibilita?: string | null;
   genere?: string | null;

@@ -2,7 +2,9 @@ import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import SchedaDetail, { type SchedaCollegata } from "@/components/scheda/SchedaDetail";
 import { baseScheda, normalizzaTipo } from "@/lib/utils";
-import { clientiOrderApp, ordiniOrderApp, ordineBreve, trovaReferenza } from "@/lib/orderApp";
+import { clientiOrderApp, ordiniOrderApp, ordineBreve } from "@/lib/orderApp";
+import { chiaveParte, parteScheda, statoReferenza } from "@/lib/referenze";
+import { salvaRicollegamenti } from "@/lib/clientiOrderApp";
 
 function parseJson<T>(s: string | null, fallback: T): T {
   if (!s) return fallback;
@@ -46,13 +48,21 @@ export default async function SchedaPagina({ id, percorso }: { id: string; perco
   // Referenze dell'ordine della scheda: null se l'ordine non si legge ora, per non dare falsi avvisi.
   const ordine = scheda.ordineOrderAppId ? ordiniOA.find((o) => o.id === scheda.ordineOrderAppId) : undefined;
   const referenzeOrdine = ordine?.referenze ?? null;
+  // Parti di referenza (articolo + adulto/bambino) già prese dalle altre schede dell'ordine.
   const collegateAltrove = ordine
     ? (await prisma.scheda.findMany({
         where: { ordineOrderAppId: ordine.id, id: { not: scheda.id }, articoloOrderAppId: { not: null } },
-        select: { articoloOrderAppId: true },
-      })).map((s) => s.articoloOrderAppId!)
+        select: { articoloOrderAppId: true, firmaOrderApp: true, genere: true },
+      })).flatMap((s) => {
+        const ref = statoReferenza(s, ordine.referenze);
+        return ref.tipo === "collegata" ? [chiaveParte(ref.ricollegata ?? s.articoloOrderAppId!, parteScheda(s.genere))] : [];
+      })
     : [];
-  const capiOrdine = trovaReferenza(referenzeOrdine ?? [], scheda.articoloOrderAppId)?.capi ?? null;
+  // L'id dell'articolo può essere cambiato nell'Order App: ritrovato per firma, si salva quello nuovo.
+  const statoRef = statoReferenza(scheda, referenzeOrdine);
+  await salvaRicollegamenti([{ id: scheda.id, stato: statoRef }]);
+  if (statoRef.tipo === "collegata" && statoRef.ricollegata) scheda.articoloOrderAppId = statoRef.ricollegata;
+  const capiOrdine = statoRef.tipo === "collegata" ? statoRef.referenza.capi : null;
 
   const origine: SchedaCollegata | null = origineRow;
   const ordiniCollegati: SchedaCollegata[] = ordiniRows.map((o) => ({
