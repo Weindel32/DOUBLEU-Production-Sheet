@@ -71,8 +71,14 @@ export interface OrdineOrderApp {
   preavviso: number | null;
   /** Giorno (aaaa-mm-gg, ora italiana) in cui il club ha inviato le taglie dal modulo: da qui parte la produzione. */
   ricezioneTaglie: string | null;
+  /** Tempi di produzione salvati nell'ordine: giorni lavorativi (null = predefinito) e inizio a mano (aaaa-mm-gg). */
+  giorniProduzione: number | null;
+  inizioProduzione: string | null;
   referenze: ReferenzaOrderApp[];
 }
+
+/** Tag dei dati letti dall'Order App: dopo una scrittura si invalida per rileggerli subito. */
+export const TAG_ORDER_APP = "order-app";
 
 export const orderAppConfigurata = () => !!(process.env.ORDER_APP_SUPABASE_URL && process.env.ORDER_APP_SUPABASE_KEY);
 
@@ -84,7 +90,7 @@ async function leggi<T>(percorso: string): Promise<T[] | null> {
     const headers: Record<string, string> = { apikey: key };
     // Le chiavi "legacy" sono JWT e vanno anche nell'Authorization; le nuove sb_secret_ no.
     if (key.startsWith("eyJ")) headers.Authorization = `Bearer ${key}`;
-    const res = await fetch(`${url}/rest/v1/${percorso}`, { headers, next: { revalidate: 300 } });
+    const res = await fetch(`${url}/rest/v1/${percorso}`, { headers, next: { revalidate: 300, tags: [TAG_ORDER_APP] } });
     if (!res.ok) {
       console.error("Order App: lettura non riuscita", percorso, res.status, await res.text().catch(() => ""));
       return null;
@@ -94,6 +100,23 @@ async function leggi<T>(percorso: string): Promise<T[] | null> {
     console.error("Order App: lettura non riuscita", percorso, err);
     return null;
   }
+}
+
+/**
+ * Salva nell'ordine dell'Order App giorni di produzione e inizio a mano: è l'unica scrittura della
+ * Production Sheet sull'Order App, così i tempi sono gli stessi nelle due app.
+ */
+export async function salvaTempiProduzione(ordineId: string, giorni: number | null, inizio: string | null) {
+  const url = process.env.ORDER_APP_SUPABASE_URL?.replace(/\/+$/, "");
+  const key = process.env.ORDER_APP_SUPABASE_KEY;
+  if (!url || !key) return false;
+  const headers: Record<string, string> = { apikey: key, "Content-Type": "application/json", Prefer: "return=minimal" };
+  if (key.startsWith("eyJ")) headers.Authorization = `Bearer ${key}`;
+  const res = await fetch(`${url}/rest/v1/orders?id=eq.${encodeURIComponent(ordineId)}`, {
+    method: "PATCH", headers, body: JSON.stringify({ production_days: giorni, production_start: inizio }), cache: "no-store",
+  }).catch((err) => { console.error("Order App: tempi di produzione non salvati", ordineId, err); return null; });
+  if (!res?.ok) console.error("Order App: tempi di produzione non salvati", ordineId, res?.status, await res?.text().catch(() => ""));
+  return !!res?.ok;
 }
 
 export async function clientiOrderApp(): Promise<ClienteOrderApp[]> {
@@ -147,8 +170,8 @@ function unisciUguali(righe: ReferenzaOrderApp[]): ReferenzaOrderApp[] {
 /** Ordini dell'Order App con le loro referenze, dal più recente. Gli ordini persi restano: possono avere schede. */
 export async function ordiniOrderApp(): Promise<OrdineOrderApp[]> {
   const [ordini, kits, articoli, moduli] = await Promise.all([
-    leggi<{ id: string; client: string | null; client_id: string | null; date: string | null; status: string | null; lost: boolean | null; delivery_date: string | null; alert_days: number | null }>(
-      "orders?select=id,client,client_id,date,status,lost,delivery_date,alert_days",
+    leggi<{ id: string; client: string | null; client_id: string | null; date: string | null; status: string | null; lost: boolean | null; delivery_date: string | null; alert_days: number | null; production_days: number | null; production_start: string | null }>(
+      "orders?select=id,client,client_id,date,status,lost,delivery_date,alert_days,production_days,production_start",
     ),
     leggi<{ id: string; order_id: string; name: string | null; position: number | null }>("kits?select=id,order_id,name,position"),
     leggi<{ id: string; kit_id: string; category: string | null; description: string | null; color: string | null; sizes_adult: TaglieOrderApp; sizes_kids: TaglieOrderApp }>(
@@ -179,6 +202,8 @@ export async function ordiniOrderApp(): Promise<OrdineOrderApp[]> {
       consegna: o.delivery_date || null,
       preavviso: o.alert_days ?? null,
       ricezioneTaglie: ricezione.has(o.id) ? giornoItaliano(ricezione.get(o.id)!) : null,
+      giorniProduzione: o.production_days ?? null,
+      inizioProduzione: o.production_start || null,
       referenze: unisciUguali((kitPerOrdine.get(o.id) ?? [])
         .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
         .flatMap((k) => (articoliPerKit.get(k.id) ?? []).map((a) => ({

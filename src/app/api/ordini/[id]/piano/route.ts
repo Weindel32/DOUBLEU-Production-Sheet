@@ -1,7 +1,8 @@
-import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
+import { salvaTempiProduzione, TAG_ORDER_APP } from "@/lib/orderApp";
 
-/** Piano di produzione di un ordine: giorni lavorativi e, se serve, il primo giorno scritto a mano. Vuoto = predefinito. */
+/** Tempi di produzione di un ordine, salvati nell'Order App: giorni lavorativi e inizio a mano. Vuoto = predefinito. */
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const body = await req.json().catch(() => ({}));
@@ -12,10 +13,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   if (inizio && !/^\d{4}-\d{2}-\d{2}$/.test(inizio))
     return NextResponse.json({ error: "Data di inizio non valida" }, { status: 400 });
 
-  const piano = await prisma.pianoOrdine.upsert({
-    where: { ordineOrderAppId: id },
-    create: { ordineOrderAppId: id, giorniProduzione: giorni, inizioProduzione: inizio },
-    update: { giorniProduzione: giorni, inizioProduzione: inizio },
-  });
-  return NextResponse.json(piano);
+  if (!(await salvaTempiProduzione(id, giorni, inizio)))
+    return NextResponse.json({ error: "Order App non raggiungibile: tempi non salvati" }, { status: 502 });
+  // Dati dell'Order App in cache per 5 minuti: si rileggono subito, la dashboard mostra i tempi nuovi.
+  revalidateTag(TAG_ORDER_APP, { expire: 0 });
+  return NextResponse.json({ giorniProduzione: giorni, inizioProduzione: inizio });
 }
