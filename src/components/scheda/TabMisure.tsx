@@ -16,27 +16,41 @@ export interface TabMisureHandle {
 }
 
 const CATEGORIE_SKIRT = ["Skirt"];
+/** Modelli con l'elastico del gonnellino (h 1 cm) anche se la categoria è un'altra: DUSP 34 = Short DDR. */
+const MODELLI_ELASTICO_SKIRT = ["DUSP 34"];
 
 const ELASTICO_ADULTO: Record<string, { pantaloncino: number; skirt: number }> = {
-  "XS":   { pantaloncino: 70, skirt: 64 },
-  "S":    { pantaloncino: 72, skirt: 66 },
-  "M":    { pantaloncino: 74, skirt: 68 },
-  "L":    { pantaloncino: 76, skirt: 70 },
-  "XL":   { pantaloncino: 78, skirt: 72 },
-  "XXL":  { pantaloncino: 80, skirt: 74 },
-  "XXXL": { pantaloncino: 82, skirt: 76 },
+  "XS":   { pantaloncino: 70, skirt: 62 },
+  "S":    { pantaloncino: 72, skirt: 64 },
+  "M":    { pantaloncino: 74, skirt: 66 },
+  "L":    { pantaloncino: 76, skirt: 68 },
+  "XL":   { pantaloncino: 78, skirt: 70 },
+  "XXL":  { pantaloncino: 80, skirt: 72 },
+  "XXXL": { pantaloncino: 82, skirt: 74 },
 };
 
-const ELASTICO_KIDS: Record<string, number> = {
-  "4A": 54, "6A": 56, "8A": 58, "10A": 60, "12A": 62, "14A": 64, "16A": 66,
+// Il gonnellino kids parte dalla 6 anni: la 4A resta da compilare a mano
+const ELASTICO_KIDS: Record<string, { pantaloncino: number; skirt?: number }> = {
+  "4A":  { pantaloncino: 54 },
+  "6A":  { pantaloncino: 56, skirt: 56 },
+  "8A":  { pantaloncino: 58, skirt: 58 },
+  "10A": { pantaloncino: 60, skirt: 60 },
+  "12A": { pantaloncino: 62, skirt: 62 },
+  "14A": { pantaloncino: 64, skirt: 64 },
+  "16A": { pantaloncino: 66, skirt: 66 },
 };
 
-function getElasticoDefault(categoria: string | null | undefined, taglia: string): { lunghezzaElastico: number; altezzaElastico: number } | null {
-  const isSkirt = CATEGORIE_SKIRT.includes(categoria || "");
+function usaElasticoSkirt(scheda: Pick<SchedaCompleta, "categoria" | "codiceModello">): boolean {
+  const modello = (scheda.codiceModello || "").trim().toUpperCase();
+  return CATEGORIE_SKIRT.includes(scheda.categoria || "") || MODELLI_ELASTICO_SKIRT.includes(modello);
+}
+
+function getElasticoDefault(scheda: Pick<SchedaCompleta, "categoria" | "codiceModello">, taglia: string): { lunghezzaElastico: number; altezzaElastico: number } | null {
+  const isSkirt = usaElasticoSkirt(scheda);
   const altezzaElastico = isSkirt ? 1 : 4;
-  if (ELASTICO_KIDS[taglia] !== undefined) return { lunghezzaElastico: ELASTICO_KIDS[taglia], altezzaElastico };
-  if (ELASTICO_ADULTO[taglia]) return { lunghezzaElastico: isSkirt ? ELASTICO_ADULTO[taglia].skirt : ELASTICO_ADULTO[taglia].pantaloncino, altezzaElastico };
-  return null;
+  const misure = ELASTICO_KIDS[taglia] ?? ELASTICO_ADULTO[taglia];
+  const lunghezzaElastico = misure && (isSkirt ? misure.skirt : misure.pantaloncino);
+  return lunghezzaElastico ? { lunghezzaElastico, altezzaElastico } : null;
 }
 
 const COLONNE_STANDARD = [
@@ -65,7 +79,7 @@ const TabMisure = forwardRef<TabMisureHandle, Props>(function TabMisure({ scheda
   const [specsElastico, setSpecsElastico] = useState<ElasticoSpecs>(() => {
     const existing = (rawTabella.__specs as ElasticoSpecs) || {};
     if (isElastico && !existing.altezza) {
-      const defaultAltezza = CATEGORIE_SKIRT.includes(scheda.categoria || "") ? "1" : "4";
+      const defaultAltezza = usaElasticoSkirt(scheda) ? "1" : "4";
       return { ...existing, altezza: defaultAltezza };
     }
     return existing;
@@ -111,7 +125,7 @@ const TabMisure = forwardRef<TabMisureHandle, Props>(function TabMisure({ scheda
     } else {
       setTagliAttive((prev) => [...prev, taglia]);
       if (isElastico && !(tabellaMisure[taglia] as MisureTaglia)?.lunghezzaElastico) {
-        const defaults = getElasticoDefault(scheda.categoria, taglia);
+        const defaults = getElasticoDefault(scheda, taglia);
         if (defaults) {
           const nuovaTabella: TabellaTaglie = {
             ...tabellaMisure,
