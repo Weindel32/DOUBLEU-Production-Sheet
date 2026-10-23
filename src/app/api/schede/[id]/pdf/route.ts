@@ -95,6 +95,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     return v ? num(v) : "—";
   };
 
+  // Altezza uguale per tutte le taglie (il caso normale): va nel titolo e ogni casella mostra solo la lunghezza
+  const altezze = new Set(taglie.map((t) => valore(t, "altezzaElastico")).filter((v) => v !== "—"));
+  const altezzaUnica = altezze.size === 1 ? [...altezze][0] : altezze.size === 0 ? specsElastico?.altezza || null : null;
+  const elasticoTaglia = (t: string) => {
+    const lunghezza = valore(t, "lunghezzaElastico");
+    const altezza = valore(t, "altezzaElastico");
+    return lunghezza === "—" ? "—" : altezzaUnica || altezza === "—" ? lunghezza : `${lunghezza} × ${altezza}`;
+  };
+
   const costoMateriali = consumi.reduce((t, c) => t + c.consumoPerCapo * (c.costoUnitario || 0), 0);
   const costoAccessori = accessori.reduce((t, a) => t + (a.quantita || 0) * (a.prezzoUnitario || 0), 0);
   const costoTotale = costoMateriali + costoAccessori + (scheda.costoLavorazione || 0);
@@ -125,23 +134,22 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     loghi: scheda.loghi.map((l, i) => ({ nome: interno ? l.logo.nome : `Logo ${i + 1}`, tecnica: l.tecnica, posizione: l.posizione, dimensione: l.dimensione, note: l.note })),
     colori: righeColori(scheda.colorePrincipale, scheda.coloreSecondario),
     notePersonalizzazione: scheda.notePersonalizzazione,
-    misure: taglie.length === 0 ? null : isElastico
-      ? {
-          titolo: "Elastico vita per taglia (cm)",
-          specifiche: [
-            ["Altezza elastico", specsElastico?.altezza ? `${specsElastico.altezza} cm` : null], ["Tipo", specsElastico?.tipo],
-            ["Costruzione", specsElastico?.costruzione], ["Applicazione", specsElastico?.applicazione],
-          ],
-          colonne: ["Lunghezza elastico", "Altezza"],
-          righe: taglie.map((t) => ({ taglia: t, valori: [valore(t, "lunghezzaElastico"), valore(t, "altezzaElastico")] })),
-        }
-      : {
+    misure: taglie.length === 0 || isElastico ? null : {
           titolo: "Tabella misure (cm)",
           specifiche: [],
           colonne: ["Torace", "Lunghezza", "Spalla", "Lung. manica"],
           righe: taglie.map((t) => ({ taglia: t, valori: ["torace", "lunghezza", "spalla", "lungManica"].map((k) => valore(t, k)) })),
         },
-    quantita: taglie.length ? { taglie: taglie.map((t) => ({ taglia: t, q: quantitaTaglia[t] || 0 })), totale: totalePezzi } : null,
+    quantita: !taglie.length ? null : !isElastico
+      ? { taglie: taglie.map((t) => ({ taglia: t, q: quantitaTaglia[t] || 0 })), totale: totalePezzi }
+      : {
+          taglie: taglie.map((t) => ({ taglia: t, q: quantitaTaglia[t] || 0, elastico: elasticoTaglia(t) })),
+          totale: totalePezzi,
+          elastico: {
+            titolo: altezzaUnica ? `elastico h ${altezzaUnica} cm` : "elastico lunghezza × altezza (cm)",
+            specifiche: [["Tipo", specsElastico?.tipo], ["Costruzione", specsElastico?.costruzione], ["Applicazione", specsElastico?.applicazione]],
+          },
+        },
     produzione: [
       ["Note generali", scheda.noteProduzione], ["Taglio", scheda.tolleranzaTaglio], ["Cucitura", scheda.tolleranzaCucitura],
       ["Colore", scheda.tolleranzaColore], ["Stampa / Ricamo", scheda.tolleranzaStampa],

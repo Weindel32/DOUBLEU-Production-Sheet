@@ -20,7 +20,8 @@ export interface DatiSchedaPdf {
   colori: { colore: string; hex: string; destinazione: string }[];
   notePersonalizzazione?: string | null;
   misure: { titolo: string; specifiche: Coppia[]; colonne: string[]; righe: { taglia: string; valori: string[] }[] } | null;
-  quantita: { taglie: { taglia: string; q: number }[]; totale: number } | null;
+  // Elastico vita (Short, Skirt…): sta nelle caselle delle quantità, così entra nella prima pagina
+  quantita: { taglie: { taglia: string; q: number; elastico?: string }[]; totale: number; elastico?: { titolo: string; specifiche: Coppia[] } } | null;
   produzione: Coppia[];
   costi: {
     consumi: { nome: string; testo: string }[];
@@ -143,7 +144,8 @@ function Documento({ d }: { d: DatiSchedaPdf }) {
         )}
 
         {d.quantita && (
-          <Sezione titolo={`Quantità per taglia — totale ${d.quantita.totale} pz`}>
+          <Sezione titolo={`Quantità${d.quantita.elastico ? " ed elastico vita" : ""} per taglia — totale ${d.quantita.totale} pz${d.quantita.elastico ? ` · ${d.quantita.elastico.titolo}` : ""}`}>
+            {d.quantita.elastico && <Griglia campi={d.quantita.elastico.specifiche} colonne={3} />}
             <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
               {[...d.quantita.taglie, { taglia: "TOT", q: d.quantita.totale }].map((t) => {
                 const tot = t.taglia === "TOT";
@@ -151,6 +153,11 @@ function Documento({ d }: { d: DatiSchedaPdf }) {
                   <View key={t.taglia} style={{ width: 44, marginRight: 4, marginBottom: 4, borderWidth: 0.5, borderColor: tot ? "#BFDBFE" : C.line, borderRadius: 3 }}>
                     <Text style={{ fontSize: 7.5, textAlign: "center", paddingVertical: 2, backgroundColor: tot ? C.navy : C.head, color: tot ? "#FFFFFF" : C.muted }}>{t.taglia}</Text>
                     <Text style={{ fontFamily: "Helvetica-Bold", fontSize: 11, textAlign: "center", paddingVertical: 3, backgroundColor: tot ? "#DBEAFE" : "#FFFFFF", color: tot ? "#1D4ED8" : C.ink }}>{t.q}</Text>
+                    {d.quantita!.elastico && (
+                      <Text style={{ fontSize: 7.5, textAlign: "center", paddingVertical: 2, borderTopWidth: 0.5, borderTopColor: C.line, backgroundColor: tot ? "#DBEAFE" : "#FFFFFF", color: tot ? "#1D4ED8" : C.muted }}>
+                        {tot ? " " : "elastico" in t && t.elastico && t.elastico !== "—" ? `el. ${t.elastico}` : "—"}
+                      </Text>
+                    )}
                   </View>
                 );
               })}
