@@ -20,13 +20,13 @@ const CATEGORIE_SKIRT = ["Skirt"];
 const MODELLI_ELASTICO_SKIRT = ["DUSP 34"];
 
 const ELASTICO_ADULTO: Record<string, { pantaloncino: number; skirt: number }> = {
-  "XS":   { pantaloncino: 70, skirt: 62 },
-  "S":    { pantaloncino: 72, skirt: 64 },
-  "M":    { pantaloncino: 74, skirt: 66 },
-  "L":    { pantaloncino: 76, skirt: 68 },
-  "XL":   { pantaloncino: 78, skirt: 70 },
-  "XXL":  { pantaloncino: 80, skirt: 72 },
-  "XXXL": { pantaloncino: 82, skirt: 74 },
+  "XS":   { pantaloncino: 70, skirt: 64 },
+  "S":    { pantaloncino: 72, skirt: 66 },
+  "M":    { pantaloncino: 74, skirt: 68 },
+  "L":    { pantaloncino: 76, skirt: 70 },
+  "XL":   { pantaloncino: 78, skirt: 72 },
+  "XXL":  { pantaloncino: 80, skirt: 74 },
+  "XXXL": { pantaloncino: 82, skirt: 76 },
 };
 
 // Il gonnellino kids parte dalla 6 anni: la 4A resta da compilare a mano
