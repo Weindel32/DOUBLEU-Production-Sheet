@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, FileDown, Copy, CheckCircle, Trash2, Loader2, Save, AlertCircle, PackagePlus, ArrowUpRight } from "lucide-react";
@@ -73,6 +73,8 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
   const [meta, setMeta] = useState({
     nomeArticolo: scheda.nomeArticolo, codice: scheda.codice, categoria: scheda.categoria || "", codiceModello: scheda.codiceModello || "",
   });
+  // Categoria e modello cambiati in Articolo decidono subito l'elastico in Misure, senza ricaricare
+  const schedaMisure = useMemo(() => ({ ...scheda, categoria: meta.categoria, codiceModello: meta.codiceModello }), [scheda, meta.categoria, meta.codiceModello]);
   const [savedAt, setSavedAt] = useState(formatOra(scheda.updatedAt));
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -320,7 +322,7 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
 
                 <section id="sez-misure" className="scheda-section space-y-4">
                   <h2 className="font-display text-xl font-bold text-[#0E1B2C]">Misure e quantità</h2>
-                  <TabMisure ref={tabMisureRef} scheda={scheda} onSave={handleSave} onQuantitaChange={setQuantita} />
+                  <TabMisure ref={tabMisureRef} scheda={schedaMisure} onSave={handleSave} onQuantitaChange={setQuantita} />
                 </section>
               </>
             )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, forwardRef, useImperativeHandle } from "react";
+import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from "react";
 import { TAGLIE_ADULTO, TAGLIE_KIDS, calcolaTotaleQuantita, CATEGORIE_ELASTICO } from "@/lib/utils";
 import type { SchedaCompleta, TabellaTaglie, QuantitaTaglia, ElasticoSpecs, MisureTaglia } from "@/types";
 
@@ -29,9 +29,8 @@ const ELASTICO_ADULTO: Record<string, { pantaloncino: number; skirt: number }> =
   "XXXL": { pantaloncino: 82, skirt: 76 },
 };
 
-// Il gonnellino kids parte dalla 6 anni: la 4A resta da compilare a mano
-const ELASTICO_KIDS: Record<string, { pantaloncino: number; skirt?: number }> = {
-  "4A":  { pantaloncino: 54 },
+const ELASTICO_KIDS: Record<string, { pantaloncino: number; skirt: number }> = {
+  "4A":  { pantaloncino: 54, skirt: 54 },
   "6A":  { pantaloncino: 56, skirt: 56 },
   "8A":  { pantaloncino: 58, skirt: 58 },
   "10A": { pantaloncino: 60, skirt: 60 },
@@ -89,6 +88,27 @@ const TabMisure = forwardRef<TabMisureHandle, Props>(function TabMisure({ scheda
   const [tagliAttive, setTagliAttive] = useState<string[]>(
     tutteLeTaglie.filter((t) => tabellaMisure[t] || quantitaTaglia[t])
   );
+
+  // Le taglie arrivate dall'Order App sono già attive e non passano dal clic: l'elastico mancante si compila all'apertura
+  const elasticoCompletato = useRef(false);
+  useEffect(() => {
+    if (!isElastico || elasticoCompletato.current) return;
+    elasticoCompletato.current = true;
+    const mancanti = tagliAttive.filter((t) => !(tabellaMisure[t] as MisureTaglia)?.lunghezzaElastico);
+    let nuovaTabella: TabellaTaglie | null = null;
+    for (const taglia of mancanti) {
+      const defaults = getElasticoDefault(scheda, taglia);
+      if (!defaults) continue;
+      nuovaTabella ??= { ...tabellaMisure };
+      nuovaTabella[taglia] = { ...(tabellaMisure[taglia] as MisureTaglia || {}), ...defaults };
+    }
+    if (!nuovaTabella) return;
+    const specs = specsElastico.altezza ? specsElastico : { ...specsElastico, altezza: usaElasticoSkirt(scheda) ? "1" : "4" };
+    setSpecsElastico(specs);
+    nuovaTabella.__specs = specs;
+    setTabellaMisure(nuovaTabella);
+    onSave({ tabellaMisure: nuovaTabella });
+  }, [isElastico, tagliAttive, tabellaMisure, scheda, specsElastico, onSave]);
 
   const totale = calcolaTotaleQuantita(quantitaTaglia as Record<string, number>);
 
