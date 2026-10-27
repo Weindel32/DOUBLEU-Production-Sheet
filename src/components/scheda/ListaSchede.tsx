@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { Plus, FileText, Search, ChevronRight, ShoppingCart } from "lucide-react";
+import { Plus, FileText, Search, ChevronRight, ShoppingCart, Receipt } from "lucide-react";
 import {
   formatData, STATI_SCHEDA, TIPI_COSTO_DB, formatEuro, totaleSviluppo,
   FASCE_MODELLO, FASCIA_STYLE, ordinaCategorie, statoOrdine, MARGINE_MINIMO,
@@ -329,6 +329,12 @@ export default async function ListaSchede({ vista, searchParams }: {
                     <Link href={`/schede/ordine/${encodeURIComponent(b.ordineId)}`}
                       className="h-10 px-3.5 rounded-lg border border-[#D6D1C4] text-[13px] font-semibold text-[#0E1B2C] inline-flex items-center gap-1.5 hover:border-[#0E1B2C]/40">
                       <ShoppingCart size={15} /> Acquisti
+                    </Link>
+                  )}
+                  {b.ordineId && (
+                    <Link href={`/schede/ordine/${encodeURIComponent(b.ordineId)}/consuntivo`}
+                      className="h-10 px-3.5 rounded-lg border border-[#D6D1C4] text-[13px] font-semibold text-[#0E1B2C] inline-flex items-center gap-1.5 hover:border-[#0E1B2C]/40">
+                      <Receipt size={15} /> Consuntivo
                     </Link>
                   )}
                   {b.ordineId && (
