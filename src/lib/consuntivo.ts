@@ -4,7 +4,7 @@
 
 import type { RiepilogoCosti } from "@/lib/utils";
 
-export const FASI_SPESA = ["Tessuto", "Accessori", "Taglio", "Confezione", "Stampa", "Ricamo", "Trasporti", "Altro"] as const;
+export const FASI_SPESA = ["Cartamodello", "Tessuto", "Accessori", "Taglio", "Confezione", "Stampa", "Ricamo", "Trasporti", "Altro"] as const;
 export type FaseSpesa = typeof FASI_SPESA[number];
 
 export interface Spesa {
@@ -35,6 +35,8 @@ export interface SchedaPrevisto {
 export function previstoPerCapo(s: SchedaPrevisto): Record<FaseSpesa, number> {
   const dettaglio = [s.costoTaglio, s.costoCucitura, s.costoStampa, s.costoRicamo].some((v) => v !== null);
   return {
+    // Il cartamodello è un costo di sviluppo (campioni), non sta nel costo per capo: nessun previsto.
+    Cartamodello: 0,
     Tessuto: s.costi.materiali,
     Accessori: s.costi.accessori,
     Taglio: s.costoTaglio ?? 0,
