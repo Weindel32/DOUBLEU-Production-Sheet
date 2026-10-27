@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic";
 import Link from "next/link";
-import { ArrowLeft, AlertTriangle } from "lucide-react";
+import { ArrowLeft, AlertTriangle, Receipt } from "lucide-react";
 import PulsantePdf from "@/components/ui/PulsantePdf";
 import { acquistiOrdine } from "@/lib/approvvigionamentoServer";
 import { quantitaAcquisto } from "@/lib/approvvigionamento";
@@ -52,6 +52,10 @@ export default async function AcquistiOrdinePage({ params, searchParams }: {
           {chip("Con prezzi", base, prezzi)}
           {chip("Senza prezzi", `${base}?prezzi=0`, !prezzi)}
         </div>
+        <Link href={`${base}/consuntivo`}
+          className="h-10 px-4 rounded-full border border-[#D6D1C4] bg-white text-sm font-semibold text-[#0E1B2C] inline-flex items-center gap-1.5 whitespace-nowrap hover:border-[#0E1B2C]/40">
+          <Receipt size={15} /> Consuntivo
+        </Link>
         <PulsantePdf key={pdf} url={pdf} nomeFile={`${prezzi ? "Approvvigionamento" : "Lista acquisti"} ${ordineId}.pdf`}
           etichetta={`PDF ${prezzi ? "interno" : "lista acquisti"}`} className="w-full sm:w-auto" />
       </div>
