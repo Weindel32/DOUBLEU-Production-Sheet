@@ -24,9 +24,14 @@ export function leggiSpesa(body: Record<string, unknown>) {
   const fattura = body.fattura !== false;
   const iva = fattura ? leggiImporto(body.iva) : null;
   if (iva !== null && (iva < 0 || iva > 100)) return { errore: "Aliquota IVA non valida" } as const;
+  // Quantità solo sul tessuto e facoltativa: vuota = spesa come prima.
+  const quantita = fase === "Tessuto" ? leggiImporto(body.quantita) : null;
+  if (fase === "Tessuto" && quantita === null && testo(body.quantita)) return { errore: "Quantità non valida" } as const;
+  if (quantita !== null && !(quantita > 0)) return { errore: "La quantità deve essere maggiore di zero" } as const;
+  const unita = quantita === null ? null : body.unita === "m" ? "m" : "kg";
   return {
     dati: {
-      data, fase, importo: Math.round(importo * 100) / 100, fattura, iva,
+      data, fase, importo: Math.round(importo * 100) / 100, fattura, iva, quantita, unita,
       fornitore: testo(body.fornitore), descrizione: testo(body.descrizione), riferimento: testo(body.riferimento),
     },
   } as const;
