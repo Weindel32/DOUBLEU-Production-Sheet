@@ -204,6 +204,8 @@ model SpesaOrdine {
   fattura          Boolean  @default(true)
   iva              Float? // aliquota % della fattura, solo come riferimento
   riferimento      String? // n° fattura o DDT
+  quantita         Float? // solo Tessuto, facoltativa: quantità comprata, per prezzo medio e confronto col fabbisogno
+  unita            String? // "kg" | "m", con la quantità
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 

@@ -18,6 +18,9 @@ export interface Spesa {
   fattura: boolean;
   iva: number | null;
   riferimento: string | null;
+  /** Solo Tessuto, facoltativa. */
+  quantita: number | null;
+  unita: string | null;
 }
 
 /** Quello che serve di una scheda d'ordine per il previsto. */
@@ -99,3 +102,39 @@ export function riepilogoConsuntivo(schede: SchedaPrevisto[], spese: Spesa[], ch
 }
 
 export type RiepilogoConsuntivo = ReturnType<typeof riepilogoConsuntivo>;
+
+/** Fabbisogno di tessuto dell'ordine in un'unità d'acquisto, dall'approvvigionamento. */
+export interface FabbisognoTessuto {
+  unita: "kg" | "m";
+  /** Netto: capi × consumo. */
+  netto: number;
+  /** Con scarto e arrotondamento: quello che si prevedeva di comprare. */
+  daComprare: number;
+  /** Spesa a listino e quantità su cui è calcolata (solo righe con prezzo). */
+  listino: number;
+  quantitaListino: number;
+}
+
+/**
+ * Tessuto comprato contro previsto, per unità (kg o m), solo dalle spese con la quantità:
+ * senza quantità non c'è confronto e il resto del consuntivo non cambia.
+ */
+export function confrontoTessuto(spese: Spesa[], fabbisogno: FabbisognoTessuto[]) {
+  const tessuto = spese.filter((s) => s.fase === "Tessuto");
+  return (["kg", "m"] as const).flatMap((unita) => {
+    const conQuantita = tessuto.filter((s) => s.quantita && s.unita === unita);
+    if (conQuantita.length === 0) return [];
+    const comprato = conQuantita.reduce((t, s) => t + s.quantita!, 0);
+    const pagato = conQuantita.reduce((t, s) => t + s.importo, 0);
+    const f = fabbisogno.find((x) => x.unita === unita) ?? null;
+    return [{
+      unita,
+      comprato,
+      prezzoMedio: pagato / comprato,
+      netto: f?.netto ?? null,
+      daComprare: f?.daComprare ?? null,
+      prezzoListino: f && f.quantitaListino > 0 ? f.listino / f.quantitaListino : null,
+      nSpese: conQuantita.length,
+    }];
+  });
+}

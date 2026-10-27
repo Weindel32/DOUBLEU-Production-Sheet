@@ -7,12 +7,14 @@ import { consuntivoOrdine } from "@/lib/consuntivoServer";
 import { MARGINE_MINIMO, formatData, formatEuro, statoOrdine } from "@/lib/utils";
 
 const pct = (n: number | null) => (n === null ? "—" : `${n.toLocaleString("it-IT", { maximumFractionDigits: 1 })}%`);
+const num1 = (n: number) => n.toLocaleString("it-IT", { maximumFractionDigits: 1 });
+const segno = (n: number, f: (n: number) => string) => `${n > 0 ? "+" : n < 0 ? "−" : ""}${f(Math.abs(n))}`;
 const coloreMargine = (n: number | null) => (n === null ? "text-[#5F6878]" : n < MARGINE_MINIMO ? "text-[#A8461F]" : "text-[#1D6B4A]");
 
 /** Consuntivo di un ordine: spese reali per fase contro il costo previsto dalle schede, e margine reale. */
 export default async function ConsuntivoOrdinePage({ params }: { params: Promise<{ id: string }> }) {
   const ordineId = decodeURIComponent((await params).id);
-  const { ordine, cliente, nSchede, capiStimati, spese, chiusoIl, riepilogo: r } = await consuntivoOrdine(ordineId);
+  const { ordine, cliente, nSchede, capiStimati, spese, chiusoIl, riepilogo: r, tessuto } = await consuntivoOrdine(ordineId);
   const base = `/schede/ordine/${encodeURIComponent(ordineId)}`;
   const righe = r.righe.filter((x) => x.previsto > 0 || x.speso > 0);
   const cella = "px-3 py-2.5";
@@ -130,12 +132,40 @@ export default async function ConsuntivoOrdinePage({ params }: { params: Promise
         </section>
       )}
 
+      {tessuto.length > 0 && (
+        <section className="bg-white border border-[#E4E0D6] rounded-2xl px-4 py-3 space-y-2 text-sm">
+          <h2 className="font-display text-[17px] font-bold text-[#0E1B2C]">Tessuto: quantità e prezzo</h2>
+          {tessuto.map((t) => {
+            const nTessuto = spese.filter((s) => s.fase === "Tessuto").length;
+            const diffQ = t.daComprare != null ? t.comprato - t.daComprare : null;
+            const diffP = t.prezzoListino != null ? t.prezzoMedio - t.prezzoListino : null;
+            return (
+              <div key={t.unita} className="space-y-0.5 text-[#4A5566]">
+                <div>
+                  Comprati <strong className="font-mono text-[#0E1B2C]">{num1(t.comprato)} {t.unita}</strong>
+                  {t.daComprare != null && <> · previsti {num1(t.daComprare)} {t.unita} con scarto ({num1(t.netto!)} netti)</>}
+                  {diffQ != null && <> · <strong className={`font-mono ${diffQ > 0 ? "text-[#A8461F]" : "text-[#1D6B4A]"}`}>{segno(diffQ, num1)} {t.unita}</strong></>}
+                </div>
+                <div>
+                  Prezzo medio pagato <strong className="font-mono text-[#0E1B2C]">{formatEuro(t.prezzoMedio)}/{t.unita}</strong>
+                  {t.prezzoListino != null && <> · listino {formatEuro(t.prezzoListino)}/{t.unita}</>}
+                  {diffP != null && Math.abs(diffP) >= 0.005 && <> · <strong className={`font-mono ${diffP > 0 ? "text-[#A8461F]" : "text-[#1D6B4A]"}`}>{segno(diffP, formatEuro)}/{t.unita}</strong></>}
+                </div>
+                {t.nSpese < nTessuto && (
+                  <div className="text-xs text-[#7A5B12]">Conta solo le spese con la quantità: {t.nSpese} di {nTessuto} spese di tessuto.</div>
+                )}
+              </div>
+            );
+          })}
+        </section>
+      )}
+
       <SpeseOrdine
         ordineId={ordineId}
         chiusoIl={chiusoIl ? chiusoIl.toISOString() : null}
         spese={spese.map((s) => ({
           id: s.id, data: s.data, fase: s.fase, fornitore: s.fornitore, descrizione: s.descrizione,
-          importo: s.importo, fattura: s.fattura, iva: s.iva, riferimento: s.riferimento,
+          importo: s.importo, fattura: s.fattura, iva: s.iva, riferimento: s.riferimento, quantita: s.quantita, unita: s.unita,
         }))}
       />
     </div>

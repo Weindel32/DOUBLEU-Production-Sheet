@@ -10,12 +10,15 @@ import { formatEuro } from "@/lib/utils";
 const oggi = () => new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Rome" });
 const inItaliano = (s: string) => s.split("-").reverse().join("/");
 
-type Bozza = { data: string; fase: string; fornitore: string; descrizione: string; importo: string; fattura: boolean; iva: string; riferimento: string };
+type Bozza = {
+  data: string; fase: string; fornitore: string; descrizione: string; importo: string; fattura: boolean; iva: string; riferimento: string;
+  quantita: string; unita: string;
+};
 
-const vuota = (): Bozza => ({ data: oggi(), fase: "Tessuto", fornitore: "", descrizione: "", importo: "", fattura: true, iva: "22", riferimento: "" });
+const vuota = (): Bozza => ({ data: oggi(), fase: "Tessuto", fornitore: "", descrizione: "", importo: "", fattura: true, iva: "22", riferimento: "", quantita: "", unita: "kg" });
 const daSpesa = (s: Spesa): Bozza => ({
   data: s.data, fase: s.fase, fornitore: s.fornitore ?? "", descrizione: s.descrizione ?? "", importo: numStr(s.importo),
-  fattura: s.fattura, iva: numStr(s.iva), riferimento: s.riferimento ?? "",
+  fattura: s.fattura, iva: numStr(s.iva), riferimento: s.riferimento ?? "", quantita: numStr(s.quantita), unita: s.unita ?? "kg",
 });
 
 /** Elenco e inserimento delle spese reali di un ordine, più chiusura del consuntivo. */
@@ -87,6 +90,16 @@ export default function SpeseOrdine({ ordineId, spese, chiusoIl }: { ordineId: s
           <input value={bozza.riferimento} onChange={(e) => set("riferimento", e.target.value)} className={inputCls} />
         </Field>
       </div>
+      {bozza.fase === "Tessuto" && (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 items-end">
+          <Field label="Quantità comprata (facoltativa)" hint="Serve per prezzo medio e confronto col fabbisogno">
+            <input type="text" inputMode="decimal" value={bozza.quantita} onChange={(e) => set("quantita", e.target.value)}
+              className={`${inputCls} text-right font-mono`} placeholder="es. 62" />
+          </Field>
+          <Segmented label="Unità" value={bozza.unita} onChange={(v) => set("unita", v)}
+            options={[{ value: "kg", label: "kg" }, { value: "m", label: "metri" }]} />
+        </div>
+      )}
       <div className="flex flex-wrap items-center gap-2">
         <button type="button" onClick={salva} disabled={salvando}
           className="h-11 px-5 rounded-[10px] bg-[#0E1B2C] text-white text-sm font-semibold hover:bg-[#1F3A68] disabled:opacity-50">
@@ -134,7 +147,8 @@ export default function SpeseOrdine({ ordineId, spese, chiusoIl }: { ordineId: s
                       {s.fase}{s.fornitore && <span className="font-normal text-[#4A5566]"> · {s.fornitore}</span>}
                     </div>
                     <div className="text-[13px] text-[#5F6878]">
-                      {[s.descrizione, s.riferimento && `rif. ${s.riferimento}`].filter(Boolean).join(" · ")}
+                      {[s.quantita && `${numStr(s.quantita)} ${s.unita} a ${formatEuro(s.importo / s.quantita)}/${s.unita}`, s.descrizione, s.riferimento && `rif. ${s.riferimento}`]
+                        .filter(Boolean).join(" · ")}
                     </div>
                   </div>
                   <div className="text-right whitespace-nowrap">
