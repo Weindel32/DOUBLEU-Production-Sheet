@@ -30,6 +30,13 @@ export interface DatiSchedaPdf {
     dopo: Coppia[];
     margine: { testo: string; positivo: boolean } | null;
   } | null;
+  /** Solo interno: costo per voce × pezzi della referenza. */
+  referenza: {
+    pezzi: number;
+    righe: { voce: string; dettaglio: string | null; quantita: string; perCapo: string; totale: string }[];
+    totali: [string, string, string][];
+    positivo: boolean | null;
+  } | null;
   campioni: { titolo: string; blocchi: { testa: Coppia; voci: Coppia[]; note?: string | null }[]; totale: string | null } | null;
   piede: string;
 }
@@ -195,6 +202,41 @@ function Documento({ d }: { d: DatiSchedaPdf }) {
               <RigaCosto a="COSTO TOTALE/CAPO" b={d.costi.totale} forte />
               {d.costi.dopo.map(([a, b]) => <RigaCosto key={a} a={a} b={b ?? ""} />)}
               {d.costi.margine && <RigaCosto a="Margine" b={d.costi.margine.testo} colore={d.costi.margine.positivo ? "#15803D" : "#DC2626"} />}
+            </View>
+          </View>
+        )}
+
+        {d.interno && d.referenza && (
+          <View style={{ marginBottom: 14 }} wrap={false}>
+            <Text style={[s.h3, { color: C.muted, fontSize: 8 }]}>Costo della referenza — {d.referenza.pezzi} pz (solo uso interno)</Text>
+            <View style={{ backgroundColor: "#FFFBEB", borderWidth: 0.5, borderColor: "#FDE68A", borderRadius: 4, padding: 8 }}>
+              <View style={{ flexDirection: "row", paddingBottom: 3, borderBottomWidth: 0.5, borderBottomColor: "#FDE68A" }}>
+                {["Voce", "Quantità", "€/capo", "Totale"].map((h, i) => (
+                  <Text key={h} style={[{ fontSize: 7.5, color: "#92400E", fontFamily: "Helvetica-Bold", flex: i === 0 ? 2.2 : 1 }, i > 0 ? s.right : {}]}>{h}</Text>
+                ))}
+              </View>
+              {d.referenza.righe.map((r, i) => (
+                <View key={i} style={{ flexDirection: "row", paddingVertical: 2.5, borderBottomWidth: 0.5, borderBottomColor: "#FEF3C7" }}>
+                  <Text style={{ flex: 2.2 }}>
+                    <Text style={s.bold}>{r.voce}</Text>
+                    {r.dettaglio ? <Text style={{ fontSize: 7.5, color: C.muted }}>  {r.dettaglio}</Text> : null}
+                  </Text>
+                  <Text style={[s.mono, s.right, { flex: 1 }]}>{r.quantita}</Text>
+                  <Text style={[s.mono, s.right, { flex: 1 }, r.perCapo === "manca" ? { color: "#DC2626" } : {}]}>{r.perCapo}</Text>
+                  <Text style={[s.monoBold, s.right, { flex: 1 }]}>{r.totale}</Text>
+                </View>
+              ))}
+              {d.referenza.totali.map(([a, b, c], i) => {
+                const margine = a === "Margine" && d.referenza!.positivo !== null;
+                const colore = margine ? { color: d.referenza!.positivo ? "#15803D" : "#DC2626" } : {};
+                return (
+                  <View key={a} style={{ flexDirection: "row", paddingVertical: 2, ...(i === 0 ? { marginTop: 3, paddingTop: 4 } : {}) }}>
+                    <Text style={[i === 0 ? s.bold : {}, { flex: 3.2 }, colore]}>{a}</Text>
+                    <Text style={[s.mono, s.right, { flex: 1 }, colore]}>{b}</Text>
+                    <Text style={[i === 0 ? s.monoBold : s.mono, s.right, { flex: 1 }, colore]}>{c}</Text>
+                  </View>
+                );
+              })}
             </View>
           </View>
         )}

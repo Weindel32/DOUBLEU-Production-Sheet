@@ -5,6 +5,7 @@ import type { ConsumoMateriale, Campione } from "@/types";
 import { etichettaColore } from "@/lib/colori";
 import { riferimentoColori } from "@/lib/coloriServer";
 import { creaPdfScheda, type Coppia, type DatiSchedaPdf } from "@/lib/pdf/schedaPdf";
+import { totaliReferenza, vociCosto } from "@/lib/costoReferenza";
 
 const PALETTE_HEX: Record<string, string> = {
   "Nero": "#000000", "Bianco": "#ffffff", "Grigio chiaro": "#d1d5db",
@@ -100,6 +101,18 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const costoTotale = costoMateriali + costoAccessori + (scheda.costoLavorazione || 0);
   const totaleCampioni = totaleSviluppo(campioni);
 
+  // Costo della referenza (solo PDF interno): stesse voci della scheda. Schede vecchie col solo
+  // totale lavorazione: va in Confezione, come nel consuntivo dell'ordine.
+  const dettaglioLav = [scheda.costoTaglio, scheda.costoCucitura, scheda.costoStampa, scheda.costoRicamo].some((v) => v !== null);
+  const voci = interno && totalePezzi > 0
+    ? vociCosto({
+        consumi: consumiSalvati, accessori,
+        taglio: scheda.costoTaglio, cucitura: dettaglioLav ? scheda.costoCucitura : scheda.costoLavorazione,
+        stampa: scheda.costoStampa, ricamo: scheda.costoRicamo,
+      }, materialiConsumo, totalePezzi)
+    : [];
+  const ref = totaliReferenza(voci, totalePezzi, scheda.prezzoVendita || 0);
+
   const dati: DatiSchedaPdf = {
     interno,
     sopra: normalizzaTipo(scheda.tipo) === "costo" ? "Costo articolo" : "Scheda produzione",
@@ -167,6 +180,25 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
           margine: scheda.prezzoVendita
             ? { testo: `${(((scheda.prezzoVendita - costoTotale) / scheda.prezzoVendita) * 100).toFixed(1).replace(".", ",")}%`, positivo: scheda.prezzoVendita > costoTotale }
             : null,
+        }
+      : null,
+    referenza: voci.length > 0
+      ? {
+          pezzi: totalePezzi,
+          righe: voci.map((v) => ({
+            voce: v.nome,
+            dettaglio: v.fase === "Confezione" ? scheda.produttore || "fasonista non indicato" : v.dettaglio,
+            quantita: v.quantita ?? `${totalePezzi} pz`,
+            perCapo: v.manca && v.perCapo <= 0 ? "manca" : euro(v.perCapo),
+            totale: v.manca && v.perCapo <= 0 ? "—" : euro(v.perCapo * totalePezzi),
+          })),
+          totali: [
+            ["Costo totale", euro(ref.costoCapo), euro(ref.totale)],
+            ["Ricavo", scheda.prezzoVendita ? euro(scheda.prezzoVendita) : "—", ref.ricavo > 0 ? euro(ref.ricavo) : "—"],
+            ["Margine", ref.margine !== null ? euro(ref.margine / totalePezzi) : "—",
+              ref.margine !== null ? `${euro(ref.margine)} · ${ref.marginePct!.toFixed(1).replace(".", ",")}%` : "—"],
+          ],
+          positivo: ref.margine === null ? null : ref.margine > 0,
         }
       : null,
     campioni: interno && campioni.length > 0

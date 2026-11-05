@@ -2,7 +2,7 @@
 
 import { Lock } from "lucide-react";
 import { formatEuro, MARGINE_MINIMO, MARGINE_PIENO } from "@/lib/utils";
-import type { VoceCosto } from "./TabProduzione";
+import { totaliReferenza, type VoceCosto } from "@/lib/costoReferenza";
 
 interface Props {
   voci: VoceCosto[];
@@ -22,11 +22,7 @@ const COLS = "grid grid-cols-[minmax(0,2.2fr)_minmax(0,1.3fr)_minmax(0,1fr)_minm
  * È il previsto, non lo speso: le spese reali stanno sull'ordine (consuntivo dell'ordine).
  */
 export default function CostoReferenza({ voci, pezzi, stimati, prezzoVendita, produttore, onVaiAiCosti }: Props) {
-  const costoCapo = voci.reduce((t, v) => t + v.perCapo, 0);
-  const totale = costoCapo * pezzi;
-  const ricavo = prezzoVendita > 0 ? prezzoVendita * pezzi : 0;
-  const margine = ricavo > 0 && totale > 0 ? ricavo - totale : null;
-  const marginePct = margine !== null ? (margine / ricavo) * 100 : null;
+  const { costoCapo, totale, ricavo, margine, marginePct } = totaliReferenza(voci, pezzi, prezzoVendita);
   const mancanti = voci.filter((v) => v.manca);
   const coloreMargine = marginePct === null ? "text-[#5F6878]"
     : marginePct >= MARGINE_PIENO ? "text-[#1D6B4A]" : marginePct >= MARGINE_MINIMO ? "text-[#7A5B12]" : "text-[#A8461F]";
