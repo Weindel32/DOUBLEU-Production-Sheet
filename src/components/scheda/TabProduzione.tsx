@@ -20,6 +20,7 @@ interface MaterialeDisp {
   peso: string | null;
   unitaPeso: string | null;
   larghezza: string | null;
+  fornitore?: string | null;
 }
 
 interface Props {
@@ -36,9 +37,25 @@ interface Props {
   onRiepilogoChange?: (r: RiepilogoCosti) => void;
   /** Materiali da comprare per questa referenza, per il riquadro fisso. */
   onAcquistiChange?: (a: AcquistoRiepilogo[]) => void;
+  /** Costo per capo voce per voce, per il costo della referenza sotto le quantità. */
+  onVociChange?: (v: VoceCosto[]) => void;
 }
 
 export interface AcquistoRiepilogo { nome: string; quantita: string; stima: number | null }
+
+/** Una voce del costo per capo: materiale, accessori o lavorazione. */
+export interface VoceCosto {
+  /** Fase come nel consuntivo dell'ordine, così i due conti si leggono allo stesso modo. */
+  fase: "Tessuto" | "Accessori" | "Taglio" | "Confezione" | "Stampa" | "Ricamo";
+  nome: string;
+  /** Fornitore del materiale, elenco accessori, fasonista. */
+  dettaglio: string | null;
+  perCapo: number;
+  /** Solo materiali: consumo netto per l'intera referenza (metri, kg o pezzi), senza scarto. */
+  quantita: string | null;
+  /** Prezzo o costo non inserito: la voce conta zero. */
+  manca: boolean;
+}
 
 export interface TabProduzioneHandle {
   save: () => Promise<void>;
@@ -54,7 +71,7 @@ const MARGINI_OBIETTIVO = [35, 45, 55];
 const RIGA_COLS = "grid grid-cols-[minmax(0,2.4fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_44px] gap-2.5 items-center";
 
 const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzione(
-  { scheda, onSave, materialiDisponibili, soloCosti, onRiepilogoChange, onAcquistiChange, quantita, capiOrdine }, ref,
+  { scheda, onSave, materialiDisponibili, soloCosti, onRiepilogoChange, onAcquistiChange, onVociChange, quantita, capiOrdine }, ref,
 ) {
   const [noteProduzione, setNoteProduzione] = useState(scheda.noteProduzione || "");
   const [tolleranzaTaglio, setTolleranzaTaglio] = useState(scheda.tolleranzaTaglio || "");
@@ -239,6 +256,37 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
     // Dipendo dai valori (firma), non dall'array nuovo a ogni render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [firmaAcquisti]);
+
+  const voci: VoceCosto[] = [
+    ...consumi.flatMap((c): VoceCosto[] => {
+      const mat = materialiDisponibili.find((m) => m.id === c.materialeId);
+      if (!mat) return [];
+      const unitario = calcolaCostoUnitarioConsumo(mat);
+      const a = calcolaAcquistoMateriale(mat, c.consumoPerCapo, totalePezzi);
+      const quantita = !a ? null
+        : a.unita === "kg" ? `${num1(a.netto)} kg · ${num1(a.metri!)} m`
+        : `${num1(a.netto)} ${a.unita}`;
+      return [{ fase: "Tessuto", nome: mat.nome, dettaglio: mat.fornitore || null, perCapo: (c.consumoPerCapo || 0) * unitario, quantita, manca: unitario <= 0 }];
+    }),
+    ...(accessori.length > 0 ? [{
+      fase: "Accessori" as const, nome: "Accessori", dettaglio: accessori.map((a) => a.nome).filter(Boolean).join(", ") || null,
+      perCapo: riepilogo.accessori, quantita: null, manca: accessori.some((a) => !(a.prezzoUnitario > 0)),
+    }] : []),
+    ...lavorazioni.flatMap(({ label, value }): VoceCosto[] => {
+      const v = parseNum(value) ?? 0;
+      // Taglio e confezione ci sono sempre: se mancano si deve vedere. Stampa e ricamo solo se usati.
+      const sempre = label === "Taglio" || label === "Cucitura";
+      if (!sempre && v <= 0) return [];
+      const fase = label === "Cucitura" ? "Confezione" : label as VoceCosto["fase"];
+      return [{ fase, nome: label === "Cucitura" ? "Confezione" : label, dettaglio: null, perCapo: v, quantita: null, manca: v <= 0 }];
+    }),
+  ];
+  const firmaVoci = JSON.stringify(voci);
+  useEffect(() => {
+    onVociChange?.(voci);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [firmaVoci]);
+
   const spesaOrdine = acquisti.reduce((t, a) => t + (a.stima ?? 0), 0);
   const senzaPrezzo = acquisti.filter((a) => a.stima === null).length;
 
