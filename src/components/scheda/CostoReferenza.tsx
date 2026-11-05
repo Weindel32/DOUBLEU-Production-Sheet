@@ -32,14 +32,15 @@ export default function CostoReferenza({ voci, pezzi, stimati, prezzoVendita, pr
     : marginePct >= MARGINE_PIENO ? "text-[#1D6B4A]" : marginePct >= MARGINE_MINIMO ? "text-[#7A5B12]" : "text-[#A8461F]";
 
   return (
-    <div className="card p-0 overflow-hidden">
-      <div className="px-4 py-3 border-b border-[#E4E0D6] flex flex-wrap items-center justify-between gap-2">
-        <h3 className="section-title">Costo della referenza</h3>
-        <span className="flex items-center gap-3 text-xs">
+    <section id="sez-costo-referenza" className="scheda-section space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
+        <h2 className="font-display text-xl font-bold text-[#0E1B2C]">Costo della referenza</h2>
+        <span className="flex items-center gap-3 text-[13px]">
           {pezzi > 0 && <span className="text-[#1F3A68] font-semibold">{pezzi} pz{stimati && " stimati dall'ordine"}</span>}
-          <span className="flex items-center gap-1 text-[#A8461F]"><Lock size={12} /> solo interno</span>
+          <span className="flex items-center gap-1.5 text-[#A8461F] bg-[#FBEDE5] px-3 py-1.5 rounded-lg"><Lock size={14} /> Solo interno</span>
         </span>
       </div>
+    <div className="card p-0 overflow-hidden">
 
       {pezzi === 0 ? (
         <p className="px-4 py-4 text-sm text-[#5F6878]">Inserisci le quantità per taglia: il costo di ogni voce si calcola sui pezzi della referenza.</p>
@@ -103,5 +104,6 @@ export default function CostoReferenza({ voci, pezzi, stimati, prezzoVendita, pr
         </div>
       )}
     </div>
+    </section>
   );
 }

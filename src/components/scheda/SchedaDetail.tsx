@@ -12,8 +12,7 @@ import {
 import TabArticolo, { type TabArticoloHandle } from "./TabArticolo";
 import TabPersonalizzazione, { type TabPersonalizzazioneHandle } from "./TabPersonalizzazione";
 import TabMisure, { type TabMisureHandle } from "./TabMisure";
-import TabProduzione, { type TabProduzioneHandle, type AcquistoRiepilogo, type VoceCosto } from "./TabProduzione";
-import CostoReferenza from "./CostoReferenza";
+import TabProduzione, { type TabProduzioneHandle, type AcquistoRiepilogo } from "./TabProduzione";
 import TabCampioni from "./TabCampioni";
 import { Segmented } from "@/components/ui/Form";
 import type { SchedaCompleta, QuantitaTaglia, Campione } from "@/types";
@@ -55,6 +54,7 @@ const SEZIONI = [
   { id: "sez-personalizzazione", label: "Personalizzazione", soloOrdine: true },
   { id: "sez-misure", label: "Misure e quantità", soloOrdine: true },
   { id: "sez-costi", label: "Costi", soloOrdine: false },
+  { id: "sez-costo-referenza", label: "Costo referenza", soloOrdine: true },
   { id: "sez-produzione", label: "Produzione", soloOrdine: true },
   { id: "sez-campioni", label: "Campioni", soloOrdine: false },
 ];
@@ -102,7 +102,6 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
   const pezziStimati = !isCosto && pezziPropri === 0 && !!capiOrdine;
   const totalePezzi = pezziStimati ? capiOrdine! : pezziPropri;
   const [acquisti, setAcquisti] = useState<AcquistoRiepilogo[]>([]);
-  const [voci, setVoci] = useState<VoceCosto[]>([]);
 
   // Evidenzia nell'indice la sezione che si sta leggendo.
   useEffect(() => {
@@ -326,14 +325,12 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
                 <section id="sez-misure" className="scheda-section space-y-4">
                   <h2 className="font-display text-xl font-bold text-[#0E1B2C]">Misure e quantità</h2>
                   <TabMisure ref={tabMisureRef} scheda={schedaMisure} onSave={handleSave} onQuantitaChange={setQuantita} />
-                  <CostoReferenza voci={voci} pezzi={totalePezzi} stimati={pezziStimati} prezzoVendita={riepilogo.prezzoVendita}
-                    produttore={meta.produttore} onVaiAiCosti={() => vaiA("sez-costi")} />
                 </section>
               </>
             )}
 
             <TabProduzione ref={tabProduzioneRef} scheda={scheda} onSave={handleSave} materialiDisponibili={materialiDisponibili}
-              soloCosti={isCosto} quantita={quantita} capiOrdine={capiOrdine} onRiepilogoChange={setRiepilogo} onAcquistiChange={setAcquisti} onVociChange={setVoci} />
+              soloCosti={isCosto} quantita={quantita} capiOrdine={capiOrdine} onRiepilogoChange={setRiepilogo} onAcquistiChange={setAcquisti} produttore={meta.produttore} />
 
             <section id="sez-campioni" className="scheda-section">
               <TabCampioni scheda={scheda} onSave={handleSave} onTotaleChange={(totale, numero) => setSviluppo({ totale, numero })} />

@@ -9,6 +9,7 @@ import {
   MARGINE_MINIMO, MARGINE_PIENO,
 } from "@/lib/utils";
 import { Field, SectionCard, EuroInput, numStr, inputCls, textareaCls } from "@/components/ui/Form";
+import CostoReferenza from "./CostoReferenza";
 
 interface MaterialeDisp {
   id: string;
@@ -37,8 +38,8 @@ interface Props {
   onRiepilogoChange?: (r: RiepilogoCosti) => void;
   /** Materiali da comprare per questa referenza, per il riquadro fisso. */
   onAcquistiChange?: (a: AcquistoRiepilogo[]) => void;
-  /** Costo per capo voce per voce, per il costo della referenza sotto le quantità. */
-  onVociChange?: (v: VoceCosto[]) => void;
+  /** Fasonista della scheda, per la riga Confezione del costo della referenza. */
+  produttore?: string;
 }
 
 export interface AcquistoRiepilogo { nome: string; quantita: string; stima: number | null }
@@ -71,7 +72,7 @@ const MARGINI_OBIETTIVO = [35, 45, 55];
 const RIGA_COLS = "grid grid-cols-[minmax(0,2.4fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_44px] gap-2.5 items-center";
 
 const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzione(
-  { scheda, onSave, materialiDisponibili, soloCosti, onRiepilogoChange, onAcquistiChange, onVociChange, quantita, capiOrdine }, ref,
+  { scheda, onSave, materialiDisponibili, soloCosti, onRiepilogoChange, onAcquistiChange, produttore = "", quantita, capiOrdine }, ref,
 ) {
   const [noteProduzione, setNoteProduzione] = useState(scheda.noteProduzione || "");
   const [tolleranzaTaglio, setTolleranzaTaglio] = useState(scheda.tolleranzaTaglio || "");
@@ -281,11 +282,6 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
       return [{ fase, nome: label === "Cucitura" ? "Confezione" : label, dettaglio: null, perCapo: v, quantita: null, manca: v <= 0 }];
     }),
   ];
-  const firmaVoci = JSON.stringify(voci);
-  useEffect(() => {
-    onVociChange?.(voci);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [firmaVoci]);
 
   const spesaOrdine = acquisti.reduce((t, a) => t + (a.stima ?? 0), 0);
   const senzaPrezzo = acquisti.filter((a) => a.stima === null).length;
@@ -477,6 +473,12 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
           </div>
         </div>
       </div>
+
+      {/* ── Costo della referenza: costo per capo × pezzi, prima della produzione ── */}
+      {!soloCosti && (
+        <CostoReferenza voci={voci} pezzi={totalePezzi} stimati={pezziStimati} prezzoVendita={riepilogo.prezzoVendita}
+          produttore={produttore} onVaiAiCosti={() => document.getElementById("sez-costi")?.scrollIntoView({ behavior: "smooth", block: "start" })} />
+      )}
 
       {/* ── Produzione ─────────────────────────────────── */}
       {!soloCosti && (
