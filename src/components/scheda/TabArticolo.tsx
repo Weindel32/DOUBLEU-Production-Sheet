@@ -26,7 +26,7 @@ interface Props {
   /** Ordini dell'Order App: una scheda di produzione è una referenza di uno di questi. */
   ordiniOrderApp?: OrdineBreve[];
   /** Nome, codice e categoria vivono anche nell'intestazione della scheda. */
-  onMetaChange?: (meta: { nomeArticolo?: string; codice?: string; categoria?: string; codiceModello?: string }) => void;
+  onMetaChange?: (meta: { nomeArticolo?: string; codice?: string; categoria?: string; codiceModello?: string; produttore?: string }) => void;
   /** Archivio modelli, per suggerire il codice e proporre di aggiungere quelli nuovi. */
   modelli?: ModelloBreve[];
 }
@@ -190,6 +190,8 @@ const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ 
       await onSave({ [field]: v });
       return;
     }
+    // Il fasonista compare nel costo della referenza, accanto alla confezione.
+    if (field === "produttore") onMetaChange?.({ produttore: values.produttore.trim() });
     await onSave({ [field]: values[field] || null });
   };
 
