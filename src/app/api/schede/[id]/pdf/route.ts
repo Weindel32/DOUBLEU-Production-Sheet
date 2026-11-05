@@ -6,6 +6,8 @@ import { etichettaColore } from "@/lib/colori";
 import { riferimentoColori } from "@/lib/coloriServer";
 import { creaPdfScheda, type Coppia, type DatiSchedaPdf } from "@/lib/pdf/schedaPdf";
 import { totaliReferenza, vociCosto } from "@/lib/costoReferenza";
+import { ordiniOrderApp } from "@/lib/orderApp";
+import { capiScheda, statoReferenza } from "@/lib/referenze";
 
 const PALETTE_HEX: Record<string, string> = {
   "Nero": "#000000", "Bianco": "#ffffff", "Grigio chiaro": "#d1d5db",
@@ -89,6 +91,18 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   });
   const taglie = Object.keys(quantitaTaglia);
   const totalePezzi = Object.values(quantitaTaglia).reduce((t, q) => t + q, 0);
+
+  // Costo della referenza senza taglie: i capi della referenza nell'ordine, come stima (come nella scheda).
+  // L'Order App si legge solo se serve; se non risponde il blocco si salta.
+  let pezziReferenza = totalePezzi;
+  let pezziStimati = false;
+  if (interno && totalePezzi === 0 && scheda.ordineOrderAppId) {
+    const ordine = (await ordiniOrderApp().catch(() => [])).find((o) => o.id === scheda.ordineOrderAppId);
+    const ref = statoReferenza(scheda, ordine?.referenze ?? null);
+    const stima = capiScheda(quantitaTaglia, ref.tipo === "collegata" ? ref.referenza : null);
+    pezziReferenza = stima.capi;
+    pezziStimati = stima.stimati;
+  }
   const isElastico = CATEGORIE_ELASTICO.includes(scheda.categoria || "");
   const specsElastico = tabellaMisure.__specs as { altezza?: string; tipo?: string; costruzione?: string; applicazione?: string } | undefined;
   const valore = (t: string, k: string) => {
@@ -104,14 +118,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   // Costo della referenza (solo PDF interno): stesse voci della scheda. Schede vecchie col solo
   // totale lavorazione: va in Confezione, come nel consuntivo dell'ordine.
   const dettaglioLav = [scheda.costoTaglio, scheda.costoCucitura, scheda.costoStampa, scheda.costoRicamo].some((v) => v !== null);
-  const voci = interno && totalePezzi > 0
+  const voci = interno && pezziReferenza > 0
     ? vociCosto({
         consumi: consumiSalvati, accessori,
         taglio: scheda.costoTaglio, cucitura: dettaglioLav ? scheda.costoCucitura : scheda.costoLavorazione,
         stampa: scheda.costoStampa, ricamo: scheda.costoRicamo,
-      }, materialiConsumo, totalePezzi)
+      }, materialiConsumo, pezziReferenza)
     : [];
-  const ref = totaliReferenza(voci, totalePezzi, scheda.prezzoVendita || 0);
+  const ref = totaliReferenza(voci, pezziReferenza, scheda.prezzoVendita || 0);
 
   const dati: DatiSchedaPdf = {
     interno,
@@ -184,18 +198,19 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       : null,
     referenza: voci.length > 0
       ? {
-          pezzi: totalePezzi,
+          pezzi: pezziReferenza,
+          stimati: pezziStimati,
           righe: voci.map((v) => ({
             voce: v.nome,
             dettaglio: v.fase === "Confezione" ? scheda.produttore || "fasonista non indicato" : v.dettaglio,
-            quantita: v.quantita ?? `${totalePezzi} pz`,
+            quantita: v.quantita ?? `${pezziReferenza} pz`,
             perCapo: v.manca && v.perCapo <= 0 ? "manca" : euro(v.perCapo),
-            totale: v.manca && v.perCapo <= 0 ? "—" : euro(v.perCapo * totalePezzi),
+            totale: v.manca && v.perCapo <= 0 ? "—" : euro(v.perCapo * pezziReferenza),
           })),
           totali: [
             ["Costo totale", euro(ref.costoCapo), euro(ref.totale)],
             ["Ricavo", scheda.prezzoVendita ? euro(scheda.prezzoVendita) : "—", ref.ricavo > 0 ? euro(ref.ricavo) : "—"],
-            ["Margine", ref.margine !== null ? euro(ref.margine / totalePezzi) : "—",
+            ["Margine", ref.margine !== null ? euro(ref.margine / pezziReferenza) : "—",
               ref.margine !== null ? `${euro(ref.margine)} · ${ref.marginePct!.toFixed(1).replace(".", ",")}%` : "—"],
           ],
           positivo: ref.margine === null ? null : ref.margine > 0,

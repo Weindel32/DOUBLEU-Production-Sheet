@@ -33,6 +33,8 @@ export interface DatiSchedaPdf {
   /** Solo interno: costo per voce × pezzi della referenza. */
   referenza: {
     pezzi: number;
+    /** Pezzi presi dall'ordine perché la scheda non ha ancora le taglie. */
+    stimati: boolean;
     righe: { voce: string; dettaglio: string | null; quantita: string; perCapo: string; totale: string }[];
     totali: [string, string, string][];
     positivo: boolean | null;
@@ -208,7 +210,7 @@ function Documento({ d }: { d: DatiSchedaPdf }) {
 
         {d.interno && d.referenza && (
           <View style={{ marginBottom: 14 }} wrap={false}>
-            <Text style={[s.h3, { color: C.muted, fontSize: 8 }]}>Costo della referenza — {d.referenza.pezzi} pz (solo uso interno)</Text>
+            <Text style={[s.h3, { color: C.muted, fontSize: 8 }]}>Costo della referenza — {d.referenza.pezzi} pz{d.referenza.stimati ? " stimati dall'ordine" : ""} (solo uso interno)</Text>
             <View style={{ backgroundColor: "#FFFBEB", borderWidth: 0.5, borderColor: "#FDE68A", borderRadius: 4, padding: 8 }}>
               <View style={{ flexDirection: "row", paddingBottom: 3, borderBottomWidth: 0.5, borderBottomColor: "#FDE68A" }}>
                 {["Voce", "Quantità", "€/capo", "Totale"].map((h, i) => (
