@@ -9,6 +9,7 @@ import { ordiniOrderApp, type OrdineOrderApp } from "@/lib/orderApp";
 import { capiScheda, chiaveParte, ETICHETTA_PARTE, parteCoperta, partiReferenza, statoReferenza } from "@/lib/referenze";
 import { salvaRicollegamenti } from "@/lib/clientiOrderApp";
 import SchedaRowMenu from "@/components/scheda/SchedaRowMenu";
+import StatoSchedaToggle, { RendiEsecutive } from "@/components/scheda/StatoSchedaToggle";
 import { riepilogoScheda } from "@/lib/costiScheda";
 import type { Campione } from "@/types";
 
@@ -220,7 +221,7 @@ export default async function ListaSchede({ vista, searchParams }: {
                 )}
                 {isArticoli && <td className={numero}>{nOrdini || "—"}</td>}
                 <td className={cella}>
-                  {!isArticoli && stato && <span className={`badge badge-${s.stato}`}>{stato.label}</span>}
+                  {!isArticoli && stato && <StatoSchedaToggle key={s.stato} id={s.id} stato={s.stato} />}
                   <div className={`text-xs text-[#5F6878] ${isArticoli ? "" : "mt-1"}`}>{formatData(s.updatedAt)}</div>
                 </td>
                 <td className="px-2 py-2.5 text-right">
@@ -297,6 +298,7 @@ export default async function ListaSchede({ vista, searchParams }: {
           )) : blocchiOrdine.map((b) => {
             const pezzi = b.righe.filter((r) => r.ref !== "non-piu-nell-ordine").reduce((tot, r) => tot + r.pezzi, 0);
             const bozze = b.righe.filter((r) => r.s.stato === "bozza").length;
+            const bozzeValide = b.righe.filter((r) => r.s.stato === "bozza" && r.ref !== "non-piu-nell-ordine").map((r) => r.s.id);
             const orfane = b.righe.filter((r) => r.ref === "non-piu-nell-ordine").length;
             const valide = b.righe.length - orfane;
             // Ogni referenza chiede una scheda per parte: adulto, e bambino se ci sono taglie bambino.
@@ -325,6 +327,7 @@ export default async function ListaSchede({ vista, searchParams }: {
                         mancanti > 0 ? `${mancanti} da creare` : null].filter(Boolean).join(" · ") || "\u00a0"}
                     </div>
                   </div>
+                  {bozzeValide.length > 0 && <RendiEsecutive ids={bozzeValide} />}
                   {b.ordineId && (
                     <Link href={`/schede/ordine/${encodeURIComponent(b.ordineId)}`}
                       className="h-10 px-3.5 rounded-lg border border-[#D6D1C4] text-[13px] font-semibold text-[#0E1B2C] inline-flex items-center gap-1.5 hover:border-[#0E1B2C]/40">
