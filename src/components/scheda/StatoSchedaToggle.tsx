@@ -16,7 +16,7 @@ async function salvaStato(id: string, stato: string) {
 }
 
 /** Badge di stato cliccabile nell'elenco: Bozza ⇄ Esecutiva senza aprire la scheda. */
-export default function StatoSchedaToggle({ id, stato }: { id: string; stato: string }) {
+export default function StatoSchedaToggle({ id, stato, className = "" }: { id: string; stato: string; className?: string }) {
   const [corrente, setCorrente] = useState(stato);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
@@ -42,7 +42,7 @@ export default function StatoSchedaToggle({ id, stato }: { id: string; stato: st
       disabled={pending}
       title={`Clic per segnare come ${ETICHETTA[prossimo]}`}
       aria-label={`Stato ${ETICHETTA[corrente] ?? corrente}: segna come ${ETICHETTA[prossimo]}`}
-      className={`badge badge-${corrente} cursor-pointer hover:brightness-95 hover:shadow-sm transition disabled:opacity-60`}
+      className={`badge badge-${corrente} cursor-pointer hover:brightness-95 hover:shadow-sm transition disabled:opacity-60 ${className}`}
     >
       {ETICHETTA[corrente] ?? corrente}
     </button>
@@ -50,7 +50,7 @@ export default function StatoSchedaToggle({ id, stato }: { id: string; stato: st
 }
 
 /** Azione sull'intestazione dell'ordine: tutte le bozze del blocco diventano esecutive. */
-export function RendiEsecutive({ ids }: { ids: string[] }) {
+export function RendiEsecutive({ ids, className }: { ids: string[]; className?: string }) {
   const [pending, startTransition] = useTransition();
   const [salvando, setSalvando] = useState(false);
   const router = useRouter();
@@ -73,7 +73,7 @@ export function RendiEsecutive({ ids }: { ids: string[] }) {
       type="button"
       onClick={esegui}
       disabled={salvando || pending}
-      className="h-10 px-3.5 rounded-lg border border-[#BFDFCC] bg-[#DDEFE5] text-[13px] font-semibold text-[#1D6B4A] inline-flex items-center gap-1.5 hover:border-[#1D6B4A]/50 disabled:opacity-60"
+      className={className ?? "h-10 px-3.5 rounded-lg border border-[#BFDFCC] bg-[#DDEFE5] text-[13px] font-semibold text-[#1D6B4A] inline-flex items-center gap-1.5 hover:border-[#1D6B4A]/50 disabled:opacity-60"}
     >
       <CheckCircle size={15} /> {salvando ? "Salvo…" : `Rendi esecutive (${ids.length})`}
     </button>
