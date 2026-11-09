@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Check, X } from "lucide-react";
-import { FASI_PRODUZIONE, GIORNI_SOLLECITO, SALTA, avanzamento, dataBreve, oggiItalia, type Fasi, type IdFase } from "@/lib/fasi";
+import { FASI_PRODUZIONE, GIORNI_SOLLECITO, SALTA, avanzamento, oggiItalia, type Fasi, type IdFase } from "@/lib/fasi";
 
 function useFasi(id: string, iniziali: Fasi, aggiorna = true) {
   const [fasi, setFasi] = useState<Fasi>(iniziali);
@@ -41,10 +41,16 @@ function useFasi(id: string, iniziali: Fasi, aggiorna = true) {
     else next[f] = SALTA;
     salva(next);
   };
-  return { fasi, errore, spunta, salta };
+  // Spunta registrata in ritardo: la data si corregge, così i giorni nella fase tornano giusti.
+  const data = (f: IdFase, iso: string) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(iso) || iso > oggiItalia() || fasi[f] === iso) return;
+    salva({ ...fasi, [f]: iso });
+  };
+  return { fasi, errore, spunta, salta, data };
 }
 
-function Checklist({ fasi, errore, spunta, salta }: ReturnType<typeof useFasi>) {
+function Checklist({ fasi, errore, spunta, salta, data }: ReturnType<typeof useFasi>) {
+  const oggi = oggiItalia();
   return (
     <div>
       <ul className="divide-y divide-[#EFEBE2]">
@@ -61,8 +67,12 @@ function Checklist({ fasi, errore, spunta, salta }: ReturnType<typeof useFasi>) 
                   {fatta && <Check size={15} strokeWidth={3} />}
                 </span>
                 <span className={`flex-1 text-[15px] ${saltata ? "text-[#A39E92] line-through" : fatta ? "text-[#0E1B2C] font-semibold" : "text-[#0E1B2C]"}`}>{f.label}</span>
-                {fatta && <span className="text-xs text-[#5F6878] font-mono">{dataBreve(v)}</span>}
               </button>
+              {fatta && (
+                <input type="date" value={v} max={oggi} aria-label={`Data ${f.label}`} title="Cambia la data"
+                  onChange={(e) => data(f.id, e.target.value)}
+                  className="h-9 w-[132px] flex-shrink-0 rounded-md border border-[#E4E0D6] bg-white px-2 text-xs font-mono text-[#0E1B2C] hover:border-[#0E1B2C]/40 focus:border-[#1F3A68]" />
+              )}
               {/* Fasi che per questo articolo non esistono: escono dal conteggio. */}
               {!fatta && (
                 <button type="button" onClick={() => salta(f.id)}
@@ -153,7 +163,7 @@ export default function FasiChip({ id, fasi, className = "" }: { id: string; fas
           <div role="dialog" aria-label="Fasi di produzione" onClick={(e) => e.stopPropagation()}
             style={pos ? { top: pos.top, right: pos.right } : undefined}
             className={pos
-              ? "absolute w-80 bg-white border border-[#E4E0D6] rounded-xl shadow-xl p-3"
+              ? "absolute w-96 bg-white border border-[#E4E0D6] rounded-xl shadow-xl p-3"
               : "absolute inset-x-0 bottom-0 bg-white rounded-t-2xl shadow-xl p-4 pb-[max(1rem,env(safe-area-inset-bottom))]"}>
             <div className="flex items-center justify-between mb-2 px-2">
               <span className="font-display font-bold text-[16px] text-[#0E1B2C]">Fasi di produzione</span>
