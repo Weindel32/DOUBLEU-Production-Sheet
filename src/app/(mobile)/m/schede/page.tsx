@@ -79,7 +79,8 @@ export default async function MobileSchedePage({ searchParams }: {
           const fasiOrdine = riepilogoFasi(fasiEsecutive);
           const tempo = tempoOrdine(fasiEsecutive, bozze.length === 0);
           return (
-            <details key={b.ordineId ?? `c:${b.cliente}`} data-blocco={b.ordineId ?? `c:${b.cliente}`} open={i === 0 && elenco.length <= 3} className="group bg-white border border-[#E4E0D6] rounded-2xl overflow-hidden">
+            <details key={b.ordineId ?? `c:${b.cliente}`} data-blocco={b.ordineId ?? `c:${b.cliente}`} id={b.ordineId ? `ordine-${b.ordineId}` : undefined}
+              open={sp.ordine ? b.ordineId === sp.ordine : i === 0 && elenco.length <= 3} className="group bg-white border border-[#E4E0D6] rounded-2xl overflow-hidden">
               <summary className="list-none [&::-webkit-details-marker]:hidden flex items-center gap-3 px-4 py-3.5 active:bg-[#FBFAF7]">
                 <span className="flex-1 min-w-0">
                   <span className={`block font-display font-bold text-[17px] truncate ${b.cliente ? "text-[#1F3A68]" : "text-[#5F6878]"}`}>{b.cliente ?? "Senza cliente"}</span>
