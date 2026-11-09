@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Check, X } from "lucide-react";
 import {
-  FASI_PRODUZIONE, GIORNI_SOLLECITO, SALTA, avanzamento, dataBreve, oggiItalia, statoFase,
+  FASI_PRODUZIONE, GIORNI_SOLLECITO, SALTA, avanzamento, dataBreve, durataFase, oggiItalia, statoFase,
   type Avanzamento, type Fasi, type IdFase,
 } from "@/lib/fasi";
 
@@ -81,7 +81,11 @@ function Checklist({ fasi, errore, avanza, salta, data }: ReturnType<typeof useF
                 <span className="flex-1 min-w-0">
                   <span className={`block text-[15px] ${s.stato === "salta" ? "text-[#A39E92] line-through" : s.stato === "vuota" ? "text-[#0E1B2C]" : "text-[#0E1B2C] font-semibold"}`}>{f.label}</span>
                   {s.stato === "corso" && <span className="block text-xs font-semibold text-[#1F3A68]">In corso</span>}
-                  {s.stato === "fatta" && <span className="block text-xs text-[#1D6B4A]">Fatta{s.inizio ? ` · partita il ${dataBreve(s.inizio)}` : ""}</span>}
+                  {s.stato === "fatta" && (
+                    <span className="block text-xs text-[#1D6B4A]">
+                      Fatta{s.inizio ? ` · partita il ${dataBreve(s.inizio)} · ${testoDurata(durataFase(s)!)}` : ""}
+                    </span>
+                  )}
                 </span>
               </button>
               {dataFase && (
@@ -106,16 +110,24 @@ function Checklist({ fasi, errore, avanza, salta, data }: ReturnType<typeof useF
   );
 }
 
+const testoDurata = (g: number) => (g === 0 ? "in giornata" : g === 1 ? "1 giorno" : `${g} giorni`);
+
 const COLORE: Record<Avanzamento["situazione"], string> = {
   corso: "text-[#1F3A68]", attesa: "text-[#7A5B12]", pronto: "text-[#1D6B4A]", "da-avviare": "text-[#5F6878]",
 };
 
 /** "da 3 giorni" (in corso) o "ferma da 3 giorni" (in attesa). */
 function testoGiorni(a: Avanzamento) {
+  if (a.situazione === "pronto") return a.impiegati === null ? null : a.impiegati === 0 ? "in giornata" : `in ${testoDurata(a.impiegati)}`;
   if (a.giorni === null) return null;
   const g = a.giorni === 0 ? "oggi" : a.giorni === 1 ? "1 giorno" : `${a.giorni} giorni`;
   return a.situazione === "attesa" ? `ferma da ${g}` : a.giorni === 0 ? "da oggi" : `da ${g}`;
 }
+
+/** Arancione oltre una settimana ferma; verde il tempo impiegato da un articolo pronto. */
+const coloreGiorni = (a: Avanzamento) =>
+  a.situazione === "pronto" ? "text-[#1D6B4A] font-semibold"
+    : (a.giorni ?? 0) >= GIORNI_SOLLECITO ? "text-[#A8461F] font-semibold" : "text-[#5F6878] font-normal";
 
 function Barra({ a }: { a: Avanzamento }) {
   return (
@@ -136,7 +148,7 @@ export function FasiLista({ id, fasi, aggiorna = true }: { id: string; fasi: Fas
       <div className="flex items-baseline justify-between gap-3">
         <span className={`text-[17px] font-bold ${COLORE[a.situazione]}`}>
           {a.situazione === "corso" ? `${a.inCorso!.label} in corso` : a.etichetta}
-          {giorni && <span className={`text-sm ${a.giorni! >= GIORNI_SOLLECITO ? "text-[#A8461F] font-semibold" : "text-[#5F6878] font-normal"}`}> · {giorni}</span>}
+          {giorni && <span className={`text-sm ${coloreGiorni(a)}`}> · {giorni}</span>}
         </span>
         <span className="text-sm text-[#5F6878] font-mono">{a.fatte}/{a.totali} fatte</span>
       </div>
@@ -182,7 +194,7 @@ export default function FasiChip({ id, fasi, className = "" }: { id: string; fas
         </span>
         <span className="block mt-1"><Barra a={a} /></span>
         {giorni && (
-          <span className={`block mt-1 text-[11px] ${a.giorni! >= GIORNI_SOLLECITO ? "text-[#A8461F] font-semibold" : "text-[#5F6878]"}`}>{giorni}</span>
+          <span className={`block mt-1 text-[11px] ${coloreGiorni(a)}`}>{giorni}</span>
         )}
       </button>
       {aperto && (

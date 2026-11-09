@@ -11,7 +11,7 @@ import { salvaRicollegamenti } from "@/lib/clientiOrderApp";
 import SchedaRowMenu from "@/components/scheda/SchedaRowMenu";
 import StatoSchedaToggle, { RendiEsecutive } from "@/components/scheda/StatoSchedaToggle";
 import FasiChip from "@/components/scheda/FasiProduzione";
-import { leggiFasi, riepilogoFasi } from "@/lib/fasi";
+import { leggiFasi, riepilogoFasi, tempoOrdine } from "@/lib/fasi";
 import { riepilogoScheda } from "@/lib/costiScheda";
 import type { Campione } from "@/types";
 
@@ -303,8 +303,10 @@ export default async function ListaSchede({ vista, searchParams }: {
           )) : blocchiOrdine.map((b) => {
             const pezzi = b.righe.filter((r) => r.ref !== "non-piu-nell-ordine").reduce((tot, r) => tot + r.pezzi, 0);
             const bozze = b.righe.filter((r) => r.s.stato === "bozza").length;
-            const fasiOrdine = riepilogoFasi(b.righe.filter((r) => r.s.stato === "esecutiva" && r.ref !== "non-piu-nell-ordine").map((r) => leggiFasi(r.s.fasi)));
+            const fasiEsecutive = b.righe.filter((r) => r.s.stato === "esecutiva" && r.ref !== "non-piu-nell-ordine").map((r) => leggiFasi(r.s.fasi));
+            const fasiOrdine = riepilogoFasi(fasiEsecutive);
             const bozzeValide = b.righe.filter((r) => r.s.stato === "bozza" && r.ref !== "non-piu-nell-ordine").map((r) => r.s.id);
+            const tempo = tempoOrdine(fasiEsecutive, bozzeValide.length === 0);
             const orfane = b.righe.filter((r) => r.ref === "non-piu-nell-ordine").length;
             const valide = b.righe.length - orfane;
             // Ogni referenza chiede una scheda per parte: adulto, e bambino se ci sono taglie bambino.
@@ -324,7 +326,13 @@ export default async function ListaSchede({ vista, searchParams }: {
                         ? <><span className="font-mono text-[#0E1B2C]">{b.ordineId}</span>{b.ordine?.data && <> · {b.ordine.data}</>}{b.ordine?.stato && <> · {statoOrdine(b.ordine.stato)}</>}</>
                         : "Senza ordine collegato"}
                     </div>
-                    {fasiOrdine && <div className="text-[13px] font-semibold text-[#1F3A68] mt-0.5">{fasiOrdine}</div>}
+                    {(tempo || fasiOrdine) && (
+                      <div className="text-[13px] mt-0.5">
+                        {tempo && <span className={`font-bold ${tempo.chiuso ? "text-[#1D6B4A]" : "text-[#0E1B2C]"}`}>{tempo.testo}</span>}
+                        {tempo && fasiOrdine && !tempo.chiuso && <span className="text-[#5F6878]"> · </span>}
+                        {fasiOrdine && !tempo?.chiuso && <span className="font-semibold text-[#1F3A68]">{fasiOrdine}</span>}
+                      </div>
+                    )}
                   </div>
                   <div className="text-sm text-[#0E1B2C] text-right">
                     <span className="font-semibold">{valide} {valide === 1 ? "referenza" : "referenze"}</span>
