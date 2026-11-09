@@ -62,6 +62,24 @@ export function giorniDa(iso: string) {
   return Math.max(0, Math.round(ms / 86_400_000));
 }
 
+/** Giorni di calendario tra due date aaaa-mm-gg. */
+export function giorniTra(da: string, a: string) {
+  return Math.max(0, Math.round((Date.parse(`${a}T00:00:00Z`) - Date.parse(`${da}T00:00:00Z`)) / 86_400_000));
+}
+
+/** Durata di una fase fatta: solo se è partita con la sua data (in corso → fatta). */
+export function durataFase(s: StatoFase) {
+  return s.stato === "fatta" && s.inizio ? giorniTra(s.inizio, s.fine) : null;
+}
+
+/** Prima data registrata (partenza o fine) e ultima fine: l'arco della produzione. */
+function arco(fasi: Fasi) {
+  const stati = FASI_PRODUZIONE.map((f) => statoFase(fasi[f.id]));
+  const date = stati.flatMap((s) => (s.stato === "corso" ? [s.inizio] : s.stato === "fatta" ? [s.inizio, s.fine] : [])).filter((d): d is string => !!d).sort();
+  const fini = stati.flatMap((s) => (s.stato === "fatta" ? [s.fine] : [])).sort();
+  return { primo: date[0] ?? null, ultimaFine: fini[fini.length - 1] ?? null };
+}
+
 /** "06/11" */
 export const dataBreve = (iso: string) => (ISO.test(iso) ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}` : "");
 
@@ -80,6 +98,8 @@ export interface Avanzamento {
   etichetta: string;
   /** In corso: giorni dalla partenza. In attesa: giorni dall'ultima fase finita. */
   giorni: number | null;
+  /** Pronto: giorni impiegati dalla prima partenza all'ultima fine (storico dei tempi). */
+  impiegati: number | null;
 }
 
 export function avanzamento(fasi: Fasi): Avanzamento {
@@ -90,11 +110,15 @@ export function avanzamento(fasi: Fasi): Avanzamento {
     .flatMap((r) => (r.s.stato === "corso" ? [{ f: r.f, inizio: r.s.inizio }] : []))
     .sort((a, b) => b.inizio.localeCompare(a.inizio))[0];
 
-  if (corso) return { totali, fatte, situazione: "corso", inCorso: corso.f, etichetta: corso.f.breve, giorni: giorniDa(corso.inizio) };
-  if (totali > 0 && fatte === totali) return { totali, fatte, situazione: "pronto", inCorso: null, etichetta: "Pronto", giorni: null };
-  if (fatte === 0) return { totali, fatte, situazione: "da-avviare", inCorso: null, etichetta: "Da avviare", giorni: null };
+  const base = { totali, fatte, inCorso: null, giorni: null, impiegati: null };
+  if (corso) return { ...base, situazione: "corso", inCorso: corso.f, etichetta: corso.f.breve, giorni: giorniDa(corso.inizio) };
+  if (totali > 0 && fatte === totali) {
+    const { primo, ultimaFine } = arco(fasi);
+    return { ...base, situazione: "pronto", etichetta: "Pronto", impiegati: primo && ultimaFine ? giorniTra(primo, ultimaFine) : null };
+  }
+  if (fatte === 0) return { ...base, situazione: "da-avviare", etichetta: "Da avviare" };
   const ultima = righe.flatMap((r) => (r.s.stato === "fatta" ? [r.s.fine] : [])).sort().pop()!;
-  return { totali, fatte, situazione: "attesa", inCorso: null, etichetta: "In attesa", giorni: giorniDa(ultima) };
+  return { ...base, situazione: "attesa", etichetta: "In attesa", giorni: giorniDa(ultima) };
 }
 
 /**
@@ -124,4 +148,22 @@ export function riepilogoFasi(elenco: Fasi[]): string {
     ...voce("da-avviare", "da avviare"),
     ...(pronte ? [`${pronte} ${pronte === 1 ? "pronta" : "pronte"}`] : []),
   ].join(" · ");
+}
+
+/**
+ * Tempo dell'ordine: "Prodotto in 24 giorni" quando tutte le referenze sono pronte (e nessuna è
+ * più in bozza), altrimenti "In produzione da 12 giorni" dalla prima fase partita.
+ */
+export function tempoOrdine(elenco: Fasi[], senzaBozze: boolean): { testo: string; chiuso: boolean } | null {
+  const archi = elenco.map(arco);
+  const primi = archi.flatMap((a) => (a.primo ? [a.primo] : [])).sort();
+  if (!primi.length) return null;
+  const chiuso = senzaBozze && elenco.length > 0 && elenco.every((f) => avanzamento(f).situazione === "pronto");
+  if (chiuso) {
+    const fine = archi.flatMap((a) => (a.ultimaFine ? [a.ultimaFine] : [])).sort().pop()!;
+    const g = giorniTra(primi[0], fine);
+    return { testo: `Prodotto in ${g} ${g === 1 ? "giorno" : "giorni"}`, chiuso };
+  }
+  const g = giorniDa(primi[0]);
+  return { testo: `In produzione da ${g === 0 ? "oggi" : g === 1 ? "1 giorno" : `${g} giorni`}`, chiuso };
 }
