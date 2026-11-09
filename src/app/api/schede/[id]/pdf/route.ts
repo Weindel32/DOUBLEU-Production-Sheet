@@ -8,7 +8,7 @@ import { creaPdfScheda, type Coppia, type DatiSchedaPdf } from "@/lib/pdf/scheda
 import { totaliReferenza, vociCosto } from "@/lib/costoReferenza";
 import { ordiniOrderApp } from "@/lib/orderApp";
 import { capiScheda, statoReferenza } from "@/lib/referenze";
-import { FASI_PRODUZIONE, leggiFasi } from "@/lib/fasi";
+import { FASI_PRODUZIONE, leggiFasi, statoFase } from "@/lib/fasi";
 
 const PALETTE_HEX: Record<string, string> = {
   "Nero": "#000000", "Bianco": "#ffffff", "Grigio chiaro": "#d1d5db",
@@ -171,7 +171,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         },
     quantita: taglie.length ? { taglie: taglie.map((t) => ({ taglia: t, q: quantitaTaglia[t] || 0 })), totale: totalePezzi } : null,
     fasi: scheda.stato === "esecutiva" && normalizzaTipo(scheda.tipo) !== "costo"
-      ? (() => { const f = leggiFasi(scheda.fasi); return FASI_PRODUZIONE.map((x) => ({ label: x.label, valore: f[x.id] ?? null })); })()
+      ? (() => {
+          const f = leggiFasi(scheda.fasi);
+          return FASI_PRODUZIONE.map((x) => {
+            const st = statoFase(f[x.id]);
+            return { label: x.label, stato: st.stato, data: st.stato === "corso" ? st.inizio : st.stato === "fatta" ? st.fine : undefined };
+          });
+        })()
       : null,
     produzione: [
       ["Note generali", scheda.noteProduzione], ["Taglio", scheda.tolleranzaTaglio], ["Cucitura", scheda.tolleranzaCucitura],

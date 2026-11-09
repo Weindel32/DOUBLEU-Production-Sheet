@@ -22,8 +22,8 @@ export interface DatiSchedaPdf {
   misure: { titolo: string; specifiche: Coppia[]; colonne: string[]; righe: { taglia: string; valori: string[] }[] } | null;
   quantita: { taglie: { taglia: string; q: number }[]; totale: number } | null;
   produzione: Coppia[];
-  /** Avanzamento della produzione (solo schede esecutive): data = fatta, "salta" = non serve. */
-  fasi: { label: string; valore: string | null }[] | null;
+  /** Avanzamento della produzione (solo schede esecutive). */
+  fasi: { label: string; stato: "vuota" | "corso" | "fatta" | "salta"; data?: string }[] | null;
   costi: {
     consumi: { nome: string; testo: string }[];
     accessori: { nome: string; testo: string }[];
@@ -194,20 +194,22 @@ function Documento({ d }: { d: DatiSchedaPdf }) {
           <Sezione titolo="Avanzamento produzione">
             <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
               {d.fasi.map((f) => {
-                const saltata = f.valore === "salta";
-                const fatta = !!f.valore && !saltata;
+                const fatta = f.stato === "fatta", corso = f.stato === "corso", saltata = f.stato === "salta";
+                const data = f.data ? f.data.split("-").reverse().join("/") : "";
                 return (
-                  <View key={f.label} style={{ width: "25%", flexDirection: "row", alignItems: "center", paddingVertical: 3, paddingRight: 6 }}>
-                    <View style={{ width: 10, height: 10, borderRadius: 2, borderWidth: 0.8, borderColor: fatta ? "#15803D" : "#9CA3AF", backgroundColor: fatta ? "#15803D" : saltata ? "#F3F4F6" : "#FFFFFF", marginRight: 5, alignItems: "center", justifyContent: "center" }}>
+                  <View key={f.label} style={{ width: "33.33%", flexDirection: "row", alignItems: "center", paddingVertical: 3, paddingRight: 6 }}>
+                    <View style={{ width: 10, height: 10, borderRadius: 2, borderWidth: 0.8, borderColor: fatta ? "#15803D" : corso ? "#1F3A68" : "#9CA3AF", backgroundColor: fatta ? "#15803D" : corso ? "#E3E9F3" : saltata ? "#F3F4F6" : "#FFFFFF", marginRight: 5, alignItems: "center", justifyContent: "center" }}>
                       {fatta && (
                         <Svg width={7} height={7} viewBox="0 0 24 24">
                           <Path d="M4 12.5l5 5L20 6.5" stroke="#FFFFFF" strokeWidth={4} fill="none" />
                         </Svg>
                       )}
+                      {corso && <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: "#1F3A68" }} />}
                     </View>
                     <View>
-                      <Text style={saltata ? { color: C.light, textDecoration: "line-through" } : fatta ? s.bold : {}}>{f.label}</Text>
-                      {fatta && <Text style={{ fontSize: 7, color: C.light }}>{f.valore!.split("-").reverse().join("/")}</Text>}
+                      <Text style={saltata ? { color: C.light, textDecoration: "line-through" } : fatta || corso ? s.bold : {}}>{f.label}</Text>
+                      {fatta && <Text style={{ fontSize: 7, color: C.light }}>fatta il {data}</Text>}
+                      {corso && <Text style={{ fontSize: 7, color: "#1F3A68" }}>in corso dal {data}</Text>}
                       {saltata && <Text style={{ fontSize: 7, color: C.light }}>non prevista</Text>}
                     </View>
                   </View>
