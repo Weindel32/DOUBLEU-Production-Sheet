@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 import Link from "next/link";
 import {
-  ArrowUpRight, CalendarClock, CircleAlert, Link2, Ruler, Scissors, Tag, PackageX, FilePlus2, Unlink, ShoppingCart, FileText, CheckCircle2,
+  ArrowUpRight, CalendarClock, CircleAlert, Link2, Ruler, Scissors, Tag, PackageX, FilePlus2, Unlink, ShoppingCart, FileText, CheckCircle2, Hourglass,
 } from "lucide-react";
 import { datiDashboard, type AzioneDaFare, type Urgenza } from "@/lib/dashboard";
 import { MARGINE_MINIMO, SCARTO_ACQUISTO, formatEuro, statoOrdine } from "@/lib/utils";
@@ -9,7 +9,7 @@ import { quantitaAcquisto } from "@/lib/approvvigionamento";
 import PianoProduzione from "@/components/dashboard/PianoProduzione";
 
 const ICONA_AZIONE: Record<AzioneDaFare["tipo"], typeof Tag> = {
-  "senza-scheda": FilePlus2, "da-collegare": Link2, orfana: Unlink, taglie: Ruler, consumi: Scissors, prezzo: Tag, materiale: PackageX, ritardo: CalendarClock,
+  "senza-scheda": FilePlus2, "da-collegare": Link2, orfana: Unlink, taglie: Ruler, consumi: Scissors, prezzo: Tag, materiale: PackageX, ritardo: CalendarClock, fermo: Hourglass,
 };
 
 const URGENZA: Record<Urgenza, { chip: string; barra: string }> = {

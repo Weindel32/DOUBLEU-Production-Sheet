@@ -12,7 +12,7 @@ import { nomeReferenza } from "@/lib/orderApp";
 import { riepilogoScheda } from "@/lib/costiScheda";
 import { MARGINE_MINIMO, TIPI_COSTO_DB } from "@/lib/utils";
 import { pianoProduzione } from "@/lib/produzione";
-import { leggiFasi, riepilogoFasi, tempoOrdine } from "@/lib/fasi";
+import { GIORNI_SOLLECITO, avanzamento, leggiFasi, riepilogoFasi, tempoOrdine } from "@/lib/fasi";
 
 const STATI_ATTIVI = ["CONFERMATO", "IN PRODUZIONE"];
 /** Preavviso quando l'ordine non ne indica uno. */
@@ -35,7 +35,7 @@ export function giorniAllaConsegna(data: string | null, oggi = new Date()) {
 export type Urgenza = "scaduto" | "preavviso" | "ok" | "senza-data";
 
 export interface AzioneDaFare {
-  tipo: "senza-scheda" | "da-collegare" | "orfana" | "taglie" | "consumi" | "prezzo" | "materiale" | "ritardo";
+  tipo: "senza-scheda" | "da-collegare" | "orfana" | "taglie" | "consumi" | "prezzo" | "materiale" | "ritardo" | "fermo";
   testo: string;
   dettaglio: string;
   href: string;
@@ -112,6 +112,21 @@ export async function datiDashboard() {
     });
     if (produzione.ritardo !== null && produzione.ritardo > 0)
       azioni.push({ tipo: "ritardo", testo: `Pronto ${produzione.ritardo} ${produzione.ritardo === 1 ? "giorno" : "giorni"} dopo la consegna promessa`, dettaglio: chi, href: "/dashboard#ordini", urgenza: urgenza === "ok" || urgenza === "senza-data" ? "preavviso" : urgenza });
+
+    // Articoli fermi da più di una settimana nella stessa fase (o tra una fase e l'altra): da sollecitare.
+    for (const { s } of valide.filter(({ s }) => s.stato === "esecutiva")) {
+      const a = avanzamento(leggiFasi(s.fasi));
+      if ((a.situazione !== "corso" && a.situazione !== "attesa") || (a.giorni ?? 0) < GIORNI_SOLLECITO) continue;
+      azioni.push({
+        tipo: "fermo",
+        testo: a.situazione === "corso"
+          ? `Sollecita: ${s.nomeArticolo} in ${a.inCorso!.label.toLowerCase()} da ${a.giorni} giorni`
+          : `${s.nomeArticolo} ferma da ${a.giorni} giorni tra una fase e l'altra`,
+        dettaglio: [chi, s.produttore].filter(Boolean).join(" · "),
+        href: `/schede/${s.id}`,
+        urgenza: urgenza === "ok" || urgenza === "senza-data" ? "preavviso" : urgenza,
+      });
+    }
 
     // Avanzamento reale dalle fasi delle schede esecutive: tempo trascorso (o impiegato) e dove sono i capi.
     const fasiEsecutive = valide.filter(({ s }) => s.stato === "esecutiva").map(({ s }) => leggiFasi(s.fasi));

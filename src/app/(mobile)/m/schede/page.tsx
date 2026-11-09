@@ -6,6 +6,7 @@ import { formatData, STATI_SCHEDA, TIPI_COSTO_DB, statoOrdine } from "@/lib/util
 import { ordiniOrderApp, type OrdineOrderApp } from "@/lib/orderApp";
 import { capiScheda, partiReferenza, statoReferenza } from "@/lib/referenze";
 import Testata from "@/components/mobile/Testata";
+import MemoriaElenco from "@/components/ui/MemoriaElenco";
 import StatoSchedaToggle, { RendiEsecutive } from "@/components/scheda/StatoSchedaToggle";
 import FasiChip from "@/components/scheda/FasiProduzione";
 import { leggiFasi, riepilogoFasi, tempoOrdine } from "@/lib/fasi";
@@ -50,6 +51,7 @@ export default async function MobileSchedePage({ searchParams }: {
 
   return (
     <>
+      <MemoriaElenco base="/m/schede" />
       <Testata indietro="/m" sopra="Double U" titolo="Ordini e schede" />
       <div className="px-4 space-y-3">
         <div role="group" aria-label="Stato" className="flex bg-[#EEEBE3] rounded-xl p-1">
@@ -77,7 +79,7 @@ export default async function MobileSchedePage({ searchParams }: {
           const fasiOrdine = riepilogoFasi(fasiEsecutive);
           const tempo = tempoOrdine(fasiEsecutive, bozze.length === 0);
           return (
-            <details key={b.ordineId ?? `c:${b.cliente}`} open={i === 0 && elenco.length <= 3} className="group bg-white border border-[#E4E0D6] rounded-2xl overflow-hidden">
+            <details key={b.ordineId ?? `c:${b.cliente}`} data-blocco={b.ordineId ?? `c:${b.cliente}`} open={i === 0 && elenco.length <= 3} className="group bg-white border border-[#E4E0D6] rounded-2xl overflow-hidden">
               <summary className="list-none [&::-webkit-details-marker]:hidden flex items-center gap-3 px-4 py-3.5 active:bg-[#FBFAF7]">
                 <span className="flex-1 min-w-0">
                   <span className={`block font-display font-bold text-[17px] truncate ${b.cliente ? "text-[#1F3A68]" : "text-[#5F6878]"}`}>{b.cliente ?? "Senza cliente"}</span>

@@ -20,6 +20,7 @@ import type { ModelloBreve } from "@/components/modelli/CampoModello";
 import type { VoceColore } from "@/lib/colori";
 import type { ClienteOrderApp, OrdineBreve, ReferenzaOrderApp } from "@/lib/orderApp";
 import AvvisiReferenza from "./AvvisiReferenza";
+import { LinkElenco } from "@/components/ui/MemoriaElenco";
 import { FasiLista } from "./FasiProduzione";
 import { leggiFasi } from "@/lib/fasi";
 
@@ -219,10 +220,10 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
 
       {/* ── Intestazione ─────────────────────────────────── */}
       <header className="flex-shrink-0 bg-[#FBFAF7] border-b border-[#E4E0D6] px-6 py-3 flex flex-wrap lg:flex-nowrap items-center gap-3 xl:gap-4">
-        <Link href={base} aria-label={isCosto ? "Torna ad articoli e costi" : "Torna alle schede produzione"}
+        <LinkElenco base={base} aria-label={isCosto ? "Torna ad articoli e costi" : "Torna alle schede produzione"}
           className="w-11 h-11 rounded-[10px] border border-[#D6D1C4] bg-white flex items-center justify-center text-[#0E1B2C] hover:border-[#0E1B2C]/40">
           <ArrowLeft size={18} />
-        </Link>
+        </LinkElenco>
         <div className="flex-1 min-w-[260px] lg:min-w-0">
           <div className="text-xs text-[#5F6878]">
             {meta.codiceModello && <><span className="font-mono font-semibold text-[#0E1B2C]">{meta.codiceModello}</span> · </>}

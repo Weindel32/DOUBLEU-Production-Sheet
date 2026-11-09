@@ -9,6 +9,7 @@ import { ordiniOrderApp, type OrdineOrderApp } from "@/lib/orderApp";
 import { capiScheda, chiaveParte, ETICHETTA_PARTE, parteCoperta, partiReferenza, statoReferenza } from "@/lib/referenze";
 import { salvaRicollegamenti } from "@/lib/clientiOrderApp";
 import SchedaRowMenu from "@/components/scheda/SchedaRowMenu";
+import MemoriaElenco from "@/components/ui/MemoriaElenco";
 import StatoSchedaToggle, { RendiEsecutive } from "@/components/scheda/StatoSchedaToggle";
 import FasiChip from "@/components/scheda/FasiProduzione";
 import { leggiFasi, riepilogoFasi, tempoOrdine } from "@/lib/fasi";
@@ -242,6 +243,7 @@ export default async function ListaSchede({ vista, searchParams }: {
 
   return (
     <div className="p-6 lg:p-8 space-y-5">
+      <MemoriaElenco base={t.base} />
       <div className="flex flex-wrap items-end gap-4">
         <div className="flex-1 min-w-[220px]">
           <h1 className="font-display text-[34px] font-extrabold tracking-tight text-[#0E1B2C] leading-tight">{t.titolo}</h1>
@@ -316,7 +318,7 @@ export default async function ListaSchede({ vista, searchParams }: {
             const scoperte = necessarie.filter(({ r, p }) => !parteCoperta(r, p, coperte));
             const mancanti = Math.max(0, scoperte.length - daCollegare);
             return (
-              <details key={b.ordineId ?? `c:${b.cliente}`} open={aperti} className="group bg-white border border-[#E4E0D6] rounded-2xl overflow-hidden">
+              <details key={b.ordineId ?? `c:${b.cliente}`} data-blocco={b.ordineId ?? `c:${b.cliente}`} open={aperti} className="group bg-white border border-[#E4E0D6] rounded-2xl overflow-hidden">
                 <summary className="list-none [&::-webkit-details-marker]:hidden cursor-pointer px-5 py-3.5 flex flex-wrap items-center gap-x-4 gap-y-1 hover:bg-[#FBFAF7] group-open:border-b group-open:border-[#E4E0D6] group-open:bg-[#FBFAF7]">
                   <ChevronRight size={18} className="text-[#5F6878] transition-transform group-open:rotate-90 flex-shrink-0" />
                   <div className="flex-1 min-w-[220px]">

@@ -65,7 +65,7 @@ export default async function MobileSchedaDetailPage({ params }: { params: Promi
 
   return (
     <>
-      <Testata indietro="/m/schede" sopra={[scheda.codiceModello, scheda.codice].filter(Boolean).join(" · ")} titolo={scheda.nomeArticolo}
+      <Testata indietro="/m/schede" elenco sopra={[scheda.codiceModello, scheda.codice].filter(Boolean).join(" · ")} titolo={scheda.nomeArticolo}
         destra={stato && <span className={`badge badge-${scheda.stato} flex-shrink-0 mb-2`}>{stato.label}</span>} />
 
       <div className="px-4 space-y-3 pb-6">
