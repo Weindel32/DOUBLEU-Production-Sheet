@@ -10,6 +10,8 @@ import { capiScheda, chiaveParte, ETICHETTA_PARTE, parteCoperta, partiReferenza,
 import { salvaRicollegamenti } from "@/lib/clientiOrderApp";
 import SchedaRowMenu from "@/components/scheda/SchedaRowMenu";
 import StatoSchedaToggle, { RendiEsecutive } from "@/components/scheda/StatoSchedaToggle";
+import FasiChip from "@/components/scheda/FasiProduzione";
+import { leggiFasi, riepilogoFasi } from "@/lib/fasi";
 import { riepilogoScheda } from "@/lib/costiScheda";
 import type { Campione } from "@/types";
 
@@ -222,7 +224,10 @@ export default async function ListaSchede({ vista, searchParams }: {
                 {isArticoli && <td className={numero}>{nOrdini || "—"}</td>}
                 <td className={cella}>
                   {!isArticoli && stato && <StatoSchedaToggle key={s.stato} id={s.id} stato={s.stato} />}
-                  <div className={`text-xs text-[#5F6878] ${isArticoli ? "" : "mt-1"}`}>{formatData(s.updatedAt)}</div>
+                  {/* Esecutiva = in produzione: al posto della data, la fase a cui è arrivata. */}
+                  {!isArticoli && s.stato === "esecutiva"
+                    ? <div className="mt-1 -mx-1.5"><FasiChip key={s.fasi ?? ""} id={s.id} fasi={leggiFasi(s.fasi)} /></div>
+                    : <div className={`text-xs text-[#5F6878] ${isArticoli ? "" : "mt-1"}`}>{formatData(s.updatedAt)}</div>}
                 </td>
                 <td className="px-2 py-2.5 text-right">
                   <SchedaRowMenu id={s.id} nome={s.nomeArticolo} statoCorrente={s.stato} base={t.base} />
@@ -298,6 +303,7 @@ export default async function ListaSchede({ vista, searchParams }: {
           )) : blocchiOrdine.map((b) => {
             const pezzi = b.righe.filter((r) => r.ref !== "non-piu-nell-ordine").reduce((tot, r) => tot + r.pezzi, 0);
             const bozze = b.righe.filter((r) => r.s.stato === "bozza").length;
+            const fasiOrdine = riepilogoFasi(b.righe.filter((r) => r.s.stato === "esecutiva" && r.ref !== "non-piu-nell-ordine").map((r) => leggiFasi(r.s.fasi)));
             const bozzeValide = b.righe.filter((r) => r.s.stato === "bozza" && r.ref !== "non-piu-nell-ordine").map((r) => r.s.id);
             const orfane = b.righe.filter((r) => r.ref === "non-piu-nell-ordine").length;
             const valide = b.righe.length - orfane;
@@ -318,6 +324,7 @@ export default async function ListaSchede({ vista, searchParams }: {
                         ? <><span className="font-mono text-[#0E1B2C]">{b.ordineId}</span>{b.ordine?.data && <> · {b.ordine.data}</>}{b.ordine?.stato && <> · {statoOrdine(b.ordine.stato)}</>}</>
                         : "Senza ordine collegato"}
                     </div>
+                    {fasiOrdine && <div className="text-[13px] font-semibold text-[#1F3A68] mt-0.5">{fasiOrdine}</div>}
                   </div>
                   <div className="text-sm text-[#0E1B2C] text-right">
                     <span className="font-semibold">{valide} {valide === 1 ? "referenza" : "referenze"}</span>

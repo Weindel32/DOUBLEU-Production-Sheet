@@ -20,6 +20,8 @@ import type { ModelloBreve } from "@/components/modelli/CampoModello";
 import type { VoceColore } from "@/lib/colori";
 import type { ClienteOrderApp, OrdineBreve, ReferenzaOrderApp } from "@/lib/orderApp";
 import AvvisiReferenza from "./AvvisiReferenza";
+import { FasiLista } from "./FasiProduzione";
+import { leggiFasi } from "@/lib/fasi";
 
 export interface SchedaCollegata {
   id: string;
@@ -308,6 +310,14 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
             {!isCosto && scheda.ordineOrderAppId && (
               <AvvisiReferenza scheda={scheda} referenze={referenzeOrdine} collegateAltrove={collegateAltrove}
                 quantita={quantita as Record<string, number>} onSave={handleSave} onCreaBambino={() => copia("bambino")} />
+            )}
+
+            {/* Le fasi partono quando la scheda è esecutiva: in bozza non è ancora in produzione. */}
+            {!isCosto && statoCorrente === "esecutiva" && (
+              <section aria-label="Avanzamento produzione" className="bg-white border border-[#E4E0D6] rounded-2xl p-5">
+                <h2 className="font-display text-lg font-bold text-[#0E1B2C] mb-3">Avanzamento produzione</h2>
+                <div className="max-w-xl"><FasiLista id={scheda.id} fasi={leggiFasi(scheda.fasi)} aggiorna={false} /></div>
+              </section>
             )}
 
             <section id="sez-articolo" className="scheda-section">

@@ -114,6 +114,8 @@ export interface SchedaCompleta {
   costoRicamo?: number | null;
   prezzoVendita?: number | null;
   noteRapide?: string | null;
+  /** JSON delle fasi di produzione (lib/fasi.ts). */
+  fasi?: string | null;
   createdBy: string;
   createdAt: string;
   updatedAt: string;

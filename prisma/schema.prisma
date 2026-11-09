@@ -131,6 +131,9 @@ model Scheda {
   costoRicamo      Float?
   prezzoVendita    Float?
 
+  // JSON: {fase: "aaaa-mm-gg" | "salta"} — avanzamento della produzione, vedi lib/fasi.ts
+  fasi String?
+
   noteRapide String?
   createdBy  String   @default("Admin")
   createdAt  DateTime @default(now())

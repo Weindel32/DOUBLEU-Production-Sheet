@@ -7,6 +7,8 @@ import { ordiniOrderApp, type OrdineOrderApp } from "@/lib/orderApp";
 import { capiScheda, partiReferenza, statoReferenza } from "@/lib/referenze";
 import Testata from "@/components/mobile/Testata";
 import StatoSchedaToggle, { RendiEsecutive } from "@/components/scheda/StatoSchedaToggle";
+import FasiChip from "@/components/scheda/FasiProduzione";
+import { leggiFasi, riepilogoFasi } from "@/lib/fasi";
 
 type Filtro = "tutte" | "esecutiva" | "bozza";
 
@@ -71,6 +73,7 @@ export default async function MobileSchedePage({ searchParams }: {
           const pezzi = valide.reduce((t, r) => t + r.pezzi, 0);
           const stimati = valide.some((r) => r.stimati);
           const bozze = valide.filter((r) => r.stato === "bozza").map((r) => r.id);
+          const fasiOrdine = riepilogoFasi(valide.filter((r) => r.stato === "esecutiva").map((r) => leggiFasi(r.fasi)));
           return (
             <details key={b.ordineId ?? `c:${b.cliente}`} open={i === 0 && elenco.length <= 3} className="group bg-white border border-[#E4E0D6] rounded-2xl overflow-hidden">
               <summary className="list-none [&::-webkit-details-marker]:hidden flex items-center gap-3 px-4 py-3.5 active:bg-[#FBFAF7]">
@@ -83,6 +86,7 @@ export default async function MobileSchedePage({ searchParams }: {
                     {valide.length}{b.ordine?.referenze.length ? ` su ${b.ordine.referenze.reduce((t, r) => t + partiReferenza(r).length, 0)}` : ""} {valide.length === 1 && !b.ordine ? "referenza" : "referenze"}
                     {pezzi > 0 && ` · ${pezzi} pz${stimati ? " (stima)" : ""}`}
                   </span>
+                  {fasiOrdine && <span className="block text-[13px] font-semibold text-[#1F3A68] mt-0.5">{fasiOrdine}</span>}
                 </span>
                 <ChevronDown size={20} className="text-[#5F6878] transition-transform group-open:rotate-180 flex-shrink-0" />
               </summary>
@@ -109,7 +113,9 @@ export default async function MobileSchedePage({ searchParams }: {
                       {/* Stato fuori dal link: un tocco sul badge cambia Bozza ⇄ Esecutiva senza aprire la scheda. */}
                       <span className="flex flex-col items-end gap-1 pl-2 pr-3 py-2 flex-shrink-0">
                         <StatoSchedaToggle key={s.stato} id={s.id} stato={s.stato} className="min-h-9 px-3" />
-                        <span className="text-xs text-[#5F6878]">{formatData(s.updatedAt.toISOString())}</span>
+                        {s.stato === "esecutiva"
+                          ? <FasiChip key={s.fasi ?? ""} id={s.id} fasi={leggiFasi(s.fasi)} className="w-[104px]" />
+                          : <span className="text-xs text-[#5F6878]">{formatData(s.updatedAt.toISOString())}</span>}
                       </span>
                     </li>
                   );
