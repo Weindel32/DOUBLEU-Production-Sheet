@@ -12,6 +12,7 @@ import { nomeReferenza } from "@/lib/orderApp";
 import { riepilogoScheda } from "@/lib/costiScheda";
 import { MARGINE_MINIMO, TIPI_COSTO_DB } from "@/lib/utils";
 import { pianoProduzione } from "@/lib/produzione";
+import { leggiFasi, riepilogoFasi, tempoOrdine } from "@/lib/fasi";
 
 const STATI_ATTIVI = ["CONFERMATO", "IN PRODUZIONE"];
 /** Preavviso quando l'ordine non ne indica uno. */
@@ -112,11 +113,19 @@ export async function datiDashboard() {
     if (produzione.ritardo !== null && produzione.ritardo > 0)
       azioni.push({ tipo: "ritardo", testo: `Pronto ${produzione.ritardo} ${produzione.ritardo === 1 ? "giorno" : "giorni"} dopo la consegna promessa`, dettaglio: chi, href: "/dashboard#ordini", urgenza: urgenza === "ok" || urgenza === "senza-data" ? "preavviso" : urgenza });
 
+    // Avanzamento reale dalle fasi delle schede esecutive: tempo trascorso (o impiegato) e dove sono i capi.
+    const fasiEsecutive = valide.filter(({ s }) => s.stato === "esecutiva").map(({ s }) => leggiFasi(s.fasi));
+    const bozze = valide.filter(({ s }) => s.stato !== "esecutiva").length;
+    const avanzamentoFasi = {
+      tempo: tempoOrdine(fasiEsecutive, bozze === 0 && senzaScheda + bambiniDaFare.length === 0),
+      riepilogo: riepilogoFasi(fasiEsecutive),
+    };
+
     return {
-      id: o.id, cliente: o.cliente, stato: o.stato, consegna: o.consegna, giorni, preavviso, urgenza, produzione,
+      id: o.id, cliente: o.cliente, stato: o.stato, consegna: o.consegna, giorni, preavviso, urgenza, produzione, avanzamentoFasi,
       referenze: necessarie.length, coperte: necessarie.length - scoperte.length + Math.min(daCollegare.length, scoperte.length), senzaScheda: senzaScheda + bambiniDaFare.length,
       esecutive: valide.filter(({ s }) => s.stato === "esecutiva").length,
-      bozze: valide.filter(({ s }) => s.stato !== "esecutiva").length,
+      bozze,
       conTaglie, provvisorio, capi, orfane: orfane.length,
     };
   });

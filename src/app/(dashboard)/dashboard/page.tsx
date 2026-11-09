@@ -130,6 +130,19 @@ export default async function DashboardPage() {
 
                   <PianoProduzione ordineId={o.id} piano={o.produzione} consegna={o.consegna} />
 
+                  {/* Avanzamento reale dalle fasi spuntate nelle schede. */}
+                  {(o.avanzamentoFasi.tempo || o.avanzamentoFasi.riepilogo) && (
+                    <Link href={`/schede?q=${encodeURIComponent(o.id)}`} className="block rounded-xl border border-[#E4E0D6] px-3.5 py-2.5 hover:border-[#0E1B2C]/30">
+                      <div className="text-[11px] font-semibold uppercase tracking-wider text-[#5F6878]">Avanzamento produzione</div>
+                      {o.avanzamentoFasi.tempo && (
+                        <div className={`font-display text-[16px] font-bold mt-0.5 ${o.avanzamentoFasi.tempo.chiuso ? "text-[#1D6B4A]" : "text-[#0E1B2C]"}`}>{o.avanzamentoFasi.tempo.testo}</div>
+                      )}
+                      {o.avanzamentoFasi.riepilogo && !o.avanzamentoFasi.tempo?.chiuso && (
+                        <div className="text-[13px] font-semibold text-[#1F3A68] mt-0.5">{o.avanzamentoFasi.riepilogo}</div>
+                      )}
+                    </Link>
+                  )}
+
                   <dl className="grid grid-cols-3 gap-2 text-[12px]">
                     <div className="rounded-xl bg-[#F6F4EF] px-3 py-2">
                       <dt className="text-[#5F6878]">Senza scheda</dt>
