@@ -1,7 +1,7 @@
 // PDF della scheda: tecnica (per produttore, modellista, sala taglio: niente costi)
 // o interna (con costi per capo, margine e campioni di sviluppo). Stessi contenuti della vecchia stampa HTML.
 
-import { Document, Image, Page, Text, View, renderToBuffer } from "@react-pdf/renderer";
+import { Document, Image, Page, Path, Svg, Text, View, renderToBuffer } from "@react-pdf/renderer";
 import { C, Campi, Intestazione, Piede, s } from "@/lib/pdf/base";
 
 export type Coppia = [string, string | null | undefined];
@@ -22,6 +22,8 @@ export interface DatiSchedaPdf {
   misure: { titolo: string; specifiche: Coppia[]; colonne: string[]; righe: { taglia: string; valori: string[] }[] } | null;
   quantita: { taglie: { taglia: string; q: number }[]; totale: number } | null;
   produzione: Coppia[];
+  /** Avanzamento della produzione (solo schede esecutive): data = fatta, "salta" = non serve. */
+  fasi: { label: string; valore: string | null }[] | null;
   costi: {
     consumi: { nome: string; testo: string }[];
     accessori: { nome: string; testo: string }[];
@@ -186,6 +188,33 @@ function Documento({ d }: { d: DatiSchedaPdf }) {
 
         {d.produzione.some(([, v]) => v) && (
           <Sezione titolo="Note di produzione e tolleranze"><Griglia campi={d.produzione} /></Sezione>
+        )}
+
+        {d.fasi && (
+          <Sezione titolo="Avanzamento produzione">
+            <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+              {d.fasi.map((f) => {
+                const saltata = f.valore === "salta";
+                const fatta = !!f.valore && !saltata;
+                return (
+                  <View key={f.label} style={{ width: "25%", flexDirection: "row", alignItems: "center", paddingVertical: 3, paddingRight: 6 }}>
+                    <View style={{ width: 10, height: 10, borderRadius: 2, borderWidth: 0.8, borderColor: fatta ? "#15803D" : "#9CA3AF", backgroundColor: fatta ? "#15803D" : saltata ? "#F3F4F6" : "#FFFFFF", marginRight: 5, alignItems: "center", justifyContent: "center" }}>
+                      {fatta && (
+                        <Svg width={7} height={7} viewBox="0 0 24 24">
+                          <Path d="M4 12.5l5 5L20 6.5" stroke="#FFFFFF" strokeWidth={4} fill="none" />
+                        </Svg>
+                      )}
+                    </View>
+                    <View>
+                      <Text style={saltata ? { color: C.light, textDecoration: "line-through" } : fatta ? s.bold : {}}>{f.label}</Text>
+                      {fatta && <Text style={{ fontSize: 7, color: C.light }}>{f.valore!.split("-").reverse().join("/")}</Text>}
+                      {saltata && <Text style={{ fontSize: 7, color: C.light }}>non prevista</Text>}
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          </Sezione>
         )}
 
         {d.costi && (

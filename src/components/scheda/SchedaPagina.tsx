@@ -109,6 +109,7 @@ export default async function SchedaPagina({ id, percorso }: { id: string; perco
     costoRicamo: n(scheda.costoRicamo),
     prezzoVendita: n(scheda.prezzoVendita),
     noteRapide: n(scheda.noteRapide),
+    fasi: n(scheda.fasi),
     immagini: parseJson(scheda.immagini, []),
     tabellaMisure: parseJson(scheda.tabellaMisure, {}),
     quantitaTaglia: parseJson(scheda.quantitaTaglia, {}),

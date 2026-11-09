@@ -9,6 +9,8 @@ import { riferimentoColori } from "@/lib/coloriServer";
 import Link from "next/link";
 import { ShoppingCart } from "lucide-react";
 import PulsantePdf from "@/components/ui/PulsantePdf";
+import { FasiLista } from "@/components/scheda/FasiProduzione";
+import { leggiFasi } from "@/lib/fasi";
 import { ordiniOrderApp, nomeReferenza } from "@/lib/orderApp";
 import { capiScheda, ETICHETTA_PARTE, partiReferenza, statoReferenza } from "@/lib/referenze";
 
@@ -84,6 +86,12 @@ export default async function MobileSchedaDetailPage({ params }: { params: Promi
             {ref.tipo === "non-piu-nell-ordine" && <div><strong>Non più nell&apos;ordine</strong>: la referenza è stata tolta o sostituita. Va sistemata dal computer.</div>}
             {ref.tipo === "da-collegare" && <div>Non ancora collegata a una referenza dell&apos;ordine.</div>}
           </div>
+        )}
+
+        {scheda.stato === "esecutiva" && (
+          <Blocco titolo="Avanzamento produzione">
+            <div className="px-2 py-3"><FasiLista key={scheda.fasi ?? ""} id={scheda.id} fasi={leggiFasi(scheda.fasi)} /></div>
+          </Blocco>
         )}
 
         <Blocco titolo="Articolo">

@@ -47,6 +47,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     data.accessori = body.accessori ? JSON.stringify(body.accessori) : null;
   if (body.immagini !== undefined)
     data.immagini = body.immagini ? JSON.stringify(body.immagini) : null;
+  if (body.fasi !== undefined)
+    data.fasi = body.fasi && Object.keys(body.fasi).length ? JSON.stringify(body.fasi) : null;
   if (body.campioni !== undefined)
     data.campioni = body.campioni ? JSON.stringify(body.campioni) : null;
 
