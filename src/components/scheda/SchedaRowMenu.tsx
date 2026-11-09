@@ -15,7 +15,7 @@ interface Props {
 
 export default function SchedaRowMenu({ id, nome, statoCorrente, base = "/schede" }: Props) {
   const [open, setOpen] = useState(false);
-  const [pos, setPos] = useState({ top: 0, right: 0 });
+  const [pos, setPos] = useState<{ top?: number; bottom?: number; right: number }>({ top: 0, right: 0 });
   const btnRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -27,15 +27,25 @@ export default function SchedaRowMenu({ id, nome, statoCorrente, base = "/schede
         btnRef.current && !btnRef.current.contains(e.target as Node)
       ) setOpen(false);
     };
+    // Il menu è fisso: se la pagina scorre resterebbe staccato dalla riga, quindi si chiude.
+    const chiudi = () => setOpen(false);
     document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    document.addEventListener("scroll", chiudi, true);
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("scroll", chiudi, true);
+    };
   }, []);
 
   const toggle = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!open && btnRef.current) {
       const rect = btnRef.current.getBoundingClientRect();
-      setPos({ top: rect.bottom + window.scrollY + 4, right: window.innerWidth - rect.right });
+      // Menu fisso sullo schermo: sulle ultime righe si apre verso l'alto, altrimenti "Elimina" finisce fuori.
+      const altezza = 220;
+      setPos(window.innerHeight - rect.bottom < altezza + 8
+        ? { bottom: window.innerHeight - rect.top + 4, right: window.innerWidth - rect.right }
+        : { top: rect.bottom + 4, right: window.innerWidth - rect.right });
     }
     setOpen((o) => !o);
   };
@@ -87,8 +97,8 @@ export default function SchedaRowMenu({ id, nome, statoCorrente, base = "/schede
       {open && (
         <div
           ref={menuRef}
-          style={{ position: "fixed", top: pos.top, right: pos.right, zIndex: 50 }}
-          className="w-40 bg-[#FFFFFF] border border-[#E4E0D6] rounded-lg shadow-xl overflow-hidden"
+          style={{ position: "fixed", top: pos.top, bottom: pos.bottom, right: pos.right, zIndex: 50 }}
+          className="w-52 bg-[#FFFFFF] border border-[#E4E0D6] rounded-lg shadow-xl overflow-hidden"
         >
           <button
             onClick={() => router.push(`${base}/${id}`)}
