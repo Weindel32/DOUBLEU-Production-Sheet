@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Check, X } from "lucide-react";
-import { FASI_PRODUZIONE, SALTA, avanzamento, dataBreve, oggiItalia, type Fasi, type IdFase } from "@/lib/fasi";
+import { FASI_PRODUZIONE, GIORNI_SOLLECITO, SALTA, avanzamento, dataBreve, oggiItalia, type Fasi, type IdFase } from "@/lib/fasi";
 
 function useFasi(id: string, iniziali: Fasi, aggiorna = true) {
   const [fasi, setFasi] = useState<Fasi>(iniziali);
@@ -79,6 +79,8 @@ function Checklist({ fasi, errore, spunta, salta }: ReturnType<typeof useFasi>) 
   );
 }
 
+const testoGiorni = (g: number) => (g === 0 ? "da oggi" : g === 1 ? "da 1 giorno" : `da ${g} giorni`);
+
 function Barra({ fatte, totali, completa }: { fatte: number; totali: number; completa: boolean }) {
   return (
     <span className="block h-1.5 rounded-full bg-[#EEEBE3] overflow-hidden">
@@ -95,7 +97,10 @@ export function FasiLista({ id, fasi, aggiorna = true }: { id: string; fasi: Fas
   return (
     <div className="space-y-3">
       <div className="flex items-baseline justify-between gap-3 text-sm">
-        <span className="font-semibold text-[#0E1B2C]">{a.completa ? "Produzione completata" : `Fase attuale: ${a.corrente!.label}`}</span>
+        <span className="font-semibold text-[#0E1B2C]">
+          {a.completa ? "Produzione completata" : `Fase attuale: ${a.corrente!.label}`}
+          {a.giorni !== null && <span className={a.giorni >= GIORNI_SOLLECITO ? "text-[#A8461F]" : "text-[#5F6878] font-normal"}> · {testoGiorni(a.giorni)}</span>}
+        </span>
         <span className="text-[#5F6878] font-mono">{a.fatte}/{a.totali}</span>
       </div>
       <Barra {...a} />
@@ -138,6 +143,9 @@ export default function FasiChip({ id, fasi, className = "" }: { id: string; fas
           <span className="font-mono font-normal text-[#5F6878]">{a.fatte}/{a.totali}</span>
         </span>
         <span className="block mt-1"><Barra {...a} /></span>
+        {a.giorni !== null && (
+          <span className={`block mt-1 text-[11px] ${a.giorni >= GIORNI_SOLLECITO ? "text-[#A8461F] font-semibold" : "text-[#5F6878]"}`}>{testoGiorni(a.giorni)}</span>
+        )}
       </button>
       {aperto && (
         <div className="fixed inset-0 z-50" onClick={() => setAperto(false)}>

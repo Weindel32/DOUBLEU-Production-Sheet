@@ -35,13 +35,30 @@ export interface Avanzamento {
   /** Prima fase non ancora fatta; null = tutto fatto. */
   corrente: (typeof FASI_PRODUZIONE)[number] | null;
   completa: boolean;
+  /** Giorni dalla fine della fase precedente: da quanto è ferma in quella attuale (null = nessuna data). */
+  giorni: number | null;
+}
+
+/** Oltre questi giorni nella stessa fase l'articolo va sollecitato: in elenco diventa ambra. */
+export const GIORNI_SOLLECITO = 7;
+
+const ISO = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Giorni di calendario tra una data aaaa-mm-gg e oggi (ora italiana). */
+export function giorniDa(iso: string) {
+  const ms = Date.parse(`${oggiItalia()}T00:00:00Z`) - Date.parse(`${iso}T00:00:00Z`);
+  return Math.max(0, Math.round(ms / 86_400_000));
 }
 
 export function avanzamento(fasi: Fasi): Avanzamento {
   const attive = FASI_PRODUZIONE.filter((f) => fasi[f.id] !== SALTA);
   const fatte = attive.filter((f) => !!fasi[f.id]).length;
   const corrente = attive.find((f) => !fasi[f.id]) ?? null;
-  return { totali: attive.length, fatte, corrente, completa: corrente === null };
+  // La fase attuale parte dall'ultima spunta fatta prima di lei (es. taglio finito = consegnato al fasonista).
+  const prima = corrente ? attive.slice(0, attive.indexOf(corrente)) : [];
+  const date = prima.map((f) => fasi[f.id]!).filter((d) => ISO.test(d)).sort();
+  const giorni = corrente && date.length ? giorniDa(date[date.length - 1]) : null;
+  return { totali: attive.length, fatte, corrente, completa: corrente === null, giorni };
 }
 
 /** Oggi in ora italiana, aaaa-mm-gg: è la data che resta sulla spunta. */
@@ -50,7 +67,7 @@ export function oggiItalia() {
 }
 
 /** "09/11" per la data di una fase. */
-export const dataBreve = (iso: string) => (/^\d{4}-\d{2}-\d{2}$/.test(iso) ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}` : "");
+export const dataBreve = (iso: string) => (ISO.test(iso) ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}` : "");
 
 /**
  * Riepilogo di un ordine: "4 in confezione · 2 al taglio · 13 pronte".
@@ -59,13 +76,20 @@ export const dataBreve = (iso: string) => (/^\d{4}-\d{2}-\d{2}$/.test(iso) ? `${
 export function riepilogoFasi(elenco: Fasi[]): string {
   if (elenco.length === 0) return "";
   const conteggi = new Map<string, number>();
+  const ferme = new Map<string, number>();
   let pronte = 0;
   for (const f of elenco) {
     const a = avanzamento(f);
-    if (a.completa) pronte++;
-    else conteggi.set(a.corrente!.id, (conteggi.get(a.corrente!.id) ?? 0) + 1);
+    if (a.completa) { pronte++; continue; }
+    const id = a.corrente!.id;
+    conteggi.set(id, (conteggi.get(id) ?? 0) + 1);
+    if (a.giorni !== null) ferme.set(id, Math.max(ferme.get(id) ?? 0, a.giorni));
   }
-  const parti = FASI_PRODUZIONE.filter((f) => conteggi.has(f.id)).reverse().map((f) => `${conteggi.get(f.id)} ${f.plurale}`);
+  // Solo quando qualcosa è fermo da più di una settimana: è lì che va sollecitato il fornitore.
+  const parti = FASI_PRODUZIONE.filter((f) => conteggi.has(f.id)).reverse().map((f) => {
+    const g = ferme.get(f.id) ?? 0;
+    return `${conteggi.get(f.id)} ${f.plurale}${g >= GIORNI_SOLLECITO ? ` (fino a ${g} gg)` : ""}`;
+  });
   if (pronte) parti.push(`${pronte} ${pronte === 1 ? "pronta" : "pronte"}`);
   return parti.join(" · ");
 }
