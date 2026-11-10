@@ -45,7 +45,8 @@ export default function MemoriaElenco({ base }: { base: string }) {
     const blocchi = () => [...document.querySelectorAll<HTMLDetailsElement>("details[data-blocco]")];
     const scroller = () => contenitore(ref.current);
     const posizione = () => scroller()?.scrollTop ?? window.scrollY;
-    const salva = () => scrivi(base, { url, aperti: blocchi().filter((d) => d.open).map((d) => d.dataset.blocco!), scroll: posizione() });
+    // L'indirizzo si rilegge ogni volta: i filtri possono cambiare senza ricaricare la pagina.
+    const salva = () => scrivi(base, { url: location.pathname + location.search, aperti: blocchi().filter((d) => d.open).map((d) => d.dataset.blocco!), scroll: posizione() });
 
     // Stesso elenco (stessi filtri) di prima: riapro gli stessi blocchi e torno allo stesso punto.
     const m = leggi(base);

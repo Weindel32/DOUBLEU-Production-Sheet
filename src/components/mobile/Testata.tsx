@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import type { ReactNode } from "react";
 import { LinkElenco } from "@/components/ui/MemoriaElenco";
+import TestataCompatta from "@/components/mobile/TestataCompatta";
 
 /** Intestazione delle pagine mobile: titolo grande, ritorno opzionale, spazio per la notch. */
 export default function Testata({ titolo, sopra, indietro, destra, elenco }: {
@@ -27,6 +28,7 @@ export default function Testata({ titolo, sopra, indietro, destra, elenco }: {
         </div>
         {destra}
       </div>
+      <TestataCompatta titolo={titolo} indietro={indietro} elenco={elenco} />
     </header>
   );
 }

@@ -38,7 +38,7 @@ export default function ScegliScheda({ righe, base, gruppi }: { righe: RigaScelt
                 <li key={r.id} className="border-b border-[#EFEBE2] last:border-0">
                   <Link href={`${base}/${r.id}`} className="flex items-center gap-3 px-3 py-3 active:bg-[#FBFAF7]">
                     <span className="w-12 h-12 rounded-xl bg-[#EEEBE3] overflow-hidden flex-shrink-0 flex items-center justify-center text-[#5F6878]">
-                      {r.foto ? <img src={r.foto} alt="" className="w-full h-full object-cover" /> : <Shirt size={20} />}
+                      {r.foto ? <img src={r.foto} alt="" loading="lazy" decoding="async" width={48} height={48} className="w-full h-full object-cover" /> : <Shirt size={20} />}
                     </span>
                     <span className="flex-1 min-w-0">
                       <span className="block font-semibold truncate">{r.titolo}</span>
