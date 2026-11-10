@@ -10,6 +10,7 @@ import { capiScheda, chiaveParte, ETICHETTA_PARTE, parteCoperta, partiReferenza,
 import { salvaRicollegamenti } from "@/lib/clientiOrderApp";
 import SchedaRowMenu from "@/components/scheda/SchedaRowMenu";
 import MemoriaElenco from "@/components/ui/MemoriaElenco";
+import Miniatura from "@/components/ui/Miniatura";
 import StatoSchedaToggle, { RendiEsecutive } from "@/components/scheda/StatoSchedaToggle";
 import FasiChip from "@/components/scheda/FasiProduzione";
 import { leggiFasi, riepilogoFasi, tempoOrdine } from "@/lib/fasi";
@@ -183,7 +184,7 @@ export default async function ListaSchede({ vista, searchParams }: {
               <tr key={s.id} className="border-b border-[#EFEBE2] last:border-0">
                 <td className="pl-4 pr-2 py-2.5">
                   <Link href={href} tabIndex={-1} aria-hidden className="block w-14 h-14 rounded-[10px] bg-[#EEEBE3] overflow-hidden">
-                    {copertina && <img src={copertina} alt="" className="w-full h-full object-cover" />}
+                    {copertina && <Miniatura src={copertina} lato={56} className="w-full h-full object-cover" />}
                   </Link>
                 </td>
                 <td className={`${cella} font-mono text-sm whitespace-nowrap`}>

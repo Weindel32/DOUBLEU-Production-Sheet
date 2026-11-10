@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Search, ChevronRight, Package } from "lucide-react";
 import { formatEuro } from "@/lib/utils";
+import Miniatura from "@/components/ui/Miniatura";
 
 export interface RigaMateriale {
   id: string;
@@ -39,7 +40,7 @@ export default function ElencoMateriali({ materiali }: { materiali: RigaMaterial
           <li key={m.id} className="border-b border-[#EFEBE2] last:border-0">
             <Link href={`/m/materiali/${m.id}`} className="flex items-center gap-3 px-3 py-3 active:bg-[#FBFAF7]">
               <span className="w-12 h-12 rounded-xl bg-[#EEEBE3] overflow-hidden flex-shrink-0 flex items-center justify-center text-[#5F6878]">
-                {m.foto ? <img src={m.foto} alt="" loading="lazy" decoding="async" width={48} height={48} className="w-full h-full object-cover" /> : <Package size={20} />}
+                {m.foto ? <Miniatura src={m.foto} lato={48} className="w-full h-full object-cover" /> : <Package size={20} />}
               </span>
               <span className="flex-1 min-w-0">
                 <span className="block font-semibold truncate">{m.nome}</span>
