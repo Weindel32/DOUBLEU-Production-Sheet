@@ -13,6 +13,7 @@ import { FasiLista } from "@/components/scheda/FasiProduzione";
 import { leggiFasi } from "@/lib/fasi";
 import { ordiniOrderApp, nomeReferenza } from "@/lib/orderApp";
 import { capiScheda, ETICHETTA_PARTE, partiReferenza, statoReferenza } from "@/lib/referenze";
+import Miniatura from "@/components/ui/Miniatura";
 
 function Blocco({ titolo, destra, children }: { titolo: string; destra?: ReactNode; children: ReactNode }) {
   return (
@@ -73,7 +74,7 @@ export default async function MobileSchedaDetailPage({ params }: { params: Promi
           <div className="flex gap-2 overflow-x-auto -mx-4 px-4 pb-1 snap-x">
             {immagini.map((img, i) => (
               <a key={i} href={img} target="_blank" rel="noreferrer" className="snap-start flex-shrink-0">
-                <img src={img} alt={`Immagine ${i + 1}`} loading={i === 0 ? "eager" : "lazy"} decoding="async" className="h-48 w-48 object-contain rounded-2xl bg-white border border-[#E4E0D6]" />
+                <Miniatura src={img} alt={`Immagine ${i + 1}`} lato={192} subito={i === 0} className="h-48 w-48 object-contain rounded-2xl bg-white border border-[#E4E0D6]" />
               </a>
             ))}
           </div>

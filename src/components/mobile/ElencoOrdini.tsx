@@ -6,6 +6,7 @@ import { ChevronDown, Shirt, ShoppingCart } from "lucide-react";
 import StatoSchedaToggle, { RendiEsecutive } from "@/components/scheda/StatoSchedaToggle";
 import FasiChip from "@/components/scheda/FasiProduzione";
 import { leggiFasi, riepilogoFasi, tempoOrdine } from "@/lib/fasi";
+import Miniatura from "@/components/ui/Miniatura";
 
 type Filtro = "tutte" | "esecutiva" | "bozza";
 const FILTRI: { value: Filtro; label: string }[] = [
@@ -121,8 +122,7 @@ export default function ElencoOrdini({ righe, blocchi }: { righe: RigaOrdine[]; 
                 <li key={s.id} className="flex items-center border-b border-[#EFEBE2] last:border-0">
                   <Link href={`/m/schede/${s.id}`} className="flex-1 min-w-0 flex items-center gap-3 pl-3 py-3 active:bg-[#FBFAF7]">
                     <span className="w-12 h-12 rounded-xl bg-[#EEEBE3] overflow-hidden flex-shrink-0 flex items-center justify-center text-[#5F6878]">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      {s.foto ? <img src={s.foto} alt="" loading="lazy" decoding="async" width={48} height={48} className="w-full h-full object-cover" /> : <Shirt size={20} />}
+                      {s.foto ? <Miniatura src={s.foto} lato={48} className="w-full h-full object-cover" /> : <Shirt size={20} />}
                     </span>
                     <span className="flex-1 min-w-0">
                       <span className="block font-semibold truncate">{s.nome}</span>
