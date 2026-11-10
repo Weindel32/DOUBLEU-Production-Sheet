@@ -78,11 +78,11 @@ export default function FotoRitagliabile({ value, onChange, etichetta, alt }: {
           </a>
           <div className="flex justify-center gap-2">
             <button type="button" onClick={ritagliaSalvata}
-              className="h-10 px-3 rounded-lg border border-[#D6D1C4] text-[13px] font-medium inline-flex items-center gap-1.5"><Crop size={15} /> Ritaglia</button>
+              className="h-11 px-3.5 rounded-lg border border-[#D6D1C4] text-[13px] font-medium inline-flex items-center gap-1.5"><Crop size={15} /> Ritaglia</button>
             <button type="button" onClick={() => fileRef.current?.click()}
-              className="h-10 px-3 rounded-lg border border-[#D6D1C4] text-[13px] font-medium inline-flex items-center gap-1.5"><RefreshCw size={15} /> Cambia</button>
+              className="h-11 px-3.5 rounded-lg border border-[#D6D1C4] text-[13px] font-medium inline-flex items-center gap-1.5"><RefreshCw size={15} /> Cambia</button>
             <button type="button" onClick={() => onChange("")} aria-label="Togli la foto"
-              className="h-10 px-3 rounded-lg border border-[#D6D1C4] text-[13px] font-medium inline-flex items-center gap-1.5 text-[#A8461F]"><X size={15} /> Togli</button>
+              className="h-11 px-3.5 rounded-lg border border-[#D6D1C4] text-[13px] font-medium inline-flex items-center gap-1.5 text-[#A8461F]"><X size={15} /> Togli</button>
           </div>
         </div>
       ) : (

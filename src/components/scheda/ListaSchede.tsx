@@ -227,7 +227,7 @@ export default async function ListaSchede({ vista, searchParams }: {
                   {!isArticoli && stato && <StatoSchedaToggle key={s.stato} id={s.id} stato={s.stato} />}
                   {/* Esecutiva = in produzione: al posto della data, la fase a cui è arrivata. */}
                   {!isArticoli && s.stato === "esecutiva"
-                    ? <div className="mt-1 -mx-1.5"><FasiChip key={s.fasi ?? ""} id={s.id} fasi={leggiFasi(s.fasi)} /></div>
+                    ? <div className="mt-1 -mx-1.5"><FasiChip id={s.id} fasi={leggiFasi(s.fasi)} /></div>
                     : <div className={`text-xs text-[#5F6878] ${isArticoli ? "" : "mt-1"}`}>{formatData(s.updatedAt)}</div>}
                 </td>
                 <td className="px-2 py-2.5 text-right">

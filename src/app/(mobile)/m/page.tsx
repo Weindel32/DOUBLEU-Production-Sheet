@@ -3,7 +3,7 @@ import Link from "next/link";
 import { PackagePlus, Tag, Receipt, Calculator, FileText, Palette, Hourglass, ChevronRight } from "lucide-react";
 import Testata from "@/components/mobile/Testata";
 import { BUILD } from "@/lib/build";
-import { datiDashboard } from "@/lib/dashboard";
+import { datiHomeMobile } from "@/lib/dashboard";
 
 const AZIONI = [
   { href: "/m/materiali/nuovo", titolo: "Nuovo materiale", testo: "Dal fornitore, con foto del cartellino", icon: PackagePlus },
@@ -16,9 +16,9 @@ const consegna = (g: number | null) =>
   g === null ? "consegna da fissare" : g < 0 ? `scaduto da ${-g} gg` : g === 0 ? "consegna oggi" : g === 1 ? "consegna domani" : `consegna tra ${g} gg`;
 
 export default async function MobileHome() {
-  // Stessi dati della Dashboard: solleciti e avanzamento non vanno ricalcolati in modo diverso sul telefono.
-  const d = await datiDashboard().catch(() => null);
-  const solleciti = d?.azioni.filter((a) => a.tipo === "fermo") ?? [];
+  // Stesso calcolo della Dashboard (solleciti e avanzamento), senza la parte su materiali e margini che qui non serve.
+  const d = await datiHomeMobile().catch(() => null);
+  const solleciti = d?.solleciti ?? [];
   const ordini = d?.ordini ?? [];
 
   return (

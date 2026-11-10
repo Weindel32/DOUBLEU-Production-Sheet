@@ -42,12 +42,17 @@ export interface AzioneDaFare {
   urgenza: Urgenza;
 }
 
-export async function datiDashboard() {
-  const [ordini, schedeRows, materiali, voci] = await Promise.all([
+const PESO_URGENZA: Record<Urgenza, number> = { scaduto: 0, preavviso: 1, ok: 2, "senza-data": 3 };
+const perUrgenza = (a: AzioneDaFare, b: AzioneDaFare) => PESO_URGENZA[a.urgenza] - PESO_URGENZA[b.urgenza];
+
+/**
+ * Ordini in lavorazione con le loro schede: avanzamento, cose da fare, solleciti.
+ * È la parte comune a Dashboard e Home del telefono, così i numeri sono gli stessi; non tocca i materiali.
+ */
+async function ordiniInLavorazione() {
+  const [ordini, schedeRows] = await Promise.all([
     ordiniOrderApp(),
     prisma.scheda.findMany({ where: { tipo: { notIn: TIPI_COSTO_DB } }, orderBy: { updatedAt: "desc" } }),
-    prisma.materiale.findMany(),
-    prisma.coloreFornitore.findMany(),
   ]);
 
   const attivi = ordini
@@ -146,6 +151,22 @@ export async function datiDashboard() {
   });
 
   await salvaRicollegamenti(ricollegamenti);
+  return { ordini, schedeRows, attiviIds, preventivi, ordiniVista, azioni, schedeAttive };
+}
+
+/** Home del telefono: solo ordini e solleciti, senza caricare materiali, colori e margini. */
+export async function datiHomeMobile() {
+  const { ordiniVista, azioni } = await ordiniInLavorazione();
+  return { ordini: ordiniVista, solleciti: azioni.filter((a) => a.tipo === "fermo").sort(perUrgenza) };
+}
+
+export async function datiDashboard() {
+  const [base, materiali, voci] = await Promise.all([
+    ordiniInLavorazione(),
+    prisma.materiale.findMany(),
+    prisma.coloreFornitore.findMany(),
+  ]);
+  const { ordini, schedeRows, attiviIds, preventivi, ordiniVista, azioni, schedeAttive } = base;
 
   // Tessuto su tutti gli ordini in lavorazione: stesso calcolo della pagina Acquisti, sommato.
   const acquisti = riepilogoAcquisti(schedeAttive.map(({ s, ordine }) => schedaAcquisto(s, ordine)), materiali);
@@ -168,8 +189,7 @@ export async function datiDashboard() {
       urgenza: "ok",
     });
   }
-  const pesoUrgenza: Record<Urgenza, number> = { scaduto: 0, preavviso: 1, ok: 2, "senza-data": 3 };
-  azioni.sort((a, b) => pesoUrgenza[a.urgenza] - pesoUrgenza[b.urgenza]);
+  azioni.sort(perUrgenza);
 
   // Margini sotto il minimo: schede degli ordini in lavorazione e schede non ancora legate a un ordine.
   const margini = schedeRows

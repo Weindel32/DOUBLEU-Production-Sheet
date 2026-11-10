@@ -118,9 +118,9 @@ export default async function MobileSchedePage({ searchParams }: {
                       </Link>
                       {/* Stato fuori dal link: un tocco sul badge cambia Bozza ⇄ Esecutiva senza aprire la scheda. */}
                       <span className="flex flex-col items-end gap-1 pl-2 pr-3 py-2 flex-shrink-0">
-                        <StatoSchedaToggle key={s.stato} id={s.id} stato={s.stato} className="min-h-9 px-3" />
+                        <StatoSchedaToggle key={s.stato} id={s.id} stato={s.stato} className="min-h-11 px-3.5" />
                         {s.stato === "esecutiva"
-                          ? <FasiChip key={s.fasi ?? ""} id={s.id} fasi={leggiFasi(s.fasi)} className="w-[104px]" />
+                          ? <FasiChip id={s.id} fasi={leggiFasi(s.fasi)} className="w-[112px]" />
                           : <span className="text-xs text-[#5F6878]">{formatData(s.updatedAt.toISOString())}</span>}
                       </span>
                     </li>
