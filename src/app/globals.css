@@ -84,6 +84,20 @@ h1, h2, h3 { font-family: var(--font-display); }
   font-weight: 600;
 }
 
+/* ─── Pannello dal basso (telefono) ───────────────────── */
+@keyframes pannello-sale  { from { transform: translateY(100%); } }
+@keyframes pannello-scende { to { transform: translateY(100%); } }
+@keyframes velo-entra { from { opacity: 0; } }
+@keyframes velo-esce  { to { opacity: 0; } }
+.pannello-basso     { animation: pannello-sale 260ms cubic-bezier(0.32, 0.72, 0, 1); }
+.pannello-esce      { animation: pannello-scende 200ms ease-in forwards; }
+.pannello-velo      { animation: velo-entra 200ms ease-out; }
+.pannello-velo-esce { animation: velo-esce 200ms ease-in forwards; }
+@media (prefers-reduced-motion: reduce) {
+  .pannello-basso, .pannello-velo { animation: none; }
+  .pannello-esce, .pannello-velo-esce { animation-duration: 1ms; }
+}
+
 /* ─── Cards ───────────────────────────────────────────── */
 .card {
   background: var(--bg-card);

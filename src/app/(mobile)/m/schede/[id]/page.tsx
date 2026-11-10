@@ -90,7 +90,7 @@ export default async function MobileSchedaDetailPage({ params }: { params: Promi
 
         {scheda.stato === "esecutiva" && (
           <Blocco titolo="Avanzamento produzione">
-            <div className="px-2 py-3"><FasiLista key={scheda.fasi ?? ""} id={scheda.id} fasi={leggiFasi(scheda.fasi)} /></div>
+            <div className="px-2 py-3"><FasiLista id={scheda.id} fasi={leggiFasi(scheda.fasi)} /></div>
           </Blocco>
         )}
 

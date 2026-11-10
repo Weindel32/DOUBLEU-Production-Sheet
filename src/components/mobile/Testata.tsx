@@ -12,11 +12,11 @@ export default function Testata({ titolo, sopra, indietro, destra, elenco }: {
   return (
     <header className="px-4 pt-[calc(14px+env(safe-area-inset-top))] pb-3">
       {indietro && (elenco ? (
-        <LinkElenco base={indietro} className="inline-flex items-center gap-0.5 h-10 -ml-1.5 text-[15px] text-[#1F3A68] font-medium">
+        <LinkElenco base={indietro} className="inline-flex items-center gap-0.5 h-11 pr-3 -ml-1.5 text-[15px] text-[#1F3A68] font-medium">
           <ChevronLeft size={20} /> Indietro
         </LinkElenco>
       ) : (
-        <Link href={indietro} className="inline-flex items-center gap-0.5 h-10 -ml-1.5 text-[15px] text-[#1F3A68] font-medium">
+        <Link href={indietro} className="inline-flex items-center gap-0.5 h-11 pr-3 -ml-1.5 text-[15px] text-[#1F3A68] font-medium">
           <ChevronLeft size={20} /> Indietro
         </Link>
       ))}

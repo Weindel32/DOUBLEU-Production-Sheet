@@ -11,18 +11,30 @@ import {
 function useFasi(id: string, iniziali: Fasi, aggiorna = true) {
   const [fasi, setFasi] = useState<Fasi>(iniziali);
   const [errore, setErrore] = useState(false);
+  const [salvataggi, setSalvataggi] = useState(0);
   const [, startTransition] = useTransition();
   const router = useRouter();
+
+  // Dati nuovi dal server (dopo un salvataggio o una modifica fatta altrove): si adottano senza ricreare
+  // il componente, così la checklist aperta resta aperta. Mai mentre un salvataggio è ancora in viaggio.
+  const dalServer = JSON.stringify(iniziali);
+  const [visto, setVisto] = useState(dalServer);
+  if (visto !== dalServer) {
+    setVisto(dalServer);
+    if (salvataggi === 0) setFasi(iniziali);
+  }
 
   const salva = async (next: Fasi) => {
     const prima = fasi;
     setFasi(next);
     setErrore(false);
+    setSalvataggi((n) => n + 1);
     const res = await fetch(`/api/schede/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ fasi: next }),
     }).catch(() => null);
+    setSalvataggi((n) => n - 1);
     if (!res?.ok) {
       setFasi(prima);
       setErrore(true);
@@ -70,7 +82,7 @@ function Checklist({ fasi, errore, avanza, salta, data }: ReturnType<typeof useF
             <li key={f.id} className="flex items-center gap-2 py-1">
               <button type="button" onClick={() => avanza(f.id)} disabled={s.stato === "salta"}
                 aria-label={`${f.label}: ${s.stato === "corso" ? "in corso" : s.stato === "fatta" ? "fatta" : "da fare"}`}
-                className="flex-1 min-w-0 min-h-12 flex items-center gap-3 rounded-lg px-2 text-left hover:bg-[#0E1B2C]/[0.03] disabled:hover:bg-transparent">
+                className="flex-1 min-w-0 min-h-12 flex items-center gap-3 rounded-lg px-2 text-left hover:bg-[#0E1B2C]/[0.03] active:bg-[#0E1B2C]/[0.06] disabled:hover:bg-transparent disabled:active:bg-transparent">
                 <span className={`w-6 h-6 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
                   s.stato === "fatta" ? "bg-[#1D6B4A] border-[#1D6B4A] text-white"
                     : s.stato === "corso" ? "border-[#1F3A68] bg-[#E3E9F3]"
@@ -92,12 +104,12 @@ function Checklist({ fasi, errore, avanza, salta, data }: ReturnType<typeof useF
                 <input type="date" value={dataFase} max={oggi} title={s.stato === "corso" ? "Partita il" : "Finita il"}
                   aria-label={`${f.label}: ${s.stato === "corso" ? "partita il" : "finita il"}`}
                   onChange={(e) => data(f.id, e.target.value)}
-                  className="h-9 w-[132px] flex-shrink-0 rounded-md border border-[#E4E0D6] bg-white px-2 text-xs font-mono text-[#0E1B2C] hover:border-[#0E1B2C]/40 focus:border-[#1F3A68]" />
+                  className="h-11 sm:h-9 w-[136px] sm:w-[132px] flex-shrink-0 rounded-lg sm:rounded-md border border-[#E4E0D6] bg-white px-2 text-[13px] sm:text-xs font-mono text-[#0E1B2C] hover:border-[#0E1B2C]/40 focus:border-[#1F3A68]" />
               )}
               {/* Fasi che per questo articolo non esistono: escono dal conteggio. */}
               {(s.stato === "vuota" || s.stato === "salta") && (
                 <button type="button" onClick={() => salta(f.id)}
-                  className="min-h-11 px-2 text-xs text-[#5F6878] hover:text-[#0E1B2C] underline-offset-2 hover:underline flex-shrink-0">
+                  className="min-h-11 px-3 sm:px-2 text-[13px] sm:text-xs text-[#5F6878] hover:text-[#0E1B2C] active:text-[#0E1B2C] underline-offset-2 hover:underline flex-shrink-0">
                   {s.stato === "salta" ? "Serve" : "Non serve"}
                 </button>
               )}
@@ -158,6 +170,80 @@ export function FasiLista({ id, fasi, aggiorna = true }: { id: string; fasi: Fas
   );
 }
 
+/** Oltre questa distanza (px) il pannello trascinato in basso si chiude. */
+const SOGLIA_CHIUSURA = 90;
+
+/**
+ * Pannello dal basso del telefono: sale con un'animazione, blocca lo scroll della pagina dietro
+ * e si chiude toccando fuori, con la X o trascinando in giù la parte alta.
+ */
+function PannelloBasso({ titolo, onChiudi, children }: { titolo: string; onChiudi: () => void; children: React.ReactNode }) {
+  const [trascina, setTrascina] = useState<{ da: number; y: number } | null>(null);
+  const [uscita, setUscita] = useState(false);
+  const [entrato, setEntrato] = useState(false);
+
+  useEffect(() => {
+    // Su iOS overflow:hidden non basta: si fissa il body e al termine si torna allo stesso punto.
+    const y = window.scrollY;
+    const { style } = document.body;
+    const prima = { position: style.position, top: style.top, width: style.width };
+    style.position = "fixed";
+    style.top = `-${y}px`;
+    style.width = "100%";
+    return () => {
+      style.position = prima.position;
+      style.top = prima.top;
+      style.width = prima.width;
+      window.scrollTo(0, y);
+    };
+  }, []);
+
+  const chiudi = () => setUscita(true);
+  const giu = (e: React.PointerEvent) => {
+    if ((e.target as HTMLElement).closest("button")) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setTrascina({ da: e.clientY, y: 0 });
+  };
+  const muovi = (e: React.PointerEvent) => trascina && !uscita && setTrascina({ da: trascina.da, y: Math.max(0, e.clientY - trascina.da) });
+  const su = () => {
+    if (!trascina || uscita) return;
+    // Oltre la soglia esce da dove l'ha lasciato il dito; sotto, torna su.
+    if (trascina.y > SOGLIA_CHIUSURA) chiudi();
+    else setTrascina(null);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50">
+      {/* pointerup oltre al click: dopo un trascinamento il primo tocco può non generare il click. */}
+      <div onClick={chiudi} onPointerUp={chiudi} className={`absolute inset-0 bg-[#0E1B2C]/30 ${uscita ? "pannello-velo-esce" : "pannello-velo"}`} />
+      <div role="dialog" aria-modal="true" aria-label={titolo}
+        onAnimationEnd={(e) => {
+          if (e.target !== e.currentTarget) return;
+          if (uscita) onChiudi();
+          else setEntrato(true);
+        }}
+        style={trascina ? { transform: `translateY(${trascina.y}px)` } : undefined}
+        className={`absolute inset-x-0 bottom-0 max-h-[90dvh] flex flex-col bg-white rounded-t-2xl shadow-xl ${
+          uscita ? "pannello-esce" : !entrato ? "pannello-basso" : trascina ? "" : "transition-transform duration-200"}`}>
+        <div onPointerDown={giu} onPointerMove={muovi} onPointerUp={su} onPointerCancel={su}
+          className="flex-shrink-0 touch-none select-none px-4 pt-2.5 pb-1">
+          <span aria-hidden className="block w-10 h-1.5 rounded-full bg-[#D6D1C4] mx-auto mb-1.5" />
+          <div className="flex items-center justify-between px-2">
+            <span className="font-display font-bold text-[17px] text-[#0E1B2C]">{titolo}</span>
+            <button type="button" onClick={chiudi} aria-label="Chiudi"
+              className="w-11 h-11 -mr-2.5 rounded-lg flex items-center justify-center text-[#5F6878] active:bg-[#0E1B2C]/5">
+              <X size={20} />
+            </button>
+          </div>
+        </div>
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** Situazione compatta negli elenchi: un clic apre la checklist senza aprire la scheda. */
 export default function FasiChip({ id, fasi, className = "" }: { id: string; fasi: Fasi; className?: string }) {
   const stato = useFasi(id, fasi);
@@ -187,24 +273,27 @@ export default function FasiChip({ id, fasi, className = "" }: { id: string; fas
     <>
       <button ref={btnRef} type="button" onClick={apri} aria-haspopup="dialog" aria-expanded={aperto}
         title="Avanzamento produzione"
-        className={`w-full min-w-[96px] text-left rounded-lg px-1.5 py-1 hover:bg-[#0E1B2C]/[0.04] ${className}`}>
-        <span className="flex items-baseline justify-between gap-1.5 text-xs">
+        className={`w-full min-w-[96px] min-h-11 sm:min-h-0 text-left rounded-lg px-1.5 py-1 hover:bg-[#0E1B2C]/[0.04] active:bg-[#0E1B2C]/[0.06] ${className}`}>
+        <span className="flex items-baseline justify-between gap-1.5 text-[13px] sm:text-xs">
           <span className={`truncate font-bold ${COLORE[a.situazione]}`}>{a.etichetta}</span>
           <span className="font-mono text-[#5F6878]">{a.fatte}/{a.totali}</span>
         </span>
         <span className="block mt-1"><Barra a={a} /></span>
         {giorni && (
-          <span className={`block mt-1 text-[11px] ${coloreGiorni(a)}`}>{giorni}</span>
+          <span className={`block mt-1 text-xs sm:text-[11px] ${coloreGiorni(a)}`}>{giorni}</span>
         )}
       </button>
-      {aperto && (
+      {aperto && !pos && (
+        <PannelloBasso titolo="Fasi di produzione" onChiudi={() => setAperto(false)}>
+          <Checklist {...stato} />
+        </PannelloBasso>
+      )}
+      {aperto && pos && (
         <div className="fixed inset-0 z-50" onClick={() => setAperto(false)}>
-          <div className={pos ? "absolute inset-0" : "absolute inset-0 bg-[#0E1B2C]/30"} />
+          <div className="absolute inset-0" />
           <div role="dialog" aria-label="Fasi di produzione" onClick={(e) => e.stopPropagation()}
-            style={pos ? { top: pos.top, right: pos.right } : undefined}
-            className={pos
-              ? "absolute w-[420px] bg-white border border-[#E4E0D6] rounded-xl shadow-xl p-3"
-              : "absolute inset-x-0 bottom-0 max-h-[90vh] overflow-y-auto bg-white rounded-t-2xl shadow-xl p-4 pb-[max(1rem,env(safe-area-inset-bottom))]"}>
+            style={{ top: pos.top, right: pos.right }}
+            className="absolute w-[420px] bg-white border border-[#E4E0D6] rounded-xl shadow-xl p-3">
             <div className="flex items-center justify-between mb-1 px-2">
               <span className="font-display font-bold text-[16px] text-[#0E1B2C]">Fasi di produzione</span>
               <button type="button" onClick={() => setAperto(false)} aria-label="Chiudi"
