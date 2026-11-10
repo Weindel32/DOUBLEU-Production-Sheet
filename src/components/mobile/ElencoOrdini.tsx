@@ -99,7 +99,7 @@ export default function ElencoOrdini({ righe, blocchi }: { righe: RigaOrdine[]; 
         const tempo = tempoOrdine(fasiEsecutive, bozze.length === 0);
         return (
           <details key={b.chiave} data-blocco={b.ordineId ?? b.chiave} id={b.ordineId ? `ordine-${b.ordineId}` : undefined}
-            open={ordineAperto ? b.ordineId === ordineAperto : i === 0 && elenco.length <= 3} className="group bg-white border border-[#E4E0D6] rounded-2xl overflow-hidden">
+            open={ordineAperto ? b.ordineId === ordineAperto : i === 0 && elenco.length <= 3} className="group scroll-mt-[calc(60px+env(safe-area-inset-top))] bg-white border border-[#E4E0D6] rounded-2xl overflow-hidden">
             <summary className="list-none [&::-webkit-details-marker]:hidden flex items-center gap-3 px-4 py-3.5 active:bg-[#FBFAF7]">
               <span className="flex-1 min-w-0">
                 <span className={`block font-display font-bold text-[17px] truncate ${b.cliente ? "text-[#1F3A68]" : "text-[#5F6878]"}`}>{b.cliente ?? "Senza cliente"}</span>
