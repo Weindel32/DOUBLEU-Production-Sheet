@@ -53,7 +53,7 @@ export default function CostiAlVolo({ articoli }: { articoli: ArticoloCosto[] })
             <button type="button" aria-expanded={on} onClick={() => { setAperto(on ? null : a.id); setPrezzoProva(""); }}
               className="w-full flex items-center gap-3 px-3 py-3 text-left active:bg-[#FBFAF7]">
               <span className="w-12 h-12 rounded-xl bg-[#EEEBE3] overflow-hidden flex-shrink-0 flex items-center justify-center text-[#5F6878]">
-                {a.foto ? <img src={a.foto} alt="" className="w-full h-full object-cover" /> : <Shirt size={20} />}
+                {a.foto ? <img src={a.foto} alt="" loading="lazy" decoding="async" width={48} height={48} className="w-full h-full object-cover" /> : <Shirt size={20} />}
               </span>
               <span className="flex-1 min-w-0">
                 <span className="block font-semibold truncate">{a.nome}</span>
