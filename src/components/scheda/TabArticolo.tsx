@@ -249,6 +249,16 @@ const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ 
       }),
     });
     const body = await res.json().catch(() => ({}));
+    // Già in archivio (magari aggiunto da un'altra scheda dopo l'apertura di questa): lo si usa così com'è.
+    if (res.status === 409 && body.modello) {
+      const m: ModelloBreve = body.modello;
+      setModelli((prev) => (trovaModello(prev, m.codice) ? prev : [...prev, m]));
+      set("codiceModello", m.codice);
+      onMetaChange?.({ codiceModello: m.codice });
+      setModelloMsg(null);
+      await onSave({ codiceModello: m.codice });
+      return;
+    }
     if (!res.ok) { setModelloMsg(body.error || "Non sono riuscito ad aggiungere il modello."); return; }
     setModelli((prev) => [...prev, { codice: body.codice, descrizione: body.descrizione, categoria: body.categoria, fascia: body.fascia }]);
     setModelloMsg(null);

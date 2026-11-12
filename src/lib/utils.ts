@@ -87,6 +87,9 @@ export function fasciaDaGenere(genere: string | null | undefined): FasciaModello
 }
 
 /** Ordina le categorie come nel menu delle schede; quelle nuove in fondo, in ordine alfabetico. */
+/** Codice modello confrontabile: senza maiuscole né spazi ("DUSP218" e "dusp 218" sono lo stesso modello). */
+export const chiaveCodice = (codice: string) => codice.replace(/\s+/g, "").toLowerCase();
+
 export function ordinaCategorie(categorie: string[]): string[] {
   const pos = (c: string) => { const i = CATEGORIE.indexOf(c); return i === -1 ? 999 : i; };
   return [...new Set(categorie)].sort((a, b) => pos(a) - pos(b) || a.localeCompare(b));

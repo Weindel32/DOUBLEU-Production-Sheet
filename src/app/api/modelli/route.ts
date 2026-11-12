@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-import { FASCE_MODELLO } from "@/lib/utils";
+import { FASCE_MODELLO, chiaveCodice } from "@/lib/utils";
 
 export async function GET(req: NextRequest) {
   const codice = req.nextUrl.searchParams.get("codice");
@@ -25,9 +25,12 @@ export async function POST(req: NextRequest) {
   if (!FASCE_MODELLO.includes(fascia))
     return NextResponse.json({ error: "Fascia non valida" }, { status: 400 });
 
-  const esistente = await prisma.modello.findUnique({ where: { codice } });
+  // Stesso codice anche se scritto con spazi diversi ("DUSP218" = "DUSP 218"): niente doppioni in archivio.
+  const chiave = chiaveCodice(codice);
+  const esistente = (await prisma.modello.findMany({ select: { codice: true, descrizione: true, categoria: true, fascia: true } }))
+    .find((m) => chiaveCodice(m.codice) === chiave);
   if (esistente)
-    return NextResponse.json({ error: `Il modello ${codice} esiste già (${esistente.descrizione})` }, { status: 409 });
+    return NextResponse.json({ error: `Il modello esiste già come ${esistente.codice} (${esistente.descrizione})`, modello: esistente }, { status: 409 });
 
   const modello = await prisma.modello.create({
     data: { codice, descrizione, categoria, fascia, note: typeof body.note === "string" && body.note.trim() ? body.note.trim() : null },

@@ -2,7 +2,7 @@
 
 import { useId, useState } from "react";
 import { inputCls } from "@/components/ui/Form";
-import { ordinaCategorie } from "@/lib/utils";
+import { chiaveCodice, ordinaCategorie } from "@/lib/utils";
 
 export interface ModelloBreve {
   codice: string;
@@ -11,10 +11,10 @@ export interface ModelloBreve {
   fascia: string;
 }
 
-/** Cerca un modello per codice ignorando maiuscole e spazi ai bordi ("dusp 09" → "DUSP 09"). */
+/** Cerca un modello per codice ignorando maiuscole e spazi ("dusp218" → "DUSP 218"). */
 export function trovaModello(modelli: ModelloBreve[], codice: string): ModelloBreve | undefined {
-  const c = codice.trim().toLowerCase();
-  return c ? modelli.find((m) => m.codice.toLowerCase() === c) : undefined;
+  const c = chiaveCodice(codice);
+  return c ? modelli.find((m) => chiaveCodice(m.codice) === c) : undefined;
 }
 
 /** Fasce del modello adatte al genere della scheda; null = nessun filtro (Unisex o non scelto). */
