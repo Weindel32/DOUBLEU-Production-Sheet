@@ -66,7 +66,11 @@ export function baseScheda(tipo: string | null | undefined): "/articoli" | "/sch
   return normalizzaTipo(tipo) === "costo" ? "/articoli" : "/schede";
 }
 
-export const FASCE_MODELLO = ["Adulto", "Uomo", "Donna", "Kids"] as const;
+// Kids è il bambino unisex; Bambina è il modello da bambina (taglie bambino, linea donna).
+/** Generi della scheda che producono la parte bambino dell'ordine (taglie 4A–16A). */
+export const GENERI_BAMBINO = ["Junior", "Bambina"];
+
+export const FASCE_MODELLO = ["Adulto", "Uomo", "Donna", "Kids", "Bambina"] as const;
 export type FasciaModello = typeof FASCE_MODELLO[number];
 
 /** Colori del badge della fascia, uguali in Modelli e in Articoli e costi. */
@@ -75,15 +79,16 @@ export const FASCIA_STYLE: Record<string, string> = {
   Uomo: "bg-[#E6EEF0] text-[#1E5260]",
   Donna: "bg-[#F7E6EC] text-[#8A2E52]",
   Kids: "bg-[#FBEDE5] text-[#A8461F]",
+  Bambina: "bg-[#F9E4E0] text-[#9C3A2E]",
 };
 
-/** Fascia del modello → genere della scheda (Adulto è unisex, Kids è junior). */
+/** Fascia del modello → genere della scheda (Adulto è unisex, Kids è junior, Bambina resta Bambina). */
 export function genereDaFascia(fascia: string | null | undefined): string {
-  return fascia === "Kids" ? "Junior" : fascia === "Donna" ? "Donna" : fascia === "Uomo" ? "Uomo" : "Unisex";
+  return fascia === "Kids" ? "Junior" : fascia === "Bambina" ? "Bambina" : fascia === "Donna" ? "Donna" : fascia === "Uomo" ? "Uomo" : "Unisex";
 }
 
 export function fasciaDaGenere(genere: string | null | undefined): FasciaModello {
-  return genere === "Junior" ? "Kids" : genere === "Donna" ? "Donna" : genere === "Uomo" ? "Uomo" : "Adulto";
+  return genere === "Junior" ? "Kids" : genere === "Bambina" ? "Bambina" : genere === "Donna" ? "Donna" : genere === "Uomo" ? "Uomo" : "Adulto";
 }
 
 /** Ordina le categorie come nel menu delle schede; quelle nuove in fondo, in ordine alfabetico. */

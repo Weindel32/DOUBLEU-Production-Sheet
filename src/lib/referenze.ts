@@ -1,15 +1,16 @@
 // Scheda ↔ referenza dell'ordine nell'Order App: a quale articolo è collegata, se c'è ancora,
 // e quanti capi usare per costi e acquisti quando le taglie non sono ancora arrivate.
 // Adulto e bambino della stessa referenza sono due prodotti (due codici, due cartamodelli):
-// la scheda Junior prende le taglie bambino, le altre le taglie adulto.
+// la scheda Junior o Bambina prende le taglie bambino, le altre le taglie adulto.
 
-import { calcolaTotaleQuantita } from "@/lib/utils";
+import { GENERI_BAMBINO, calcolaTotaleQuantita } from "@/lib/utils";
 import { nomeReferenza, sommaTaglie, trovaReferenza, type ReferenzaOrderApp } from "@/lib/orderApp";
 
 export type Parte = "adulto" | "bambino";
 
-/** La parte della referenza che la scheda produce: Junior è il genere dei modelli Kids. */
-export const parteScheda = (genere: string | null | undefined): Parte => (genere === "Junior" ? "bambino" : "adulto");
+/** La parte della referenza che la scheda produce: Junior (modelli Kids) e Bambina sono la parte bambino. */
+export const parteScheda = (genere: string | null | undefined): Parte =>
+  (GENERI_BAMBINO.includes(genere ?? "") ? "bambino" : "adulto");
 
 export const ETICHETTA_PARTE: Record<Parte, string> = { adulto: "Adulto", bambino: "Bambino" };
 

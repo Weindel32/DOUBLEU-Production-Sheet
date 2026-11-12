@@ -31,7 +31,7 @@ interface Props {
   modelli?: ModelloBreve[];
 }
 
-const GENERI = ["Unisex", "Uomo", "Donna", "Junior"].map((v) => ({ value: v, label: v }));
+const GENERI = ["Unisex", "Uomo", "Donna", "Junior", "Bambina"].map((v) => ({ value: v, label: v }));
 const VESTIBILITA = [
   { value: "Regular Fit", label: "Regular" }, { value: "Slim Fit", label: "Slim" },
   { value: "Loose Fit", label: "Loose" }, { value: "Athletic Fit", label: "Athletic" },

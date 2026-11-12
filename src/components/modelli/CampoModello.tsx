@@ -21,7 +21,8 @@ export function trovaModello(modelli: ModelloBreve[], codice: string): ModelloBr
 export function fascePerGenere(genere: string | null | undefined): string[] | null {
   if (genere === "Donna") return ["Donna"];
   if (genere === "Uomo") return ["Uomo", "Adulto"];
-  if (genere === "Junior") return ["Kids"];
+  if (genere === "Junior") return ["Kids", "Bambina"];
+  if (genere === "Bambina") return ["Bambina", "Kids"];
   return null;
 }
 

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Check, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import {
-  CATEGORIE, TIPI_SCHEDA, baseScheda, formatEuro, genereDaFascia, fasciaDaGenere, ordinaCategorie, etichettaOrdine, type TipoScheda,
+  CATEGORIE, GENERI_BAMBINO, TIPI_SCHEDA, baseScheda, formatEuro, genereDaFascia, fasciaDaGenere, ordinaCategorie, etichettaOrdine, type TipoScheda,
 } from "@/lib/utils";
 import type { OrdineOrderApp, ReferenzaOrderApp } from "@/lib/orderApp";
 import { ETICHETTA_PARTE, parteCoperta, partiReferenza, quotaReferenza, type Parte } from "@/lib/referenze";
@@ -18,7 +18,7 @@ const DESCRIZIONE_TIPO: Record<TipoScheda, string> = {
   produzione: "Scheda completa per il produttore: misure, quantità per taglia, personalizzazioni, PDF.",
 };
 
-const GENERI = ["Unisex", "Uomo", "Donna", "Junior"].map((v) => ({ value: v, label: v }));
+const GENERI = ["Unisex", "Uomo", "Donna", "Junior", "Bambina"].map((v) => ({ value: v, label: v }));
 const VESTIBILITA = [
   { value: "Regular Fit", label: "Regular" }, { value: "Slim Fit", label: "Slim" },
   { value: "Loose Fit", label: "Loose" }, { value: "Athletic Fit", label: "Athletic" },
@@ -92,14 +92,15 @@ export default function NuovaSchedaForm({ tipoIniziale, modelloIniziale, modelli
   const categorie = ordinaCategorie([...CATEGORIE, ...modelli.map((m) => m.categoria)]);
 
   // Una referenza dell'ordine precompila nome, categoria e genere: il modello resta da scegliere.
-  // La parte Bambino è un prodotto a sé: genere Junior (modelli Kids) e solo le taglie bambino.
+  // La parte Bambino è un prodotto a sé: genere Junior (modelli Kids), Bambina se la referenza è da donna,
+  // e solo le taglie bambino.
   const scegliReferenza = (r: ReferenzaOrderApp, parte: Parte) => {
     const { nome, genere } = datiReferenza(r);
     setForm((f) => ({
       ...f,
       nomeArticolo: nome ? (parte === "bambino" ? `${nome} Bambino` : nome) : f.nomeArticolo,
       categoria: r.categoria && categorie.includes(r.categoria) ? r.categoria : f.categoria,
-      genere: parte === "bambino" ? "Junior" : genere ?? (f.genere === "Junior" ? "Unisex" : f.genere),
+      genere: parte === "bambino" ? (genere === "Donna" ? "Bambina" : "Junior") : genere ?? (GENERI_BAMBINO.includes(f.genere) ? "Unisex" : f.genere),
     }));
     setNomeDalModello(false);
     setReferenza({ r, parte });

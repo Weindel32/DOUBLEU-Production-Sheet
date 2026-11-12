@@ -22,6 +22,7 @@ const GENERE_COLORS: Record<string, string> = {
   uomo: "#3b82f6",
   donna: "#ec4899",
   junior: "#22c55e",
+  bambina: "#f97316",
   unisex: "#a855f7",
 };
 
@@ -30,6 +31,7 @@ const GENERE_TABS = [
   { value: "uomo", label: "Uomo" },
   { value: "donna", label: "Donna" },
   { value: "junior", label: "Junior" },
+  { value: "bambina", label: "Bambina" },
   { value: "unisex", label: "Unisex" },
 ];
 
@@ -154,7 +156,7 @@ export default function AnalyticsClient({
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
         <div className="card py-4 text-center sm:col-span-1 col-span-2">
           <div className="text-3xl font-bold text-[#0E1B2C]">
             {totali.totPezzi.toLocaleString("it-IT")}
@@ -166,7 +168,7 @@ export default function AnalyticsClient({
             {totali.totSchede} schede
           </div>
         </div>
-        {(["uomo", "donna", "junior", "unisex"] as const).map((g) => (
+        {(["uomo", "donna", "junior", "bambina", "unisex"] as const).map((g) => (
           <div key={g} className="card py-4 text-center">
             <div
               className="text-2xl font-bold"
