@@ -1,10 +1,11 @@
 import { prisma } from "@/lib/prisma";
 
+// Pantaloncino e Gonnellino tengono i prefissi storici SH/SK: i codici restano sulla stessa serie.
 const CATEGORIA_PREFISSO: Record<string, string> = {
   "T-Shirt PRF": "TP", "T-Shirt WS": "TW", "T-Shirt COT": "TC",
   "Polo": "PO", "Hoodie": "HO", "Zip Hoodie": "ZH",
   "Sweatshirt": "SW", "Jacket": "JK", "Sweatpants": "SP",
-  "Short": "SH", "Skirt": "SK", "Dress": "DR", "Altro": "AL",
+  "Pantaloncino": "SH", "Gonnellino": "SK", "Dress": "DR", "Altro": "AL",
 };
 
 /**

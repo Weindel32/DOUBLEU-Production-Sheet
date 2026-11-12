@@ -208,11 +208,17 @@ export async function ordiniOrderApp(): Promise<OrdineOrderApp[]> {
         .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
         .flatMap((k) => (articoliPerKit.get(k.id) ?? []).map((a) => ({
           id: a.id, ids: [a.id], firme: [firmaArticolo(k.name, a.description, a.color)],
-          kit: k.name, categoria: a.category, descrizione: a.description?.trim() || null, colore: a.color?.trim() || null,
+          kit: k.name, categoria: categoriaDaOrderApp(a.category), descrizione: a.description?.trim() || null, colore: a.color?.trim() || null,
           ...leggiTaglie(a.sizes_adult, a.sizes_kids),
         })))),
     }))
     .sort((a, b) => chiaveData(b.data).localeCompare(chiaveData(a.data)) || b.id.localeCompare(a.id));
+}
+
+/** L'Order App chiama ancora Short/Skirt: qui sono Pantaloncino/Gonnellino (Short e Skirt si confondevano con Shirt). */
+const CATEGORIE_ORDER_APP: Record<string, string> = { short: "Pantaloncino", skirt: "Gonnellino" };
+export function categoriaDaOrderApp(c: string | null): string | null {
+  return (c && CATEGORIE_ORDER_APP[c.trim().toLowerCase()]) || c;
 }
 
 /** Ordini su cui ha senso aprire nuove schede: non annullati né persi. */

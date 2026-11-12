@@ -31,7 +31,7 @@ export const TAGLIE = [...TAGLIE_ADULTO, ...TAGLIE_KIDS] as const;
 export const CATEGORIE = [
   "T-Shirt PRF", "T-Shirt WS", "T-Shirt COT",
   "Polo", "Hoodie", "Zip Hoodie", "Sweatshirt", "Jacket",
-  "Sweatpants", "Short", "Skirt", "Dress", "Altro",
+  "Sweatpants", "Pantaloncino", "Gonnellino", "Dress", "Altro",
 ];
 
 export const TIPI_SCHEDA = [
@@ -105,7 +105,7 @@ export function totaleSviluppo(campioni: { voci: { importo: number }[] }[]): num
   return campioni.reduce((s, c) => s + totaleCampione(c), 0);
 }
 
-export const CATEGORIE_ELASTICO = ["Short", "Skirt", "Sweatpants"];
+export const CATEGORIE_ELASTICO = ["Pantaloncino", "Gonnellino", "Sweatpants"];
 
 export const TECNICHE_LOGO = ["Ricamo", "Stampa", "Transfer", "Sublimazione", "Patch"];
 

@@ -15,40 +15,40 @@ export interface TabMisureHandle {
   save: () => Promise<void>;
 }
 
-const CATEGORIE_SKIRT = ["Skirt"];
-/** Modelli con l'elastico del gonnellino (h 1 cm) anche se la categoria è un'altra: DUSP 34 = Short DDR. */
-const MODELLI_ELASTICO_SKIRT = ["DUSP 34"];
+const CATEGORIE_GONNELLINO = ["Gonnellino"];
+/** Modelli con l'elastico del gonnellino (h 1 cm) anche se la categoria è un'altra: DUSP 34 = Pantaloncino DDR. */
+const MODELLI_ELASTICO_GONNELLINO = ["DUSP 34"];
 
-const ELASTICO_ADULTO: Record<string, { pantaloncino: number; skirt: number }> = {
-  "XS":   { pantaloncino: 70, skirt: 64 },
-  "S":    { pantaloncino: 72, skirt: 66 },
-  "M":    { pantaloncino: 74, skirt: 68 },
-  "L":    { pantaloncino: 76, skirt: 70 },
-  "XL":   { pantaloncino: 78, skirt: 72 },
-  "XXL":  { pantaloncino: 80, skirt: 74 },
-  "XXXL": { pantaloncino: 82, skirt: 76 },
+const ELASTICO_ADULTO: Record<string, { pantaloncino: number; gonnellino: number }> = {
+  "XS":   { pantaloncino: 70, gonnellino: 64 },
+  "S":    { pantaloncino: 72, gonnellino: 66 },
+  "M":    { pantaloncino: 74, gonnellino: 68 },
+  "L":    { pantaloncino: 76, gonnellino: 70 },
+  "XL":   { pantaloncino: 78, gonnellino: 72 },
+  "XXL":  { pantaloncino: 80, gonnellino: 74 },
+  "XXXL": { pantaloncino: 82, gonnellino: 76 },
 };
 
-const ELASTICO_KIDS: Record<string, { pantaloncino: number; skirt: number }> = {
-  "4A":  { pantaloncino: 54, skirt: 54 },
-  "6A":  { pantaloncino: 56, skirt: 56 },
-  "8A":  { pantaloncino: 58, skirt: 58 },
-  "10A": { pantaloncino: 60, skirt: 60 },
-  "12A": { pantaloncino: 62, skirt: 62 },
-  "14A": { pantaloncino: 64, skirt: 64 },
-  "16A": { pantaloncino: 66, skirt: 66 },
+const ELASTICO_KIDS: Record<string, { pantaloncino: number; gonnellino: number }> = {
+  "4A":  { pantaloncino: 54, gonnellino: 54 },
+  "6A":  { pantaloncino: 56, gonnellino: 56 },
+  "8A":  { pantaloncino: 58, gonnellino: 58 },
+  "10A": { pantaloncino: 60, gonnellino: 60 },
+  "12A": { pantaloncino: 62, gonnellino: 62 },
+  "14A": { pantaloncino: 64, gonnellino: 64 },
+  "16A": { pantaloncino: 66, gonnellino: 66 },
 };
 
-function usaElasticoSkirt(scheda: Pick<SchedaCompleta, "categoria" | "codiceModello">): boolean {
+function usaElasticoGonnellino(scheda: Pick<SchedaCompleta, "categoria" | "codiceModello">): boolean {
   const modello = (scheda.codiceModello || "").trim().toUpperCase();
-  return CATEGORIE_SKIRT.includes(scheda.categoria || "") || MODELLI_ELASTICO_SKIRT.includes(modello);
+  return CATEGORIE_GONNELLINO.includes(scheda.categoria || "") || MODELLI_ELASTICO_GONNELLINO.includes(modello);
 }
 
 function getElasticoDefault(scheda: Pick<SchedaCompleta, "categoria" | "codiceModello">, taglia: string): { lunghezzaElastico: number; altezzaElastico: number } | null {
-  const isSkirt = usaElasticoSkirt(scheda);
-  const altezzaElastico = isSkirt ? 1 : 4;
+  const isGonnellino = usaElasticoGonnellino(scheda);
+  const altezzaElastico = isGonnellino ? 1 : 4;
   const misure = ELASTICO_KIDS[taglia] ?? ELASTICO_ADULTO[taglia];
-  const lunghezzaElastico = misure && (isSkirt ? misure.skirt : misure.pantaloncino);
+  const lunghezzaElastico = misure && (isGonnellino ? misure.gonnellino : misure.pantaloncino);
   return lunghezzaElastico ? { lunghezzaElastico, altezzaElastico } : null;
 }
 
@@ -78,7 +78,7 @@ const TabMisure = forwardRef<TabMisureHandle, Props>(function TabMisure({ scheda
   const [specsElastico, setSpecsElastico] = useState<ElasticoSpecs>(() => {
     const existing = (rawTabella.__specs as ElasticoSpecs) || {};
     if (isElastico && !existing.altezza) {
-      const defaultAltezza = usaElasticoSkirt(scheda) ? "1" : "4";
+      const defaultAltezza = usaElasticoGonnellino(scheda) ? "1" : "4";
       return { ...existing, altezza: defaultAltezza };
     }
     return existing;
@@ -103,7 +103,7 @@ const TabMisure = forwardRef<TabMisureHandle, Props>(function TabMisure({ scheda
       nuovaTabella[taglia] = { ...(tabellaMisure[taglia] as MisureTaglia || {}), ...defaults };
     }
     if (!nuovaTabella) return;
-    const specs = specsElastico.altezza ? specsElastico : { ...specsElastico, altezza: usaElasticoSkirt(scheda) ? "1" : "4" };
+    const specs = specsElastico.altezza ? specsElastico : { ...specsElastico, altezza: usaElasticoGonnellino(scheda) ? "1" : "4" };
     setSpecsElastico(specs);
     nuovaTabella.__specs = specs;
     setTabellaMisure(nuovaTabella);
@@ -207,7 +207,7 @@ const TabMisure = forwardRef<TabMisureHandle, Props>(function TabMisure({ scheda
         </div>
       </div>
 
-      {/* Specifiche Elastico Vita — solo per Pantaloncino / Short / Skirt */}
+      {/* Specifiche Elastico Vita — solo per Pantaloncino / Gonnellino / Sweatpants */}
       {isElastico && (
         <div className="card">
           <h3 className="section-title">
