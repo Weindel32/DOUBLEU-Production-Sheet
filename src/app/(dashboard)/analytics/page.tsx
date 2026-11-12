@@ -16,6 +16,7 @@ export interface AnalyticsData {
     uomo: Record<string, number>;
     donna: Record<string, number>;
     junior: Record<string, number>;
+    bambina: Record<string, number>;
     unisex: Record<string, number>;
   };
   totali: {
@@ -52,6 +53,7 @@ export default async function AnalyticsPage() {
     uomo: {},
     donna: {},
     junior: {},
+    bambina: {},
     unisex: {},
   };
 
@@ -104,6 +106,9 @@ export default async function AnalyticsPage() {
         .reduce((s, a) => s + a.totalePezzi, 0),
       junior: articoli
         .filter((a) => a.genere.toLowerCase() === "junior")
+        .reduce((s, a) => s + a.totalePezzi, 0),
+      bambina: articoli
+        .filter((a) => a.genere.toLowerCase() === "bambina")
         .reduce((s, a) => s + a.totalePezzi, 0),
       unisex: articoli
         .filter((a) => a.genere.toLowerCase() === "unisex")

@@ -11,7 +11,7 @@ import { parteScheda } from "@/lib/referenze";
  *   l'articolo resta nel catalogo costi.
  * - modo "duplica": copia dello stesso tipo, con "(copia)" nel nome.
  * - modo "bambino": dalla scheda adulto di una referenza nasce la sua scheda Bambino (stessa referenza,
- *   genere Junior, taglie bambino dell'ordine). Tessuti, colori, loghi e costi si copiano; modello, codice
+ *   genere Junior (Bambina se l'originale è da donna), taglie bambino dell'ordine). Tessuti, colori, loghi e costi si copiano; modello, codice
  *   e misure no: il bambino ha il suo cartamodello.
  * I campioni non si copiano mai: sono il costo di sviluppo dell'articolo originale.
  */
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         origineId: modo === "ordine" ? origine.id : origine.origineId,
         nomeArticolo: modo === "duplica" ? `${origine.nomeArticolo} (copia)` : modo === "bambino" ? `${origine.nomeArticolo} Bambino` : origine.nomeArticolo,
         campioni: null,
-        ...(bambino ? { genere: "Junior", codiceModello: null, tabellaMisure: null, quantitaTaglia: bambino.quantitaTaglia } : {}),
+        ...(bambino ? { genere: origine.genere === "Donna" || origine.genere === "Bambina" ? "Bambina" : "Junior", codiceModello: null, tabellaMisure: null, quantitaTaglia: bambino.quantitaTaglia } : {}),
         loghi: {
           create: loghi.map((l) => ({
             logoId: l.logoId, posizione: l.posizione, tecnica: l.tecnica, dimensione: l.dimensione, note: l.note,
