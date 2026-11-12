@@ -58,7 +58,7 @@ export interface TabArticoloHandle {
   save: () => Promise<void>;
 }
 
-const CATEGORIE_SENZA_COLLO_MANICHE = ["Short", "Skirt", "Sweatpants"];
+const CATEGORIE_SENZA_COLLO_MANICHE = ["Pantaloncino", "Gonnellino", "Sweatpants"];
 const CATEGORIE_COSTINA = ["Hoodie", "Zip Hoodie", "Sweatshirt", "Sweatpants"];
 
 const TabArticolo = forwardRef<TabArticoloHandle, Props>(function TabArticolo({ scheda, onSave, clienti, materiali, onMetaChange, modelli: modelliIniziali = [], vociColori = [], clientiOrderApp = [], ordiniOrderApp = [] }, ref) {
