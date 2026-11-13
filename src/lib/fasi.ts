@@ -1,7 +1,9 @@
 // Avanzamento della produzione di una referenza. Ogni fase è vuota, in corso (dal giorno X) o fatta
 // (il giorno Y). Nessun ordine obbligato: stampa e ricamo possono venire dopo la confezione.
 // Una fase che per quell'articolo non esiste si segna "non serve" ed esce dal conteggio.
-// "Pronto" non è una fase: lo è l'articolo quando tutte le fasi previste sono fatte.
+// L'ultima fase è "Pronto per la consegna": parte quando l'articolo è finito e si chiude quando lo si consegna
+// (o spedisce), così si misura anche l'attesa prima della consegna. Fatte tutte, l'articolo è "Consegnato".
+// Il controllo qualità si fa durante la produzione: non è una fase.
 
 export const FASI_PRODUZIONE = [
   { id: "cartamodello", label: "Cartamodello", breve: "Cartamodello", plurale: "al cartamodello" },
@@ -9,7 +11,7 @@ export const FASI_PRODUZIONE = [
   { id: "taglio", label: "Taglio", breve: "Taglio", plurale: "al taglio" },
   { id: "confezione", label: "Confezione", breve: "Confezione", plurale: "in confezione" },
   { id: "decorazione", label: "Stampa / Ricamo", breve: "Stampa/Ricamo", plurale: "in stampa/ricamo" },
-  { id: "controllo", label: "Controllo qualità", breve: "Controllo", plurale: "al controllo" },
+  { id: "consegna", label: "Pronto per la consegna", breve: "Da consegnare", plurale: "da consegnare" },
 ] as const;
 
 export type Fase = (typeof FASI_PRODUZIONE)[number];
@@ -94,11 +96,11 @@ export interface Avanzamento {
   situazione: Situazione;
   /** Fase in corso (la partita più di recente, se sono più d'una). */
   inCorso: Fase | null;
-  /** Etichetta breve per gli elenchi: "Confezione", "In attesa", "Pronto", "Da avviare". */
+  /** Etichetta breve per gli elenchi: "Confezione", "In attesa", "Consegnato", "Da avviare". */
   etichetta: string;
   /** In corso: giorni dalla partenza. In attesa: giorni dall'ultima fase finita. */
   giorni: number | null;
-  /** Pronto: giorni impiegati dalla prima partenza all'ultima fine (storico dei tempi). */
+  /** Consegnato: giorni impiegati dalla prima partenza alla consegna (storico dei tempi). */
   impiegati: number | null;
 }
 
@@ -114,7 +116,7 @@ export function avanzamento(fasi: Fasi): Avanzamento {
   if (corso) return { ...base, situazione: "corso", inCorso: corso.f, etichetta: corso.f.breve, giorni: giorniDa(corso.inizio) };
   if (totali > 0 && fatte === totali) {
     const { primo, ultimaFine } = arco(fasi);
-    return { ...base, situazione: "pronto", etichetta: "Pronto", impiegati: primo && ultimaFine ? giorniTra(primo, ultimaFine) : null };
+    return { ...base, situazione: "pronto", etichetta: "Consegnato", impiegati: primo && ultimaFine ? giorniTra(primo, ultimaFine) : null };
   }
   if (fatte === 0) return { ...base, situazione: "da-avviare", etichetta: "Da avviare" };
   const ultima = righe.flatMap((r) => (r.s.stato === "fatta" ? [r.s.fine] : [])).sort().pop()!;
@@ -122,7 +124,7 @@ export function avanzamento(fasi: Fasi): Avanzamento {
 }
 
 /**
- * Riepilogo di un ordine, prima ciò che è in lavorazione: "3 in confezione (fino a 12 gg) · 2 in attesa · 4 pronte".
+ * Riepilogo di un ordine, prima ciò che è in lavorazione: "3 in confezione (fino a 12 gg) · 2 da consegnare · 4 consegnate".
  * Contano solo le schede esecutive: le bozze non sono ancora in produzione.
  */
 export function riepilogoFasi(elenco: Fasi[]): string {
@@ -146,12 +148,12 @@ export function riepilogoFasi(elenco: Fasi[]): string {
     ...FASI_PRODUZIONE.flatMap((f) => voce(f.id, f.plurale)),
     ...voce("attesa", "in attesa"),
     ...voce("da-avviare", "da avviare"),
-    ...(pronte ? [`${pronte} ${pronte === 1 ? "pronta" : "pronte"}`] : []),
+    ...(pronte ? [`${pronte} ${pronte === 1 ? "consegnata" : "consegnate"}`] : []),
   ].join(" · ");
 }
 
 /**
- * Tempo dell'ordine: "Prodotto in 24 giorni" quando tutte le referenze sono pronte (e nessuna è
+ * Tempo dell'ordine: "Consegnato in 24 giorni" quando tutte le referenze sono consegnate (e nessuna è
  * più in bozza), altrimenti "In produzione da 12 giorni" dalla prima fase partita.
  */
 export function tempoOrdine(elenco: Fasi[], senzaBozze: boolean): { testo: string; chiuso: boolean } | null {
@@ -162,7 +164,7 @@ export function tempoOrdine(elenco: Fasi[], senzaBozze: boolean): { testo: strin
   if (chiuso) {
     const fine = archi.flatMap((a) => (a.ultimaFine ? [a.ultimaFine] : [])).sort().pop()!;
     const g = giorniTra(primi[0], fine);
-    return { testo: `Prodotto in ${g} ${g === 1 ? "giorno" : "giorni"}`, chiuso };
+    return { testo: `Consegnato in ${g} ${g === 1 ? "giorno" : "giorni"}`, chiuso };
   }
   const g = giorniDa(primi[0]);
   return { testo: `In produzione da ${g === 0 ? "oggi" : g === 1 ? "1 giorno" : `${g} giorni`}`, chiuso };
@@ -170,7 +172,7 @@ export function tempoOrdine(elenco: Fasi[], senzaBozze: boolean): { testo: strin
 
 /**
  * Dove si trova un articolo dell'ordine, per filtrarlo: la bozza non è ancora in produzione,
- * l'esecutiva sta nella sua fase in corso, oppure in attesa, da avviare o pronta.
+ * l'esecutiva sta nella sua fase in corso, oppure in attesa, da avviare o consegnata.
  */
 export function chiaveStato(stato: string, fasi: Fasi): string {
   if (stato !== "esecutiva") return "bozza";
@@ -192,7 +194,7 @@ export function vociStato(articoli: { stato: string; fasi: Fasi }[]): VoceStato[
   const ordine: [string, string][] = [
     ["bozza", "Bozza"], ["da-avviare", "Da avviare"],
     ...FASI_PRODUZIONE.map((f): [string, string] => [f.id, f.breve]),
-    ["attesa", "In attesa"], ["pronto", "Pronte"],
+    ["attesa", "In attesa"], ["pronto", "Consegnate"],
   ];
   return ordine.flatMap(([chiave, etichetta]) => {
     const c = conta.get(chiave);

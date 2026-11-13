@@ -124,7 +124,9 @@ async function ordiniInLavorazione() {
       if ((a.situazione !== "corso" && a.situazione !== "attesa") || (a.giorni ?? 0) < GIORNI_SOLLECITO) continue;
       azioni.push({
         tipo: "fermo",
-        testo: a.situazione === "corso"
+        testo: a.situazione === "corso" && a.inCorso!.id === "consegna"
+          ? `Da consegnare: ${s.nomeArticolo} pronto da ${a.giorni} giorni`
+          : a.situazione === "corso"
           ? `Sollecita: ${s.nomeArticolo} in ${a.inCorso!.label.toLowerCase()} da ${a.giorni} giorni`
           : `${s.nomeArticolo} ferma da ${a.giorni} giorni tra una fase e l'altra`,
         dettaglio: [chi, s.produttore].filter(Boolean).join(" · "),
