@@ -93,17 +93,21 @@ function Checklist({ fasi, errore, avanza, salta, data }: ReturnType<typeof useF
                 </span>
                 <span className="flex-1 min-w-0">
                   <span className={`block text-[15px] ${s.stato === "salta" ? "text-[#A39E92] line-through" : s.stato === "vuota" ? "text-[#0E1B2C]" : "text-[#0E1B2C] font-semibold"}`}>{f.label}</span>
-                  {s.stato === "corso" && <span className="block text-xs font-semibold text-[#1F3A68]">In corso</span>}
+                  {s.stato === "corso" && (
+                    <span className="block text-xs font-semibold text-[#1F3A68]">{f.id === "consegna" ? "In attesa di consegna" : "In corso"}</span>
+                  )}
                   {s.stato === "fatta" && (
                     <span className="block text-xs text-[#1D6B4A]">
-                      Fatta{s.inizio ? ` · partita il ${dataBreve(s.inizio)} · ${testoDurata(durataFase(s)!)}` : ""}
+                      {f.id === "consegna"
+                        ? `Consegnato${s.inizio ? ` · pronto dal ${dataBreve(s.inizio)} · attesa ${testoDurata(durataFase(s)!)}` : ""}`
+                        : `Fatta${s.inizio ? ` · partita il ${dataBreve(s.inizio)} · ${testoDurata(durataFase(s)!)}` : ""}`}
                     </span>
                   )}
                 </span>
               </button>
               {dataFase && (
-                <input type="date" value={dataFase} max={oggi} title={s.stato === "corso" ? "Partita il" : "Finita il"}
-                  aria-label={`${f.label}: ${s.stato === "corso" ? "partita il" : "finita il"}`}
+                <input type="date" value={dataFase} max={oggi} title={f.id === "consegna" ? (s.stato === "corso" ? "Pronto dal" : "Consegnato il") : s.stato === "corso" ? "Partita il" : "Finita il"}
+                  aria-label={`${f.label}: ${f.id === "consegna" ? (s.stato === "corso" ? "pronto dal" : "consegnato il") : s.stato === "corso" ? "partita il" : "finita il"}`}
                   onChange={(e) => data(f.id, e.target.value)}
                   className="h-11 sm:h-9 w-[136px] sm:w-[132px] flex-shrink-0 rounded-lg sm:rounded-md border border-[#E4E0D6] bg-white px-2 text-[13px] sm:text-xs font-mono text-[#0E1B2C] hover:border-[#0E1B2C]/40 focus:border-[#1F3A68]" />
               )}
@@ -160,7 +164,7 @@ export function FasiLista({ id, fasi, aggiorna = true }: { id: string; fasi: Fas
     <div className="space-y-3">
       <div className="flex items-baseline justify-between gap-3">
         <span className={`text-[17px] font-bold ${COLORE[a.situazione]}`}>
-          {a.situazione === "corso" ? `${a.inCorso!.label} in corso` : a.etichetta}
+          {a.situazione === "corso" ? (a.inCorso!.id === "consegna" ? a.inCorso!.label : `${a.inCorso!.label} in corso`) : a.etichetta}
           {giorni && <span className={`text-sm ${coloreGiorni(a)}`}> · {giorni}</span>}
         </span>
         <span className="text-sm text-[#5F6878] font-mono">{a.fatte}/{a.totali} fatte</span>

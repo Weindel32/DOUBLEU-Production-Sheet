@@ -14,7 +14,7 @@ import Miniatura from "@/components/ui/Miniatura";
 import StatoSchedaToggle, { RendiEsecutive } from "@/components/scheda/StatoSchedaToggle";
 import FasiChip from "@/components/scheda/FasiProduzione";
 import { chiaveStato, leggiFasi, riepilogoFasi, tempoOrdine, vociStato } from "@/lib/fasi";
-import BloccoFiltrabile from "@/components/ordine/FiltroStati";
+import BloccoFiltrabile, { CasellaScheda } from "@/components/ordine/FiltroStati";
 import { riepilogoScheda } from "@/lib/costiScheda";
 import type { Campione } from "@/types";
 
@@ -149,8 +149,9 @@ export default async function ListaSchede({ vista, searchParams }: {
   const tabella = (righe: Riga[]) => (
     <div className="overflow-x-auto">
       {/* Larghezze fisse: le colonne restano allineate tra un blocco e l'altro. */}
-      <table className="w-full text-[15px] min-w-[860px] table-fixed">
+      <table className="w-full text-[15px] min-w-[900px] table-fixed">
         <colgroup>
+          {!isArticoli && <col className="w-11" />}
           <col className="w-[72px]" /><col className="w-[140px]" /><col />
           <col className="w-[110px]" /><col className="w-[100px]" /><col className="w-[90px]" />
           {isArticoli && <><col className="w-[120px]" /><col className="w-[76px]" /></>}
@@ -158,6 +159,7 @@ export default async function ListaSchede({ vista, searchParams }: {
         </colgroup>
         <thead>
           <tr className="border-b border-[#E4E0D6] text-left">
+            {!isArticoli && <th className="pl-3 py-3"><span className="sr-only">Seleziona</span></th>}
             <th className="pl-4 pr-2 py-3 w-[72px]"><span className="sr-only">Foto</span></th>
             <th className={cella}>Modello / codice</th>
             <th className={cella}>Articolo</th>
@@ -183,6 +185,7 @@ export default async function ListaSchede({ vista, searchParams }: {
             const href = `${t.base}/${s.id}`;
             return (
               <tr key={s.id} data-stato={isArticoli ? undefined : chiaveStato(s.stato, leggiFasi(s.fasi))} className="border-b border-[#EFEBE2] last:border-0">
+                {!isArticoli && <td className="pl-3 py-2.5"><CasellaScheda id={s.id} nome={s.nomeArticolo} /></td>}
                 <td className="pl-4 pr-2 py-2.5">
                   <Link href={href} tabIndex={-1} aria-hidden className="block w-14 h-14 rounded-[10px] bg-[#EEEBE3] overflow-hidden">
                     {copertina && <Miniatura src={copertina} lato={56} className="w-full h-full object-cover" />}
@@ -320,7 +323,7 @@ export default async function ListaSchede({ vista, searchParams }: {
             const scoperte = necessarie.filter(({ r, p }) => !parteCoperta(r, p, coperte));
             const mancanti = Math.max(0, scoperte.length - daCollegare);
             return (
-              <details key={b.ordineId ?? `c:${b.cliente}`} data-blocco={b.ordineId ?? `c:${b.cliente}`} open={aperti} className="group bg-white border border-[#E4E0D6] rounded-2xl overflow-hidden">
+              <details key={b.ordineId ?? `c:${b.cliente}`} data-blocco={b.ordineId ?? `c:${b.cliente}`} open={aperti} className="group bg-white border border-[#E4E0D6] rounded-2xl overflow-clip">
                 <summary className="list-none [&::-webkit-details-marker]:hidden cursor-pointer px-5 py-3.5 flex flex-wrap items-center gap-x-4 gap-y-1 hover:bg-[#FBFAF7] group-open:border-b group-open:border-[#E4E0D6] group-open:bg-[#FBFAF7]">
                   <ChevronRight size={18} className="text-[#5F6878] transition-transform group-open:rotate-90 flex-shrink-0" />
                   <div className="flex-1 min-w-[220px]">
@@ -366,7 +369,9 @@ export default async function ListaSchede({ vista, searchParams }: {
                     </Link>
                   )}
                 </summary>
-                <BloccoFiltrabile totale={b.righe.length} voci={vociStato(b.righe.map((r) => ({ stato: r.s.stato, fasi: leggiFasi(r.s.fasi) })))}>
+                <BloccoFiltrabile ordineId={b.ordineId}
+                  voci={vociStato(b.righe.map((r) => ({ stato: r.s.stato, fasi: leggiFasi(r.s.fasi) })))}
+                  righe={b.righe.map((r) => ({ id: r.s.id, pezzi: r.pezzi, stato: chiaveStato(r.s.stato, leggiFasi(r.s.fasi)) }))}>
                   {tabella(b.righe)}
                 </BloccoFiltrabile>
               </details>

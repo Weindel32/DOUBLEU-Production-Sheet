@@ -3,7 +3,7 @@ import { ordiniOrderApp } from "@/lib/orderApp";
 import { capiAcquisto, riepilogoAcquisti, type SchedaAcquisto } from "@/lib/approvvigionamento";
 import { schedaAcquisto } from "@/lib/approvvigionamentoServer";
 import { riepilogoScheda } from "@/lib/costiScheda";
-import { confrontoTessuto, riepilogoConsuntivo, type FabbisognoTessuto } from "@/lib/consuntivo";
+import { confrontoTessuto, previstoPerCapo, riepilogoConsuntivo, type FabbisognoTessuto } from "@/lib/consuntivo";
 import { TIPI_COSTO_DB } from "@/lib/utils";
 
 /** Spese, previsto dalle schede e stato di chiusura del consuntivo di un ordine dell'Order App. */
@@ -53,3 +53,35 @@ export async function consuntivoOrdine(ordineId: string) {
     tessuto: confrontoTessuto(spese, fabbisogno),
   };
 }
+
+/**
+ * Conto di alcune referenze dell'ordine: per ognuna capi e costo per capo diviso per fase (il previsto
+ * del consuntivo). Serve a pagare il fasonista solo per gli articoli consegnati.
+ */
+export async function contoSelezione(ordineId: string, ids: string[]) {
+  const [schedeRows, materiali, ordini] = await Promise.all([
+    prisma.scheda.findMany({ where: { id: { in: ids }, ordineOrderAppId: ordineId, tipo: { notIn: TIPI_COSTO_DB } } }),
+    prisma.materiale.findMany(),
+    ordiniOrderApp(),
+  ]);
+  const ordine = ordini.find((o) => o.id === ordineId) ?? null;
+  const cliente = ordine?.cliente
+    ?? (await prisma.scheda.findFirst({ where: { ordineOrderAppId: ordineId, clienteId: { not: null } }, select: { cliente: { select: { nome: true } } } }))?.cliente?.nome
+    ?? null;
+  // Stesso ordine della selezione, così l'elenco si legge come nella lista.
+  const articoli = ids.flatMap((id) => {
+    const s = schedeRows.find((x) => x.id === id);
+    if (!s) return [];
+    const acq = schedaAcquisto(s, ordine);
+    const { capi, stimati } = capiAcquisto(acq);
+    const costi = riepilogoScheda(s, materiali);
+    return [{
+      id: s.id, codice: s.codice, codiceModello: s.codiceModello, nomeArticolo: s.nomeArticolo, produttore: s.produttore,
+      capi, stimati, esclusa: acq.esclusa ?? null,
+      perCapo: previstoPerCapo({ capi, costi, costoTaglio: s.costoTaglio, costoCucitura: s.costoCucitura, costoStampa: s.costoStampa, costoRicamo: s.costoRicamo, costoLavorazione: s.costoLavorazione }),
+    }];
+  });
+  return { ordine, cliente, articoli };
+}
+
+export type ArticoloConto = Awaited<ReturnType<typeof contoSelezione>>["articoli"][number];
