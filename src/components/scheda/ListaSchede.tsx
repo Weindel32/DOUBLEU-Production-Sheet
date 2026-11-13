@@ -13,7 +13,8 @@ import MemoriaElenco from "@/components/ui/MemoriaElenco";
 import Miniatura from "@/components/ui/Miniatura";
 import StatoSchedaToggle, { RendiEsecutive } from "@/components/scheda/StatoSchedaToggle";
 import FasiChip from "@/components/scheda/FasiProduzione";
-import { leggiFasi, riepilogoFasi, tempoOrdine } from "@/lib/fasi";
+import { chiaveStato, leggiFasi, riepilogoFasi, tempoOrdine, vociStato } from "@/lib/fasi";
+import BloccoFiltrabile from "@/components/ordine/FiltroStati";
 import { riepilogoScheda } from "@/lib/costiScheda";
 import type { Campione } from "@/types";
 
@@ -181,7 +182,7 @@ export default async function ListaSchede({ vista, searchParams }: {
             const margineCls = costi.margine === null ? "text-[#5F6878]" : costi.margine < SOGLIA_MARGINE ? "text-[#A8461F]" : "text-[#1D6B4A]";
             const href = `${t.base}/${s.id}`;
             return (
-              <tr key={s.id} className="border-b border-[#EFEBE2] last:border-0">
+              <tr key={s.id} data-stato={isArticoli ? undefined : chiaveStato(s.stato, leggiFasi(s.fasi))} className="border-b border-[#EFEBE2] last:border-0">
                 <td className="pl-4 pr-2 py-2.5">
                   <Link href={href} tabIndex={-1} aria-hidden className="block w-14 h-14 rounded-[10px] bg-[#EEEBE3] overflow-hidden">
                     {copertina && <Miniatura src={copertina} lato={56} className="w-full h-full object-cover" />}
@@ -365,7 +366,9 @@ export default async function ListaSchede({ vista, searchParams }: {
                     </Link>
                   )}
                 </summary>
-                {tabella(b.righe)}
+                <BloccoFiltrabile totale={b.righe.length} voci={vociStato(b.righe.map((r) => ({ stato: r.s.stato, fasi: leggiFasi(r.s.fasi) })))}>
+                  {tabella(b.righe)}
+                </BloccoFiltrabile>
               </details>
             );
           })}

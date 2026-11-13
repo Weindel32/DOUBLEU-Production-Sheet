@@ -1,11 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ChevronDown, Shirt, ShoppingCart } from "lucide-react";
 import StatoSchedaToggle, { RendiEsecutive } from "@/components/scheda/StatoSchedaToggle";
 import FasiChip from "@/components/scheda/FasiProduzione";
-import { leggiFasi, riepilogoFasi, tempoOrdine } from "@/lib/fasi";
+import { leggiFasi, riepilogoFasi, tempoOrdine, chiaveStato, vociStato } from "@/lib/fasi";
+import { ChipStati } from "@/components/ordine/FiltroStati";
 import Miniatura from "@/components/ui/Miniatura";
 
 type Filtro = "tutte" | "esecutiva" | "bozza";
@@ -51,6 +53,8 @@ export default function ElencoOrdini({ righe, blocchi }: { righe: RigaOrdine[]; 
   const stato = sp.get("stato");
   const filtro: Filtro = stato === "bozza" || stato === "esecutiva" ? stato : "tutte";
   const ordineAperto = sp.get("ordine");
+  // Stato scelto dentro ciascun ordine: solo in memoria, alla prossima apertura si riparte da Tutte.
+  const [statoBlocco, setStatoBlocco] = useState<Record<string, string | null>>({});
 
   const scegli = (f: Filtro) => {
     const q = new URLSearchParams(sp.toString());
@@ -98,6 +102,12 @@ export default function ElencoOrdini({ righe, blocchi }: { righe: RigaOrdine[]; 
         const fasiEsecutive = valide.filter((r) => r.stato === "esecutiva").map((r) => leggiFasi(r.fasi));
         const fasiOrdine = riepilogoFasi(fasiEsecutive);
         const tempo = tempoOrdine(fasiEsecutive, bozze.length === 0);
+        const conStato = rr.map((r) => ({ r, chiave: chiaveStato(r.stato, leggiFasi(r.fasi)) }));
+        const voci = vociStato(rr.map((r) => ({ stato: r.stato, fasi: leggiFasi(r.fasi) })));
+        // Lo stato scelto vale finché c'è ancora qualche articolo in quello stato.
+        const scelto = statoBlocco[b.chiave] ?? null;
+        const filtroBlocco = scelto && voci.some((v) => v.chiave === scelto) ? scelto : null;
+        const mostrate = filtroBlocco ? conStato.filter((x) => x.chiave === filtroBlocco).map((x) => x.r) : rr;
         return (
           <details key={b.chiave} data-blocco={b.ordineId ?? b.chiave} id={b.ordineId ? `ordine-${b.ordineId}` : undefined}
             open={ordineAperto ? b.ordineId === ordineAperto : i === 0 && elenco.length <= 3} className="group scroll-mt-[calc(60px+env(safe-area-inset-top))] bg-white border border-[#E4E0D6] rounded-2xl overflow-hidden">
@@ -117,8 +127,15 @@ export default function ElencoOrdini({ righe, blocchi }: { righe: RigaOrdine[]; 
               <ChevronDown size={20} className="text-[#5F6878] transition-transform group-open:rotate-180 flex-shrink-0" />
             </summary>
 
+            {voci.length > 1 && (
+              <div className="border-t border-[#EFEBE2] px-3 py-2.5">
+                <ChipStati mobile voci={voci} totale={rr.length} valore={filtroBlocco}
+                  onChange={(v) => setStatoBlocco((m) => ({ ...m, [b.chiave]: v }))} />
+              </div>
+            )}
+
             <ul className="border-t border-[#EFEBE2]">
-              {rr.map((s) => (
+              {mostrate.map((s) => (
                 <li key={s.id} className="flex items-center border-b border-[#EFEBE2] last:border-0">
                   <Link href={`/m/schede/${s.id}`} className="flex-1 min-w-0 flex items-center gap-3 pl-3 py-3 active:bg-[#FBFAF7]">
                     <span className="w-12 h-12 rounded-xl bg-[#EEEBE3] overflow-hidden flex-shrink-0 flex items-center justify-center text-[#5F6878]">

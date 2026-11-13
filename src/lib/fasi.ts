@@ -167,3 +167,35 @@ export function tempoOrdine(elenco: Fasi[], senzaBozze: boolean): { testo: strin
   const g = giorniDa(primi[0]);
   return { testo: `In produzione da ${g === 0 ? "oggi" : g === 1 ? "1 giorno" : `${g} giorni`}`, chiuso };
 }
+
+/**
+ * Dove si trova un articolo dell'ordine, per filtrarlo: la bozza non è ancora in produzione,
+ * l'esecutiva sta nella sua fase in corso, oppure in attesa, da avviare o pronta.
+ */
+export function chiaveStato(stato: string, fasi: Fasi): string {
+  if (stato !== "esecutiva") return "bozza";
+  const a = avanzamento(fasi);
+  return a.situazione === "corso" ? a.inCorso!.id : a.situazione;
+}
+
+export interface VoceStato { chiave: string; etichetta: string; n: number; giorniMax: number }
+
+/** Stati presenti in un ordine, nell'ordine di lavorazione, con quanti articoli e il più fermo (giorni). */
+export function vociStato(articoli: { stato: string; fasi: Fasi }[]): VoceStato[] {
+  const conta = new Map<string, { n: number; giorniMax: number }>();
+  for (const { stato, fasi } of articoli) {
+    const k = chiaveStato(stato, fasi);
+    const giorni = stato === "esecutiva" ? avanzamento(fasi).giorni ?? 0 : 0;
+    const c = conta.get(k) ?? { n: 0, giorniMax: 0 };
+    conta.set(k, { n: c.n + 1, giorniMax: Math.max(c.giorniMax, giorni) });
+  }
+  const ordine: [string, string][] = [
+    ["bozza", "Bozza"], ["da-avviare", "Da avviare"],
+    ...FASI_PRODUZIONE.map((f): [string, string] => [f.id, f.breve]),
+    ["attesa", "In attesa"], ["pronto", "Pronte"],
+  ];
+  return ordine.flatMap(([chiave, etichetta]) => {
+    const c = conta.get(chiave);
+    return c ? [{ chiave, etichetta, ...c }] : [];
+  });
+}
