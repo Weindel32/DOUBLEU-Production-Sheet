@@ -6,20 +6,13 @@ import type { RiepilogoCosti } from "@/lib/utils";
 import type { VenditaOrdine } from "@/lib/orderApp";
 import type { Parte } from "@/lib/referenze";
 
-export const FASI_SPESA = ["Sviluppo", "Tessuto", "Accessori", "Piazzato", "Taglio", "Confezione", "Stampa", "Ricamo", "Trasporti", "Altro"] as const;
+/**
+ * "Cartamodello" è la stampa del piazzato: costo dell'ordine. "Sviluppo taglie" (taglie nuove, modelli nuovi)
+ * è un investimento che resta: fuori dal margine operativo, dentro il margine dopo sviluppo.
+ */
+export const FASI_SPESA = ["Sviluppo taglie", "Tessuto", "Accessori", "Cartamodello", "Taglio", "Confezione", "Stampa", "Ricamo", "Trasporti", "Altro"] as const;
 export type FaseSpesa = typeof FASI_SPESA[number];
-/**
- * Fasi che non si usano più per le nuove spese ma restano su quelle vecchie: "Cartamodello" mescolava
- * stampa del piazzato (costo dell'ordine) e sviluppo (investimento). Va riassegnata a mano.
- */
-export const FASI_DA_RIASSEGNARE = ["Cartamodello"] as const;
-/** Fasi accettate dal salvataggio: le nuove, più quelle vecchie per non bloccare la modifica di una spesa. */
-export const FASI_VALIDE: readonly string[] = [...FASI_SPESA, ...FASI_DA_RIASSEGNARE];
-/**
- * Sviluppo (taglie nuove, modelli nuovi) è un investimento che resta: fuori dal margine operativo,
- * dentro il margine dopo sviluppo.
- */
-export const FASE_SVILUPPO = "Sviluppo";
+export const FASE_SVILUPPO: FaseSpesa = "Sviluppo taglie";
 
 export interface Spesa {
   id: string;
@@ -52,11 +45,11 @@ export interface SchedaPrevisto {
 export function previstoPerCapo(s: SchedaPrevisto): Record<FaseSpesa, number> {
   const dettaglio = [s.costoTaglio, s.costoCucitura, s.costoStampa, s.costoRicamo].some((v) => v !== null);
   return {
-    // Sviluppo e stampa del piazzato non stanno nel costo per capo: nessun previsto, conta lo speso.
-    Sviluppo: 0,
+    // Sviluppo e stampa del piazzato (cartamodello) non stanno nel costo per capo: nessun previsto, conta lo speso.
+    "Sviluppo taglie": 0,
     Tessuto: s.costi.materiali,
     Accessori: s.costi.accessori,
-    Piazzato: 0,
+    Cartamodello: 0,
     Taglio: s.costoTaglio ?? 0,
     Confezione: dettaglio ? s.costoCucitura ?? 0 : s.costoLavorazione ?? 0,
     Stampa: s.costoStampa ?? 0,
@@ -67,8 +60,7 @@ export function previstoPerCapo(s: SchedaPrevisto): Record<FaseSpesa, number> {
 }
 
 export interface RigaConsuntivo {
-  /** Una delle FASI_SPESA, o una vecchia fase da riassegnare se ha ancora spese. */
-  fase: string; previsto: number; speso: number; nSpese: number;
+  fase: FaseSpesa; previsto: number; speso: number; nSpese: number;
   /** Segnata completa: tutte le spese della fase sono registrate. */
   completa: boolean;
   /** Quanto conta nel costo reale: lo speso se completa (o consuntivo chiuso), altrimenti il più alto tra speso e previsto. */
@@ -82,9 +74,7 @@ export interface RigaConsuntivo {
  * Il ricavo è quello dell'Order App (imponibile merce): il prezzo sta sul kit, non sulla scheda.
  */
 export function riepilogoConsuntivo(schede: SchedaPrevisto[], spese: Spesa[], chiuso: boolean, ricavo: number, fasiComplete: string[] = []) {
-  const vecchie = FASI_DA_RIASSEGNARE.filter((f) => spese.some((sp) => sp.fase === f));
-  const righe: RigaConsuntivo[] = [...FASI_SPESA, ...vecchie]
-    .map((fase) => ({ fase, previsto: 0, speso: 0, nSpese: 0, completa: fasiComplete.includes(fase), costo: 0 }));
+  const righe: RigaConsuntivo[] = FASI_SPESA.map((fase) => ({ fase, previsto: 0, speso: 0, nSpese: 0, completa: fasiComplete.includes(fase), costo: 0 }));
   const altro = righe.find((r) => r.fase === "Altro")!;
   const riga = (fase: string) => righe.find((r) => r.fase === fase) ?? altro;
 
@@ -107,7 +97,7 @@ export function riepilogoConsuntivo(schede: SchedaPrevisto[], spese: Spesa[], ch
   const speso = conFattura + senzaFattura;
   for (const r of righe) r.costo = chiuso || r.completa ? r.speso : Math.max(r.speso, r.previsto);
   const sviluppo = riga(FASE_SVILUPPO).costo;
-  // Costo operativo: senza sviluppo. Le vecchie spese "Cartamodello" restano dentro, per prudenza.
+  // Costo operativo: senza sviluppo.
   const costo = righe.reduce((t, r) => t + r.costo, 0) - sviluppo;
   const margine = (costo: number) => (ricavo > 0 && costo > 0 ? ((ricavo - costo) / ricavo) * 100 : null);
   return {
@@ -129,8 +119,6 @@ export function riepilogoConsuntivo(schede: SchedaPrevisto[], spese: Spesa[], ch
     margineReale: margine(costo),
     /** Margine reale dopo lo sviluppo: se l'ordine ha ripagato anche l'investimento. */
     margineDopoSviluppo: sviluppo > 0 ? margine(costo + sviluppo) : null,
-    /** Spese su fasi vecchie da riassegnare (Cartamodello → Piazzato o Sviluppo). */
-    daRiassegnare: righe.filter((r) => vecchie.includes(r.fase as typeof vecchie[number])).reduce((t, r) => t + r.nSpese, 0),
   };
 }
 
