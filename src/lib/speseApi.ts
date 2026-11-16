@@ -1,4 +1,4 @@
-import { FASI_SPESA } from "@/lib/consuntivo";
+import { FASI_VALIDE } from "@/lib/consuntivo";
 
 const testo = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null);
 
@@ -18,7 +18,7 @@ export function leggiSpesa(body: Record<string, unknown>) {
   const data = testo(body.data);
   if (!data || !/^\d{4}-\d{2}-\d{2}$/.test(data)) return { errore: "Data non valida" } as const;
   const fase = testo(body.fase);
-  if (!fase || !(FASI_SPESA as readonly string[]).includes(fase)) return { errore: "Fase non valida" } as const;
+  if (!fase || !FASI_VALIDE.includes(fase)) return { errore: "Fase non valida" } as const;
   const importo = leggiImporto(body.importo);
   if (importo === null || !(importo > 0)) return { errore: "Inserisci un importo maggiore di zero" } as const;
   const fattura = body.fattura !== false;

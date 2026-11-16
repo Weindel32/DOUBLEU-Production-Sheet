@@ -66,7 +66,7 @@ export default async function ConsuntivoOrdinePage({ params }: { params: Promise
           : <><span className="font-semibold">Consuntivo aperto:</span> il margine reale è provvisorio finché non registri tutte le spese e chiudi il consuntivo.</>}
       </div>
 
-      {(!vendita || (vendita && r.ricavo === 0) || senzaScheda > 0 || scontiDaVerificare > 0 || capiStimati) && (
+      {(!vendita || (vendita && r.ricavo === 0) || senzaScheda > 0 || scontiDaVerificare > 0 || capiStimati || r.daRiassegnare > 0) && (
         <div role="alert" className="rounded-xl border border-[#E8C98A] bg-[#FBF3DF] px-4 py-3 text-sm text-[#7A5B12] space-y-1">
           <div className="flex items-center gap-2 font-semibold"><AlertTriangle size={16} /> Numeri da completare</div>
           {!vendita && <div>Order App non raggiungibile: senza i prezzi dei kit ricavo e margini non si calcolano.</div>}
@@ -74,6 +74,12 @@ export default async function ConsuntivoOrdinePage({ params }: { params: Promise
           {senzaScheda > 0 && <div>{senzaScheda} {senzaScheda === 1 ? "articolo dell'ordine è" : "articoli dell'ordine sono"} senza scheda con i costi: il costo {aKit ? "dei kit" : "delle righe"} è incompleto.</div>}
           {scontiDaVerificare > 0 && <div>Sconti non in percentuale su {scontiDaVerificare} {scontiDaVerificare === 1 ? "riga" : "righe"}: il ricavo è senza sconto, verificalo nell&apos;Order App.</div>}
           {capiStimati && <div>Alcune schede non hanno ancora le taglie: il previsto usa i capi dell&apos;ordine.</div>}
+          {r.daRiassegnare > 0 && (
+            <div>
+              {r.daRiassegnare} {r.daRiassegnare === 1 ? "spesa" : "spese"} di cartamodello da riassegnare con la matita: <strong>Piazzato</strong> se è stampa
+              (costo dell&apos;ordine) o <strong>Sviluppo</strong> se sono taglie o modelli nuovi. Fino ad allora contano nel margine operativo.
+            </div>
+          )}
         </div>
       )}
 
@@ -86,7 +92,14 @@ export default async function ConsuntivoOrdinePage({ params }: { params: Promise
         {tile("Margine",
           <><span className={coloreMargine(r.marginePrevisto)}>{pct(r.marginePrevisto)}</span><span className="text-[#5F6878] text-base"> → </span><span className={coloreMargine(r.speso > 0 ? r.margineReale : null)}>{r.speso > 0 ? pct(r.margineReale) : "—"}</span></>,
           r.ricavo > 0
-            ? `previsto → ${chiusoIl ? "reale" : "reale provvisorio"} su ${formatEuro(r.ricavo)} di vendita (imponibile, spedizione esclusa)`
+            ? <>
+                previsto → {chiusoIl ? "reale" : "reale provvisorio"} operativo su {formatEuro(r.ricavo)} di vendita (imponibile, spedizione esclusa)
+                {r.margineDopoSviluppo !== null && (
+                  <span className="block mt-1 text-[13px] text-[#4A5566]">
+                    Dopo sviluppo ({formatEuro(r.sviluppo)}): <strong className={coloreMargine(r.margineDopoSviluppo)}>{pct(r.margineDopoSviluppo)}</strong>
+                  </span>
+                )}
+              </>
             : "manca il ricavo dall'Order App")}
       </div>
 
@@ -113,6 +126,8 @@ export default async function ConsuntivoOrdinePage({ params }: { params: Promise
                     <tr key={x.fase} className="border-b border-[#EFEBE2] last:border-0">
                       <td className={`${cella} font-semibold text-[#0E1B2C]`}>
                         {x.fase}{x.nSpese > 0 && <span className="font-normal text-xs text-[#5F6878]"> · {x.nSpese} {x.nSpese === 1 ? "spesa" : "spese"}</span>}
+                        {x.fase === "Sviluppo" && x.nSpese > 0 && <span className="block font-normal text-xs text-[#5F6878]">fuori dal margine operativo</span>}
+                        {x.fase === "Cartamodello" && <span className="block font-normal text-xs text-[#7A5B12]">da riassegnare: Piazzato o Sviluppo</span>}
                       </td>
                       <td className={`${cella} text-right font-mono text-[#4A5566]`}>{x.previsto > 0 ? formatEuro(x.previsto) : "—"}</td>
                       <td className={`${cella} text-right font-mono text-[#0E1B2C]`}>{x.speso > 0 ? formatEuro(x.speso) : "—"}</td>
@@ -122,7 +137,8 @@ export default async function ConsuntivoOrdinePage({ params }: { params: Promise
                           : `${diff >= 0 ? "−" : "+"}${formatEuro(Math.abs(diff))}`}
                       </td>
                       {!chiusoIl && fasiAttive && (
-                        <td className={`${cella} text-center`}><SpuntaFase ordineId={ordineId} fase={x.fase} completa={x.completa} /></td>
+                        // Senza previsto conta sempre lo speso: la spunta non cambierebbe niente.
+                        <td className={`${cella} text-center`}>{x.previsto > 0 && <SpuntaFase ordineId={ordineId} fase={x.fase} completa={x.completa} />}</td>
                       )}
                     </tr>
                   );

@@ -4,8 +4,15 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Pencil, Plus, Trash2, Lock, LockOpen } from "lucide-react";
 import { Field, Segmented, inputCls, numStr } from "@/components/ui/Form";
-import { FASI_SPESA, type Spesa } from "@/lib/consuntivo";
+import { FASI_SPESA, FASI_VALIDE, type Spesa } from "@/lib/consuntivo";
 import { formatEuro } from "@/lib/utils";
+
+/** Le due fasi che prima erano "Cartamodello": dove vanno nel margine. */
+const NOTA_FASE: Record<string, string> = {
+  Piazzato: "Stampa del piazzato: costo dell'ordine, entra nel margine",
+  Sviluppo: "Taglie o modelli nuovi: investimento, fuori dal margine operativo",
+  Cartamodello: "Vecchia fase: scegli Piazzato o Sviluppo",
+};
 
 const oggi = () => new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Rome" });
 const inItaliano = (s: string) => s.split("-").reverse().join("/");
@@ -62,9 +69,12 @@ export default function SpeseOrdine({ ordineId, spese, chiusoIl }: { ordineId: s
         <Field label="Data">
           <input type="date" value={bozza.data} onChange={(e) => set("data", e.target.value)} className={inputCls} />
         </Field>
-        <Field label="Fase">
+        <Field label="Fase" hint={NOTA_FASE[bozza.fase]}>
           <select value={bozza.fase} onChange={(e) => set("fase", e.target.value)} className={inputCls}>
             {FASI_SPESA.map((f) => <option key={f}>{f}</option>)}
+            {!(FASI_SPESA as readonly string[]).includes(bozza.fase) && FASI_VALIDE.includes(bozza.fase) && (
+              <option value={bozza.fase}>{bozza.fase} (da riassegnare)</option>
+            )}
           </select>
         </Field>
         <Field label="Fornitore">
@@ -145,6 +155,9 @@ export default function SpeseOrdine({ ordineId, spese, chiusoIl }: { ordineId: s
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold text-[#0E1B2C]">
                       {s.fase}{s.fornitore && <span className="font-normal text-[#4A5566]"> · {s.fornitore}</span>}
+                      {!(FASI_SPESA as readonly string[]).includes(s.fase) && (
+                        <span className="ml-2 align-middle text-xs font-semibold px-2 py-0.5 rounded-full bg-[#FBF3DF] text-[#7A5B12]">da riassegnare</span>
+                      )}
                     </div>
                     <div className="text-[13px] text-[#5F6878]">
                       {[s.quantita && `${numStr(s.quantita)} ${s.unita} a ${formatEuro(s.importo / s.quantita)}/${s.unita}`, s.descrizione, s.riferimento && `rif. ${s.riferimento}`]
