@@ -32,7 +32,7 @@ export const TAGLIE_KIDS = ["4A", "6A", "8A", "10A", "12A", "14A", "16A"] as con
 export const TAGLIE = [...TAGLIE_ADULTO, ...TAGLIE_KIDS] as const;
 
 export const CATEGORIE = [
-  "T-Shirt PRF", "T-Shirt WS", "T-Shirt COT",
+  "T-Shirt PRF", "T-Shirt Donna", "Canotta Donna", "T-Shirt COT",
   "Polo", "Hoodie", "Zip Hoodie", "Sweatshirt", "Jacket",
   "Sweatpants", "Pantaloncino", "Gonnellino", "Dress", "Altro",
 ];

@@ -28,7 +28,7 @@ export function fascePerGenere(genere: string | null | undefined): string[] | nu
 
 /**
  * Campo "Modello": codice del cartamodello del modellista, con suggerimenti dall'archivio.
- * I suggerimenti seguono categoria e genere della scheda (T-Shirt WS + Donna → solo quelle);
+ * I suggerimenti seguono categoria e genere della scheda (T-Shirt Donna + Donna → solo quelle);
  * "mostra tutti" toglie il filtro. Un codice che non è in archivio resta valido.
  */
 export default function CampoModello({ value, onChange, onBlur, modelli, id, categoria, genere }: {
