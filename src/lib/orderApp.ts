@@ -90,6 +90,8 @@ export interface VenditaOrdine {
   /** Ricavo dell'ordine per il margine: merce, IVA e spedizione escluse. */
   imponibile: number;
   spedizione: number;
+  /** Aliquota IVA dell'ordine in %, 0 se senza IVA: serve a mostrare i prezzi come li pensi (IVA inclusa). */
+  iva: number;
 }
 
 export interface OrdineOrderApp {
@@ -122,7 +124,7 @@ type ArticoloRiga = {
 type OrdineRiga = {
   id: string; client: string | null; client_id: string | null; date: string | null; status: string | null; lost: boolean | null;
   delivery_date: string | null; alert_days: number | null; production_days: number | null; production_start: string | null;
-  pricing_mode: string | null; kit_quantity: number | null; discount_mode: string | null; discount_type: string | null; discount_value: Num; shipping: Num;
+  pricing_mode: string | null; kit_quantity: number | null; iva_enabled: boolean | null; iva_rate: Num; discount_mode: string | null; discount_type: string | null; discount_value: Num; shipping: Num;
 };
 
 /** Sconto di riga (kit o articolo): in percentuale si applica, altrimenti va verificato nell'Order App. */
@@ -173,7 +175,7 @@ export function venditaOrdine(o: OrdineRiga, kits: KitRiga[], articoliPerKit: Ma
     ? Math.min(subtotale, o.discount_type === "percentuale" ? subtotale * v / 100 : v)
     : 0;
   if (scontoOrdine > 0 && subtotale > 0) for (const r of righe) r.ricavo *= 1 - scontoOrdine / subtotale;
-  return { modo, righe, subtotale, scontoOrdine, imponibile: subtotale - scontoOrdine, spedizione: n(o.shipping) };
+  return { modo, righe, subtotale, scontoOrdine, imponibile: subtotale - scontoOrdine, spedizione: n(o.shipping), iva: o.iva_enabled ? n(o.iva_rate) : 0 };
 }
 
 /** Tag dei dati letti dall'Order App: dopo una scrittura si invalida per rileggerli subito. */
@@ -270,7 +272,7 @@ function unisciUguali(righe: ReferenzaOrderApp[]): ReferenzaOrderApp[] {
 export async function ordiniOrderApp(): Promise<OrdineOrderApp[]> {
   const [ordini, kits, articoli, moduli] = await Promise.all([
     leggi<OrdineRiga>(
-      "orders?select=id,client,client_id,date,status,lost,delivery_date,alert_days,production_days,production_start,pricing_mode,kit_quantity,discount_mode,discount_type,discount_value,shipping",
+      "orders?select=id,client,client_id,date,status,lost,delivery_date,alert_days,production_days,production_start,pricing_mode,kit_quantity,iva_enabled,iva_rate,discount_mode,discount_type,discount_value,shipping",
     ),
     leggi<KitRiga>("kits?select=id,order_id,name,position,price,quantity,omaggio,discount_type,discount_value"),
     leggi<ArticoloRiga>(

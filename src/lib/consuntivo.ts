@@ -53,15 +53,22 @@ export function previstoPerCapo(s: SchedaPrevisto): Record<FaseSpesa, number> {
   };
 }
 
-export interface RigaConsuntivo { fase: FaseSpesa; previsto: number; speso: number; nSpese: number }
+export interface RigaConsuntivo {
+  fase: FaseSpesa; previsto: number; speso: number; nSpese: number;
+  /** Segnata completa: tutte le spese della fase sono registrate. */
+  completa: boolean;
+  /** Quanto conta nel costo reale: lo speso se completa (o consuntivo chiuso), altrimenti il più alto tra speso e previsto. */
+  costo: number;
+}
 
 /**
- * Consuntivo aperto: le fasi senza spese contano al previsto, così una fattura non ancora arrivata
- * non sembra un risparmio. Chiuso: conta solo lo speso.
+ * Consuntivo aperto: ogni fase conta il più alto tra speso e previsto, così una fattura non ancora arrivata
+ * non sembra un risparmio e uno sforamento si vede subito. Una fase segnata completa conta lo speso vero:
+ * il risparmio entra nel margine solo quando lo confermi. Chiuso: conta solo lo speso.
  * Il ricavo è quello dell'Order App (imponibile merce): il prezzo sta sul kit, non sulla scheda.
  */
-export function riepilogoConsuntivo(schede: SchedaPrevisto[], spese: Spesa[], chiuso: boolean, ricavo: number) {
-  const righe: RigaConsuntivo[] = FASI_SPESA.map((fase) => ({ fase, previsto: 0, speso: 0, nSpese: 0 }));
+export function riepilogoConsuntivo(schede: SchedaPrevisto[], spese: Spesa[], chiuso: boolean, ricavo: number, fasiComplete: string[] = []) {
+  const righe: RigaConsuntivo[] = FASI_SPESA.map((fase) => ({ fase, previsto: 0, speso: 0, nSpese: 0, completa: fasiComplete.includes(fase), costo: 0 }));
   const riga = (fase: string) => righe.find((r) => r.fase === fase) ?? righe[righe.length - 1];
 
   let capi = 0;
@@ -81,7 +88,8 @@ export function riepilogoConsuntivo(schede: SchedaPrevisto[], spese: Spesa[], ch
 
   const previsto = righe.reduce((t, r) => t + r.previsto, 0);
   const speso = conFattura + senzaFattura;
-  const costo = chiuso ? speso : righe.reduce((t, r) => t + (r.nSpese > 0 ? r.speso : r.previsto), 0);
+  for (const r of righe) r.costo = chiuso || r.completa ? r.speso : Math.max(r.speso, r.previsto);
+  const costo = righe.reduce((t, r) => t + r.costo, 0);
   const margine = (costo: number) => (ricavo > 0 && costo > 0 ? ((ricavo - costo) / ricavo) * 100 : null);
   return {
     righe,
@@ -91,7 +99,7 @@ export function riepilogoConsuntivo(schede: SchedaPrevisto[], spese: Spesa[], ch
     speso,
     conFattura,
     senzaFattura,
-    /** Costo reale dell'ordine; a consuntivo aperto, con il previsto per le fasi ancora senza spese. */
+    /** Costo reale dell'ordine; a consuntivo aperto, con il previsto per le fasi non complete rimaste sotto. */
     costo,
     /** Positivo = costo reale sotto il previsto. */
     risparmio: previsto - costo,

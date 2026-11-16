@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { ArrowLeft, AlertTriangle } from "lucide-react";
 import SpeseOrdine from "@/components/ordine/SpeseOrdine";
+import SpuntaFase from "@/components/ordine/SpuntaFase";
 import { consuntivoOrdine } from "@/lib/consuntivoServer";
 import { coloreMargine, formatData, formatEuro, statoOrdine } from "@/lib/utils";
 
@@ -13,7 +14,8 @@ const segno = (n: number, f: (n: number) => string) => `${n > 0 ? "+" : n < 0 ? 
 /** Consuntivo di un ordine: spese reali per fase contro il costo previsto dalle schede, e margine reale. */
 export default async function ConsuntivoOrdinePage({ params }: { params: Promise<{ id: string }> }) {
   const ordineId = decodeURIComponent((await params).id);
-  const { ordine, cliente, nSchede, capiStimati, spese, chiusoIl, riepilogo: r, tessuto, vendita, margini } = await consuntivoOrdine(ordineId);
+  const { ordine, cliente, nSchede, capiStimati, spese, chiusoIl, riepilogo: r, tessuto, vendita, margini, fasiAttive } = await consuntivoOrdine(ordineId);
+  const conIva = (prezzo: number) => (vendita && vendita.iva > 0 ? prezzo * (1 + vendita.iva / 100) : null);
   const senzaScheda = margini.reduce((t, m) => t + m.senzaScheda, 0);
   const scontiDaVerificare = margini.filter((m) => m.scontoDaVerificare).length;
   const aKit = vendita?.modo === "kit";
@@ -80,7 +82,7 @@ export default async function ConsuntivoOrdinePage({ params }: { params: Promise
         {tile("Speso", formatEuro(r.speso), r.capi > 0 && r.speso > 0 ? `${formatEuro(r.speso / r.capi)} a capo` : `${spese.length} spese`)}
         {tile(r.risparmio >= 0 ? "Risparmio" : "Extra costo",
           <span className={r.speso === 0 ? "text-[#5F6878]" : r.risparmio >= 0 ? "text-[#1D6B4A]" : "text-[#A8461F]"}>{formatEuro(Math.abs(r.risparmio))}</span>,
-          r.speso === 0 ? "nessuna spesa ancora" : chiusoIl ? "rispetto al previsto" : "sulle fasi registrate, le altre al previsto")}
+          r.speso === 0 ? "nessuna spesa ancora" : chiusoIl ? "rispetto al previsto" : "solo sulle fasi complete; le altre al previsto, o allo speso se già oltre")}
         {tile("Margine",
           <><span className={coloreMargine(r.marginePrevisto)}>{pct(r.marginePrevisto)}</span><span className="text-[#5F6878] text-base"> → </span><span className={coloreMargine(r.speso > 0 ? r.margineReale : null)}>{r.speso > 0 ? pct(r.margineReale) : "—"}</span></>,
           r.ricavo > 0
@@ -98,12 +100,15 @@ export default async function ConsuntivoOrdinePage({ params }: { params: Promise
                   <th className={`${cella} font-medium text-right`}>Previsto</th>
                   <th className={`${cella} font-medium text-right`}>Speso</th>
                   <th className={`${cella} font-medium text-right`}>Differenza</th>
+                  {!chiusoIl && fasiAttive && <th className={`${cella} font-medium text-center w-24`}>Completa</th>}
                 </tr>
               </thead>
               <tbody>
                 {righe.map((x) => {
                   const diff = x.previsto - x.speso;
-                  const daRegistrare = x.nSpese === 0 && !chiusoIl;
+                  const daRegistrare = x.nSpese === 0 && !chiusoIl && !x.completa;
+                  // Aperta e sotto il previsto: il risparmio non conta finché la fase non è completa.
+                  const inCorso = !chiusoIl && !x.completa && x.nSpese > 0 && diff > 0;
                   return (
                     <tr key={x.fase} className="border-b border-[#EFEBE2] last:border-0">
                       <td className={`${cella} font-semibold text-[#0E1B2C]`}>
@@ -111,9 +116,14 @@ export default async function ConsuntivoOrdinePage({ params }: { params: Promise
                       </td>
                       <td className={`${cella} text-right font-mono text-[#4A5566]`}>{x.previsto > 0 ? formatEuro(x.previsto) : "—"}</td>
                       <td className={`${cella} text-right font-mono text-[#0E1B2C]`}>{x.speso > 0 ? formatEuro(x.speso) : "—"}</td>
-                      <td className={`${cella} text-right font-mono ${daRegistrare ? "text-[#8A8F98]" : diff >= 0 ? "text-[#1D6B4A]" : "text-[#A8461F]"}`}>
-                        {daRegistrare ? "da registrare" : `${diff >= 0 ? "−" : "+"}${formatEuro(Math.abs(diff))}`}
+                      <td className={`${cella} text-right font-mono ${daRegistrare || inCorso ? "text-[#8A8F98]" : diff >= 0 ? "text-[#1D6B4A]" : "text-[#A8461F]"}`}>
+                        {daRegistrare ? "da registrare" : inCorso
+                          ? <>in corso<span className="block text-xs font-sans">mancano {formatEuro(diff)}</span></>
+                          : `${diff >= 0 ? "−" : "+"}${formatEuro(Math.abs(diff))}`}
                       </td>
+                      {!chiusoIl && fasiAttive && (
+                        <td className={`${cella} text-center`}><SpuntaFase ordineId={ordineId} fase={x.fase} completa={x.completa} /></td>
+                      )}
                     </tr>
                   );
                 })}
@@ -126,6 +136,7 @@ export default async function ConsuntivoOrdinePage({ params }: { params: Promise
                   <td className={`${cella} text-right font-mono ${r.speso === 0 ? "text-[#8A8F98]" : r.risparmio >= 0 ? "text-[#1D6B4A]" : "text-[#A8461F]"}`}>
                     {r.speso === 0 ? "—" : `${r.risparmio >= 0 ? "−" : "+"}${formatEuro(Math.abs(r.risparmio))}`}
                   </td>
+                  {!chiusoIl && fasiAttive && <td className={cella} />}
                 </tr>
               </tfoot>
             </table>
@@ -151,7 +162,7 @@ export default async function ConsuntivoOrdinePage({ params }: { params: Promise
                 <tr className="border-y border-[#E4E0D6] bg-[#FBFAF7] text-left text-[13px] text-[#5F6878]">
                   <th className={`${cella} font-medium`}>{aKit ? "Kit" : "Articolo"}</th>
                   <th className={`${cella} font-medium text-right`}>Venduti</th>
-                  <th className={`${cella} font-medium text-right`}>Prezzo</th>
+                  <th className={`${cella} font-medium text-right`}>Prezzo{vendita && vendita.iva > 0 ? " (IVA escl.)" : ""}</th>
                   <th className={`${cella} font-medium text-right`}>Ricavo</th>
                   <th className={`${cella} font-medium text-right`}>Costo {aKit ? "kit" : "capo"}</th>
                   <th className={`${cella} font-medium text-right`}>Costo</th>
@@ -168,7 +179,10 @@ export default async function ConsuntivoOrdinePage({ params }: { params: Promise
                     <td className={`${cella} text-right font-mono text-[#4A5566]`}>
                       {m.quantita}{m.omaggi > 0 && <span className="block text-xs text-[#5F6878]">+{m.omaggi} omaggio</span>}
                     </td>
-                    <td className={`${cella} text-right font-mono text-[#4A5566]`}>{m.prezzo > 0 ? formatEuro(m.prezzo) : "—"}</td>
+                    <td className={`${cella} text-right font-mono text-[#4A5566]`}>
+                      {m.prezzo > 0 ? formatEuro(m.prezzo) : "—"}
+                      {m.prezzo > 0 && conIva(m.prezzo) !== null && <span className="block text-xs text-[#5F6878]">{formatEuro(conIva(m.prezzo)!)} IVA incl.</span>}
+                    </td>
                     <td className={`${cella} text-right font-mono text-[#0E1B2C]`}>{m.ricavo > 0 ? formatEuro(m.ricavo) : "—"}</td>
                     <td className={`${cella} text-right font-mono text-[#4A5566]`}>{m.costoUnitario !== null ? formatEuro(m.costoUnitario) : "—"}</td>
                     <td className={`${cella} text-right font-mono text-[#0E1B2C]`}>{m.costo > 0 ? formatEuro(m.costo) : "—"}</td>
