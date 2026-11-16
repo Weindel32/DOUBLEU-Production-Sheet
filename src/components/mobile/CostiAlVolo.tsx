@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Search, ChevronDown, Shirt } from "lucide-react";
-import { formatEuro, prezzoDaMargine, parseNumIt, MARGINE_MINIMO, MARGINE_PIENO } from "@/lib/utils";
+import { formatEuro, prezzoDaMargine, parseNumIt, coloreMargine } from "@/lib/utils";
 import Miniatura from "@/components/ui/Miniatura";
 
 export interface ArticoloCosto {
@@ -15,17 +15,13 @@ export interface ArticoloCosto {
   accessori: number;
   lavorazioni: number;
   costo: number;
-  prezzo: number;
-  margine: number | null;
 }
 
 const MARGINI = [35, 45, 55];
 
 const pct = (m: number | null) => (m === null ? "—" : `${m.toFixed(1).replace(".", ",")}%`);
-const coloreMargine = (m: number | null) =>
-  m === null ? "text-[#5F6878]" : m >= MARGINE_PIENO ? "text-[#1D6B4A]" : m >= MARGINE_MINIMO ? "text-[#7A5B12]" : "text-[#A8461F]";
 
-/** Sola lettura: costo per capo, prezzo e margine, più "che margine faccio a questo prezzo?". */
+/** Sola lettura: costo per capo, prezzo per margine e "che margine faccio a questo prezzo?". Il prezzo vero si decide nel Kit Builder. */
 export default function CostiAlVolo({ articoli }: { articoli: ArticoloCosto[] }) {
   const [q, setQ] = useState("");
   const [aperto, setAperto] = useState<string | null>(null);
@@ -60,10 +56,7 @@ export default function CostiAlVolo({ articoli }: { articoli: ArticoloCosto[] })
                 <span className="block font-semibold truncate">{a.nome}</span>
                 <span className="block text-[13px] text-[#5F6878] truncate font-mono">{a.codice}</span>
               </span>
-              <span className="text-right flex-shrink-0">
-                <span className="block font-mono font-semibold">{a.costo > 0 ? formatEuro(a.costo) : "—"}</span>
-                <span className={`block text-xs font-mono font-semibold ${coloreMargine(a.margine)}`}>{pct(a.margine)}</span>
-              </span>
+              <span className="font-mono font-semibold flex-shrink-0">{a.costo > 0 ? formatEuro(a.costo) : "—"}</span>
               <ChevronDown size={18} className={`text-[#C9C3B5] flex-shrink-0 transition-transform ${on ? "rotate-180" : ""}`} />
             </button>
 
@@ -79,10 +72,6 @@ export default function CostiAlVolo({ articoli }: { articoli: ArticoloCosto[] })
                       <span>{l}</span><span className="font-mono">{formatEuro(v as number)}</span>
                     </div>
                   ))}
-                  <div className="flex justify-between text-sm border-t border-white/15 pt-2">
-                    <span className="text-[#B7C4D8]">Prezzo di listino</span>
-                    <span className="font-mono">{a.prezzo > 0 ? formatEuro(a.prezzo) : "—"} · {pct(a.margine)}</span>
-                  </div>
                 </div>
 
                 {a.costo > 0 && (

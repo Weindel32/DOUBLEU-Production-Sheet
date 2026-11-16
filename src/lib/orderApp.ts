@@ -59,6 +59,41 @@ export const nomeReferenza = (r: { descrizione: string | null; categoria: string
 export const trovaReferenza = (referenze: ReferenzaOrderApp[], articoloId: string | null | undefined) =>
   articoloId ? referenze.find((r) => r.ids.includes(articoloId)) : undefined;
 
+/**
+ * Una riga di vendita dell'ordine: un kit (prezzi a kit) o un articolo (prezzi per articolo).
+ * Il prezzo vive nell'Order App, non nella scheda: lo stesso articolo può stare in kit con prezzi diversi.
+ */
+export interface RigaVendita {
+  tipo: "kit" | "articolo";
+  nome: string;
+  /** Kit o pezzi venduti (pagati). */
+  quantita: number;
+  /** Kit o pezzi consegnati in omaggio: costano ma non incassano. */
+  omaggi: number;
+  /** Prezzo unitario imponibile, IVA esclusa. */
+  prezzo: number;
+  /** Ricavo imponibile della riga, con il suo sconto e la sua quota dello sconto sull'ordine. */
+  ricavo: number;
+  /** Sconto non in percentuale sulla riga: non si sa come l'Order App lo applica, il ricavo è senza. */
+  scontoDaVerificare: boolean;
+  /** Articoli dell'Order App nella riga con i pezzi consegnati (omaggi compresi), per il costo. */
+  articoli: { id: string; adulto: number; bambino: number }[];
+}
+
+/** Quanto incassa l'ordine, con le regole dell'Order App: imponibile merce, poi IVA e spedizione. */
+export interface VenditaOrdine {
+  modo: "kit" | "singolo";
+  righe: RigaVendita[];
+  /** Somma delle righe prima dello sconto sull'ordine. */
+  subtotale: number;
+  scontoOrdine: number;
+  /** Ricavo dell'ordine per il margine: merce, IVA e spedizione escluse. */
+  imponibile: number;
+  spedizione: number;
+  /** Aliquota IVA dell'ordine in %, 0 se senza IVA: serve a mostrare i prezzi come li pensi (IVA inclusa). */
+  iva: number;
+}
+
 export interface OrdineOrderApp {
   id: string; // es. "DU-2026-1625"
   clienteId: string | null;
@@ -75,6 +110,72 @@ export interface OrdineOrderApp {
   giorniProduzione: number | null;
   inizioProduzione: string | null;
   referenze: ReferenzaOrderApp[];
+  vendita: VenditaOrdine;
+}
+
+type Num = number | string | null;
+const n = (v: Num | undefined) => (v === null || v === undefined || v === "" ? 0 : Number(v) || 0);
+
+type KitRiga = { id: string; order_id: string; name: string | null; position: number | null; price: Num; quantity: number | null; omaggio: Num; discount_type: string | null; discount_value: Num };
+type ArticoloRiga = {
+  id: string; kit_id: string; category: string | null; description: string | null; color: string | null;
+  sizes_adult: TaglieOrderApp; sizes_kids: TaglieOrderApp; price: Num; omaggio: number | null; discount_type: string | null; discount_value: Num;
+};
+type OrdineRiga = {
+  id: string; client: string | null; client_id: string | null; date: string | null; status: string | null; lost: boolean | null;
+  delivery_date: string | null; alert_days: number | null; production_days: number | null; production_start: string | null;
+  pricing_mode: string | null; kit_quantity: number | null; iva_enabled: boolean | null; iva_rate: Num; discount_mode: string | null; discount_type: string | null; discount_value: Num; shipping: Num;
+};
+
+/** Sconto di riga (kit o articolo): in percentuale si applica, altrimenti va verificato nell'Order App. */
+function scontoRiga(lordo: number, tipo: string | null, valore: Num) {
+  const v = n(valore);
+  if (!v) return { ricavo: lordo, daVerificare: false };
+  if (tipo === "percentuale") return { ricavo: lordo * (1 - v / 100), daVerificare: false };
+  return { ricavo: lordo, daVerificare: true };
+}
+
+/** Pezzi di un articolo per parte: senza taglie il totale indicato va all'adulto, come per le referenze. */
+function pezziArticolo(a: ArticoloRiga) {
+  const t = leggiTaglie(a.sizes_adult, a.sizes_kids);
+  const adulto = sommaTaglie(t.taglieAdulto);
+  const bambino = sommaTaglie(t.taglieBambino);
+  return adulto + bambino > 0 ? { adulto, bambino } : { adulto: t.capi ?? 0, bambino: 0 };
+}
+
+/**
+ * Ricavo dell'ordine con le stesse regole dell'Order App (verificate sui totali): a kit prezzo × kit
+ * venduti, per articolo prezzo × (pezzi − omaggi); poi lo sconto sull'ordine, ripartito sulle righe.
+ */
+export function venditaOrdine(o: OrdineRiga, kits: KitRiga[], articoliPerKit: Map<string, ArticoloRiga[]>): VenditaOrdine {
+  const modo = o.pricing_mode === "kit" ? "kit" : "singolo";
+  const ordinati = [...kits].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+  const righe: RigaVendita[] = modo === "kit"
+    ? ordinati.map((k) => {
+        const quantita = k.quantity ?? o.kit_quantity ?? 0;
+        const prezzo = n(k.price);
+        const { ricavo, daVerificare } = scontoRiga(prezzo * quantita, k.discount_type, k.discount_value);
+        return {
+          tipo: "kit", nome: k.name?.trim() || "Kit", quantita, omaggi: n(k.omaggio), prezzo, ricavo, scontoDaVerificare: daVerificare,
+          articoli: (articoliPerKit.get(k.id) ?? []).map((a) => ({ id: a.id, ...pezziArticolo(a) })),
+        };
+      })
+    : ordinati.flatMap((k) => (articoliPerKit.get(k.id) ?? []).map((a): RigaVendita => {
+        const pz = pezziArticolo(a);
+        const omaggi = Math.min(a.omaggio ?? 0, pz.adulto + pz.bambino);
+        const quantita = pz.adulto + pz.bambino - omaggi;
+        const prezzo = n(a.price);
+        const { ricavo, daVerificare } = scontoRiga(prezzo * quantita, a.discount_type, a.discount_value);
+        const nome = [a.description?.trim() || categoriaDaOrderApp(a.category) || "Articolo", a.color?.trim()].filter(Boolean).join(" · ");
+        return { tipo: "articolo", nome, quantita, omaggi, prezzo, ricavo, scontoDaVerificare: daVerificare, articoli: [{ id: a.id, ...pz }] };
+      }));
+  const subtotale = righe.reduce((t, r) => t + r.ricavo, 0);
+  const v = n(o.discount_value);
+  const scontoOrdine = o.discount_mode === "ordine" && v
+    ? Math.min(subtotale, o.discount_type === "percentuale" ? subtotale * v / 100 : v)
+    : 0;
+  if (scontoOrdine > 0 && subtotale > 0) for (const r of righe) r.ricavo *= 1 - scontoOrdine / subtotale;
+  return { modo, righe, subtotale, scontoOrdine, imponibile: subtotale - scontoOrdine, spedizione: n(o.shipping), iva: o.iva_enabled ? n(o.iva_rate) : 0 };
 }
 
 /** Tag dei dati letti dall'Order App: dopo una scrittura si invalida per rileggerli subito. */
@@ -170,19 +271,19 @@ function unisciUguali(righe: ReferenzaOrderApp[]): ReferenzaOrderApp[] {
 /** Ordini dell'Order App con le loro referenze, dal più recente. Gli ordini persi restano: possono avere schede. */
 export async function ordiniOrderApp(): Promise<OrdineOrderApp[]> {
   const [ordini, kits, articoli, moduli] = await Promise.all([
-    leggi<{ id: string; client: string | null; client_id: string | null; date: string | null; status: string | null; lost: boolean | null; delivery_date: string | null; alert_days: number | null; production_days: number | null; production_start: string | null }>(
-      "orders?select=id,client,client_id,date,status,lost,delivery_date,alert_days,production_days,production_start",
+    leggi<OrdineRiga>(
+      "orders?select=id,client,client_id,date,status,lost,delivery_date,alert_days,production_days,production_start,pricing_mode,kit_quantity,iva_enabled,iva_rate,discount_mode,discount_type,discount_value,shipping",
     ),
-    leggi<{ id: string; order_id: string; name: string | null; position: number | null }>("kits?select=id,order_id,name,position"),
-    leggi<{ id: string; kit_id: string; category: string | null; description: string | null; color: string | null; sizes_adult: TaglieOrderApp; sizes_kids: TaglieOrderApp }>(
-      "articles?select=id,kit_id,category,description,color,sizes_adult,sizes_kids",
+    leggi<KitRiga>("kits?select=id,order_id,name,position,price,quantity,omaggio,discount_type,discount_value"),
+    leggi<ArticoloRiga>(
+      "articles?select=id,kit_id,category,description,color,sizes_adult,sizes_kids,price,omaggio,discount_type,discount_value",
     ),
     leggi<{ order_id: string; submitted_at: string | null }>("order_forms?select=order_id,submitted_at&submitted_at=not.is.null"),
   ]);
   if (!ordini) return [];
-  const kitPerOrdine = new Map<string, { id: string; name: string | null; position: number | null }[]>();
+  const kitPerOrdine = new Map<string, KitRiga[]>();
   for (const k of kits ?? []) kitPerOrdine.set(k.order_id, [...(kitPerOrdine.get(k.order_id) ?? []), k]);
-  const articoliPerKit = new Map<string, NonNullable<typeof articoli>>();
+  const articoliPerKit = new Map<string, ArticoloRiga[]>();
   for (const a of articoli ?? []) articoliPerKit.set(a.kit_id, [...(articoliPerKit.get(a.kit_id) ?? []), a]);
   // Ultimo invio del modulo taglie: se il club le corregge, la produzione riparte da lì.
   const ricezione = new Map<string, string>();
@@ -204,7 +305,8 @@ export async function ordiniOrderApp(): Promise<OrdineOrderApp[]> {
       ricezioneTaglie: ricezione.has(o.id) ? giornoItaliano(ricezione.get(o.id)!) : null,
       giorniProduzione: o.production_days ?? null,
       inizioProduzione: o.production_start || null,
-      referenze: unisciUguali((kitPerOrdine.get(o.id) ?? [])
+      vendita: venditaOrdine(o, kitPerOrdine.get(o.id) ?? [], articoliPerKit),
+      referenze: unisciUguali([...(kitPerOrdine.get(o.id) ?? [])]
         .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
         .flatMap((k) => (articoliPerKit.get(k.id) ?? []).map((a) => ({
           id: a.id, ids: [a.id], firme: [firmaArticolo(k.name, a.description, a.color)],
@@ -225,8 +327,9 @@ export function categoriaDaOrderApp(c: string | null): string | null {
 export const ordineAttivo = (o: OrdineOrderApp) => !o.perso && o.stato !== "ANNULLATO";
 
 /** Versione leggera per i componenti client: niente referenze. */
-export type OrdineBreve = Omit<OrdineOrderApp, "referenze"> & { nReferenze: number };
+export type OrdineBreve = Omit<OrdineOrderApp, "referenze" | "vendita"> & { nReferenze: number };
 export const ordineBreve = (o: OrdineOrderApp): OrdineBreve => {
-  const { referenze, ...resto } = o;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { referenze, vendita, ...resto } = o;
   return { ...resto, nReferenze: referenze.length };
 };

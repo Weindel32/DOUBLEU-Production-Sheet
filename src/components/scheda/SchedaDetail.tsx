@@ -7,7 +7,6 @@ import { ArrowLeft, FileDown, Copy, CheckCircle, Trash2, Loader2, Save, AlertCir
 import {
   STATI_SCHEDA, StatoScheda, TIPI_SCHEDA, normalizzaTipo, baseScheda, formatData, formatOra, formatEuro,
   calcolaTotaleQuantita, totaleSviluppo, type RiepilogoCosti,
-  MARGINE_MINIMO, MARGINE_PIENO,
 } from "@/lib/utils";
 import TabArticolo, { type TabArticoloHandle } from "./TabArticolo";
 import TabPersonalizzazione, { type TabPersonalizzazioneHandle } from "./TabPersonalizzazione";
@@ -64,7 +63,7 @@ const SEZIONI = [
 
 const STATI_OPZIONI = STATI_SCHEDA.map((s) => ({ value: s.value, label: s.label }));
 
-const RIEPILOGO_VUOTO: RiepilogoCosti = { materiali: 0, accessori: 0, lavorazioni: 0, totale: 0, prezzoVendita: 0, margine: null };
+const RIEPILOGO_VUOTO: RiepilogoCosti = { materiali: 0, accessori: 0, lavorazioni: 0, totale: 0 };
 
 export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponibili, materialiDisponibili, origine, ordiniCollegati = [], modelli = [], vociColori = [], clientiOrderApp = [], ordiniOrderApp = [], referenzeOrdine = null, collegateAltrove = [], capiOrdine = null }: Props) {
   const router = useRouter();
@@ -206,9 +205,6 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
     if (!(await copia("ordine"))) setCreandoOrdine(false);
   };
 
-  const margineColore = riepilogo.margine === null ? "text-[#B7C4D8]"
-    : riepilogo.margine >= MARGINE_PIENO ? "text-[#8FD6B0]" : riepilogo.margine >= MARGINE_MINIMO ? "text-[#F0D58C]" : "text-[#F2A488]";
-  const fmtMargine = riepilogo.margine === null ? "—" : `${riepilogo.margine.toFixed(1).replace(".", ",")}%`;
   const quote = riepilogo.totale > 0 ? [
     { label: "Materiali", v: riepilogo.materiali, c: "#E8A27E" },
     { label: "Accessori", v: riepilogo.accessori, c: "#F3D3BF" },
@@ -373,15 +369,7 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
                   </div>
                 </>
               )}
-              <div className="h-px bg-white/15" />
-              <div className="flex justify-between text-sm">
-                <span className="text-[#B7C4D8]">Prezzo vendita</span>
-                <span className="font-mono">{riepilogo.prezzoVendita > 0 ? formatEuro(riepilogo.prezzoVendita) : "—"}</span>
-              </div>
-              <div className="flex justify-between items-baseline">
-                <span className="text-sm text-[#B7C4D8]">Margine</span>
-                <span className={`font-mono text-2xl font-semibold ${margineColore}`}>{fmtMargine}</span>
-              </div>
+              {totalePezzi > 0 && <div className="h-px bg-white/15" />}
               {totalePezzi > 0 && (
                 <div className="flex justify-between text-sm">
                   <span className="text-[#B7C4D8]">Ordine · {totalePezzi} pz{pezziStimati && " stimati"}</span>
@@ -484,10 +472,6 @@ export default function SchedaDetail({ scheda, clientiDisponibili, loghiDisponib
         <div>
           <div className="text-[11px] uppercase tracking-wider text-[#B7C4D8]">Costo / capo</div>
           <div className="font-mono text-xl font-semibold">{formatEuro(riepilogo.totale)}</div>
-        </div>
-        <div>
-          <div className="text-[11px] uppercase tracking-wider text-[#B7C4D8]">Margine</div>
-          <div className={`font-mono text-xl font-semibold ${margineColore}`}>{fmtMargine}</div>
         </div>
         {totalePezzi > 0 && (
           <div>

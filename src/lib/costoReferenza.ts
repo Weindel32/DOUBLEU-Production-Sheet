@@ -62,10 +62,7 @@ export function vociCosto(
   return [...materialiVoci, ...accessori, ...lavorazioni];
 }
 
-export function totaliReferenza(voci: VoceCosto[], pezzi: number, prezzoVendita: number) {
+export function totaliReferenza(voci: VoceCosto[], pezzi: number) {
   const costoCapo = voci.reduce((t, v) => t + v.perCapo, 0);
-  const totale = costoCapo * pezzi;
-  const ricavo = prezzoVendita > 0 ? prezzoVendita * pezzi : 0;
-  const margine = ricavo > 0 && totale > 0 ? ricavo - totale : null;
-  return { costoCapo, totale, ricavo, margine, marginePct: margine !== null ? (margine / ricavo) * 100 : null };
+  return { costoCapo, totale: costoCapo * pezzi };
 }

@@ -60,7 +60,7 @@ const dataIt = (d: string) => (/^\d{4}-\d{2}-\d{2}$/.test(d) ? d.split("-").reve
 
 /**
  * PDF della scheda (file vero: su iPhone si condivide o stampa dal foglio di iOS).
- * ?tipo=tecnico per il produttore (niente costi); ?tipo=interno con costi, margine e campioni.
+ * ?tipo=tecnico per il produttore (niente costi); ?tipo=interno con costi e campioni.
  */
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -126,7 +126,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         stampa: scheda.costoStampa, ricamo: scheda.costoRicamo,
       }, materialiConsumo, pezziReferenza)
     : [];
-  const ref = totaliReferenza(voci, pezziReferenza, scheda.prezzoVendita || 0);
+  const ref = totaliReferenza(voci, pezziReferenza);
 
   const dati: DatiSchedaPdf = {
     interno,
@@ -199,11 +199,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
           totale: euro(costoTotale),
           dopo: [
             ...(totalePezzi > 0 ? [[`Costo totale ordine (${totalePezzi} pz)`, euro(costoTotale * totalePezzi)] as Coppia] : []),
-            ...(scheda.prezzoVendita ? [["Prezzo vendita/capo", euro(scheda.prezzoVendita)] as Coppia] : []),
           ],
-          margine: scheda.prezzoVendita
-            ? { testo: `${(((scheda.prezzoVendita - costoTotale) / scheda.prezzoVendita) * 100).toFixed(1).replace(".", ",")}%`, positivo: scheda.prezzoVendita > costoTotale }
-            : null,
+          // Ricavo e margine stanno nel consuntivo dell'ordine: il prezzo è del kit, nell'Order App.
+          margine: null,
         }
       : null,
     referenza: voci.length > 0
@@ -219,11 +217,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
           })),
           totali: [
             ["Costo totale", euro(ref.costoCapo), euro(ref.totale)],
-            ["Ricavo", scheda.prezzoVendita ? euro(scheda.prezzoVendita) : "—", ref.ricavo > 0 ? euro(ref.ricavo) : "—"],
-            ["Margine", ref.margine !== null ? euro(ref.margine / pezziReferenza) : "—",
-              ref.margine !== null ? `${euro(ref.margine)} · ${ref.marginePct!.toFixed(1).replace(".", ",")}%` : "—"],
           ],
-          positivo: ref.margine === null ? null : ref.margine > 0,
+          positivo: null,
         }
       : null,
     campioni: interno && campioni.length > 0

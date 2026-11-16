@@ -7,6 +7,12 @@ import { Field, Segmented, inputCls, numStr } from "@/components/ui/Form";
 import { FASI_SPESA, type Spesa } from "@/lib/consuntivo";
 import { formatEuro } from "@/lib/utils";
 
+/** Cartamodello e sviluppo: dove vanno nel margine. */
+const NOTA_FASE: Record<string, string> = {
+  Cartamodello: "Stampa del piazzato: costo dell'ordine, entra nel margine",
+  "Sviluppo taglie": "Taglie o modelli nuovi: investimento, fuori dal margine operativo",
+};
+
 const oggi = () => new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Rome" });
 const inItaliano = (s: string) => s.split("-").reverse().join("/");
 
@@ -59,44 +65,44 @@ export default function SpeseOrdine({ ordineId, spese, chiusoIl }: { ordineId: s
   const form = (
     <div className="bg-[#FBFAF7] border border-[#E4E0D6] rounded-2xl p-4 space-y-3">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Field label="Data">
-          <input type="date" value={bozza.data} onChange={(e) => set("data", e.target.value)} className={inputCls} />
+        <Field className="min-w-0" label="Data">
+          <input type="date" value={bozza.data} onChange={(e) => set("data", e.target.value)} className={`${inputCls} min-w-0 appearance-none`} />
         </Field>
-        <Field label="Fase">
+        <Field className="min-w-0" label="Fase" hint={NOTA_FASE[bozza.fase]}>
           <select value={bozza.fase} onChange={(e) => set("fase", e.target.value)} className={inputCls}>
             {FASI_SPESA.map((f) => <option key={f}>{f}</option>)}
           </select>
         </Field>
-        <Field label="Fornitore">
+        <Field className="min-w-0" label="Fornitore">
           <input value={bozza.fornitore} onChange={(e) => set("fornitore", e.target.value)} className={inputCls} placeholder="es. CTA" />
         </Field>
-        <Field label="Descrizione">
+        <Field className="min-w-0" label="Descrizione">
           <input value={bozza.descrizione} onChange={(e) => set("descrizione", e.target.value)} className={inputCls} placeholder="es. Jersey navy 62 m" />
         </Field>
       </div>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 items-end">
-        <Segmented label="Documento" value={bozza.fattura ? "si" : "no"} onChange={(v) => set("fattura", v === "si")}
+        <Segmented className="min-w-0" label="Documento" value={bozza.fattura ? "si" : "no"} onChange={(v) => set("fattura", v === "si")}
           options={[{ value: "si", label: "Con fattura" }, { value: "no", label: "Senza fattura" }]} />
         <Field label={bozza.fattura ? "Imponibile (IVA esclusa)" : "Importo pagato"}>
           <input type="text" inputMode="decimal" value={bozza.importo} onChange={(e) => set("importo", e.target.value)}
             className={`${inputCls} text-right font-mono`} placeholder="0,00" />
         </Field>
         {bozza.fattura ? (
-          <Field label="IVA % (riferimento)">
+          <Field className="min-w-0" label="IVA % (riferimento)">
             <input type="text" inputMode="decimal" value={bozza.iva} onChange={(e) => set("iva", e.target.value)} className={`${inputCls} text-right font-mono`} />
           </Field>
         ) : <div className="text-xs text-[#5F6878] pb-2">Senza fattura conta tutto l&apos;importo pagato: non c&apos;è IVA da recuperare.</div>}
-        <Field label="N° fattura / DDT">
+        <Field className="min-w-0" label="N° fattura / DDT">
           <input value={bozza.riferimento} onChange={(e) => set("riferimento", e.target.value)} className={inputCls} />
         </Field>
       </div>
       {bozza.fase === "Tessuto" && (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 items-end">
-          <Field label="Quantità comprata (facoltativa)" hint="Serve per prezzo medio e confronto col fabbisogno">
+          <Field className="min-w-0" label="Quantità comprata (facoltativa)" hint="Serve per prezzo medio e confronto col fabbisogno">
             <input type="text" inputMode="decimal" value={bozza.quantita} onChange={(e) => set("quantita", e.target.value)}
               className={`${inputCls} text-right font-mono`} placeholder="es. 62" />
           </Field>
-          <Segmented label="Unità" value={bozza.unita} onChange={(v) => set("unita", v)}
+          <Segmented className="min-w-0" label="Unità" value={bozza.unita} onChange={(v) => set("unita", v)}
             options={[{ value: "kg", label: "kg" }, { value: "m", label: "metri" }]} />
         </div>
       )}

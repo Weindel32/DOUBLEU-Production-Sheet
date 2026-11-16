@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Plus, FileText, Search, ChevronRight, ShoppingCart, Receipt } from "lucide-react";
 import {
   formatData, STATI_SCHEDA, TIPI_COSTO_DB, formatEuro, totaleSviluppo,
-  FASCE_MODELLO, FASCIA_STYLE, ordinaCategorie, statoOrdine, MARGINE_MINIMO,
+  FASCE_MODELLO, FASCIA_STYLE, ordinaCategorie, statoOrdine,
 } from "@/lib/utils";
 import { ordiniOrderApp, type OrdineOrderApp } from "@/lib/orderApp";
 import { capiScheda, chiaveParte, ETICHETTA_PARTE, parteCoperta, partiReferenza, statoReferenza } from "@/lib/referenze";
@@ -18,10 +18,9 @@ import BloccoFiltrabile, { CasellaScheda } from "@/components/ordine/FiltroStati
 import { riepilogoScheda } from "@/lib/costiScheda";
 import type { Campione } from "@/types";
 
-type Filtri = { stato?: string; margine?: string; campioni?: string; fascia?: string; q?: string };
+type Filtri = { stato?: string; campioni?: string; fascia?: string; q?: string };
 type Vista = "articoli" | "ordini";
 
-const SOGLIA_MARGINE = MARGINE_MINIMO;
 const SENZA_MODELLO = "Senza modello";
 
 const TESTI: Record<Vista, { titolo: string; base: string; nuovo: string; nuovoHref: string; vuoto: string; singolare: string; plurale: string }> = {
@@ -47,7 +46,7 @@ export default async function ListaSchede({ vista, searchParams }: {
 }) {
   const t = TESTI[vista];
   const str = (k: string) => (typeof searchParams[k] === "string" ? (searchParams[k] as string) : undefined);
-  const filtri: Filtri = { stato: str("stato"), margine: str("margine"), campioni: str("campioni"), fascia: str("fascia"), q: str("q") };
+  const filtri: Filtri = { stato: str("stato"), campioni: str("campioni"), fascia: str("fascia"), q: str("q") };
 
   const hrefFiltri = (cambio: Filtri) => {
     const next = { ...filtri, ...cambio };
@@ -99,10 +98,9 @@ export default async function ListaSchede({ vista, searchParams }: {
   await salvaRicollegamenti(righe.map((r) => ({ id: r.s.id, stato: r.stato })));
 
   const q = filtri.q?.trim().toLowerCase();
-  const filtrate = righe.filter(({ s, costi, nCampioni, modello }) =>
+  const filtrate = righe.filter(({ s, nCampioni, modello }) =>
     (!filtri.stato || s.stato === filtri.stato) &&
     (!filtri.fascia || modello?.fascia === filtri.fascia) &&
-    (filtri.margine !== "basso" || (costi.margine !== null && costi.margine < SOGLIA_MARGINE)) &&
     (filtri.campioni !== "si" || nCampioni > 0) &&
     (!q || [s.codice, s.codiceModello, s.nomeArticolo, s.cliente?.nome, s.categoria, s.collezione, s.ordineOrderAppId,
       s.ordineOrderAppId ? ordineDi.get(s.ordineOrderAppId)?.cliente : null].some((v) => v?.toLowerCase().includes(q))),
@@ -141,7 +139,7 @@ export default async function ListaSchede({ vista, searchParams }: {
   const blocchiOrdine = [...blocchi.values()];
 
   const aperti = !!filtri.q || blocchiOrdine.length === 1;
-  const nessunFiltro = !filtri.stato && !filtri.margine && !filtri.campioni && !filtri.fascia && !filtri.q;
+  const nessunFiltro = !filtri.stato && !filtri.campioni && !filtri.fascia && !filtri.q;
   const isArticoli = vista === "articoli";
   const cella = "px-3 py-2.5";
   const numero = `${cella} text-right font-mono whitespace-nowrap`;
@@ -149,11 +147,11 @@ export default async function ListaSchede({ vista, searchParams }: {
   const tabella = (righe: Riga[]) => (
     <div className="overflow-x-auto">
       {/* Larghezze fisse: le colonne restano allineate tra un blocco e l'altro. */}
-      <table className="w-full text-[15px] min-w-[900px] table-fixed">
+      <table className="w-full text-[15px] min-w-[720px] table-fixed">
         <colgroup>
           {!isArticoli && <col className="w-11" />}
           <col className="w-[72px]" /><col className="w-[140px]" /><col />
-          <col className="w-[110px]" /><col className="w-[100px]" /><col className="w-[90px]" />
+          <col className="w-[110px]" />
           {isArticoli && <><col className="w-[120px]" /><col className="w-[76px]" /></>}
           <col className="w-[120px]" /><col className="w-12" />
         </colgroup>
@@ -164,8 +162,6 @@ export default async function ListaSchede({ vista, searchParams }: {
             <th className={cella}>Modello / codice</th>
             <th className={cella}>Articolo</th>
               <th className={`${cella} text-right`}>Costo / capo</th>
-            <th className={`${cella} text-right`}>Prezzo</th>
-            <th className={`${cella} text-right`}>Margine</th>
             {isArticoli && <th className={`${cella} text-right`}>Sviluppo</th>}
             {isArticoli && <th className={`${cella} text-right`}>Ordini</th>}
             <th className={cella}>{isArticoli ? "Aggiornato" : "Stato"}</th>
@@ -181,7 +177,6 @@ export default async function ListaSchede({ vista, searchParams }: {
             const dettagli = isArticoli
               ? (modello ? null : s.categoria)
               : [s.categoria, s.genere, pezzi > 0 ? `${pezzi} pz${pezziStimati ? " stimati" : ""}` : null].filter(Boolean).join(" · ");
-            const margineCls = costi.margine === null ? "text-[#5F6878]" : costi.margine < SOGLIA_MARGINE ? "text-[#A8461F]" : "text-[#1D6B4A]";
             const href = `${t.base}/${s.id}`;
             return (
               <tr key={s.id} data-stato={isArticoli ? undefined : chiaveStato(s.stato, leggiFasi(s.fasi))} className="border-b border-[#EFEBE2] last:border-0">
@@ -217,10 +212,6 @@ export default async function ListaSchede({ vista, searchParams }: {
                   {dettagli && <div className="text-[13px] text-[#5F6878]">{dettagli}</div>}
                 </td>
                 <td className={numero}>{costi.totale > 0 ? formatEuro(costi.totale) : "—"}</td>
-                <td className={numero}>{costi.prezzoVendita > 0 ? formatEuro(costi.prezzoVendita) : "—"}</td>
-                <td className={`${numero} font-semibold ${margineCls}`}>
-                  {costi.margine === null ? "—" : `${costi.margine.toFixed(1).replace(".", ",")}%`}
-                </td>
                 {isArticoli && (
                   <td className={`${numero} text-[#1F3A68]`}>
                     {nCampioni > 0 ? formatEuro(sviluppo) : "—"}
@@ -260,7 +251,6 @@ export default async function ListaSchede({ vista, searchParams }: {
         </div>
         <form action={t.base} className="w-full sm:w-80">
           {filtri.stato && <input type="hidden" name="stato" value={filtri.stato} />}
-          {filtri.margine && <input type="hidden" name="margine" value={filtri.margine} />}
           {filtri.campioni && <input type="hidden" name="campioni" value={filtri.campioni} />}
           {filtri.fascia && <input type="hidden" name="fascia" value={filtri.fascia} />}
           <label className="h-12 border border-[#D6D1C4] rounded-xl bg-white flex items-center gap-2.5 px-3.5 text-[#5F6878] focus-within:border-[#1F3A68]">
@@ -276,11 +266,10 @@ export default async function ListaSchede({ vista, searchParams }: {
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        {chip("Tutti", { stato: undefined, margine: undefined, campioni: undefined, fascia: undefined }, nessunFiltro || (!filtri.stato && !filtri.margine && !filtri.campioni && !filtri.fascia))}
+        {chip("Tutti", { stato: undefined, campioni: undefined, fascia: undefined }, nessunFiltro || (!filtri.stato && !filtri.campioni && !filtri.fascia))}
         {isArticoli && FASCE_MODELLO.map((f) => chip(f, { fascia: filtri.fascia === f ? undefined : f }, filtri.fascia === f))}
         {isArticoli && <span aria-hidden className="w-px h-6 bg-[#D6D1C4] mx-1" />}
         {!isArticoli && STATI_SCHEDA.map((st) => chip(st.label, { stato: filtri.stato === st.value ? undefined : st.value }, filtri.stato === st.value))}
-        {chip(`Margine sotto ${SOGLIA_MARGINE}%`, { margine: filtri.margine === "basso" ? undefined : "basso" }, filtri.margine === "basso")}
         {isArticoli && chip("Con campioni", { campioni: filtri.campioni === "si" ? undefined : "si" }, filtri.campioni === "si")}
       </div>
 

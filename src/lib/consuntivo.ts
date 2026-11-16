@@ -3,9 +3,16 @@
 // Il previsto è costo per capo della scheda × capi, diviso nelle stesse fasi delle spese.
 
 import type { RiepilogoCosti } from "@/lib/utils";
+import type { VenditaOrdine } from "@/lib/orderApp";
+import type { Parte } from "@/lib/referenze";
 
-export const FASI_SPESA = ["Cartamodello", "Tessuto", "Accessori", "Taglio", "Confezione", "Stampa", "Ricamo", "Trasporti", "Altro"] as const;
+/**
+ * "Cartamodello" è la stampa del piazzato: costo dell'ordine. "Sviluppo taglie" (taglie nuove, modelli nuovi)
+ * è un investimento che resta: fuori dal margine operativo, dentro il margine dopo sviluppo.
+ */
+export const FASI_SPESA = ["Sviluppo taglie", "Tessuto", "Accessori", "Cartamodello", "Taglio", "Confezione", "Stampa", "Ricamo", "Trasporti", "Altro"] as const;
 export type FaseSpesa = typeof FASI_SPESA[number];
+export const FASE_SVILUPPO: FaseSpesa = "Sviluppo taglie";
 
 export interface Spesa {
   id: string;
@@ -38,10 +45,11 @@ export interface SchedaPrevisto {
 export function previstoPerCapo(s: SchedaPrevisto): Record<FaseSpesa, number> {
   const dettaglio = [s.costoTaglio, s.costoCucitura, s.costoStampa, s.costoRicamo].some((v) => v !== null);
   return {
-    // Il cartamodello è un costo di sviluppo (campioni), non sta nel costo per capo: nessun previsto.
-    Cartamodello: 0,
+    // Sviluppo e stampa del piazzato (cartamodello) non stanno nel costo per capo: nessun previsto, conta lo speso.
+    "Sviluppo taglie": 0,
     Tessuto: s.costi.materiali,
     Accessori: s.costi.accessori,
+    Cartamodello: 0,
     Taglio: s.costoTaglio ?? 0,
     Confezione: dettaglio ? s.costoCucitura ?? 0 : s.costoLavorazione ?? 0,
     Stampa: s.costoStampa ?? 0,
@@ -51,22 +59,29 @@ export function previstoPerCapo(s: SchedaPrevisto): Record<FaseSpesa, number> {
   };
 }
 
-export interface RigaConsuntivo { fase: FaseSpesa; previsto: number; speso: number; nSpese: number }
+export interface RigaConsuntivo {
+  fase: FaseSpesa; previsto: number; speso: number; nSpese: number;
+  /** Segnata completa: tutte le spese della fase sono registrate. */
+  completa: boolean;
+  /** Quanto conta nel costo reale: lo speso se completa (o consuntivo chiuso), altrimenti il più alto tra speso e previsto. */
+  costo: number;
+}
 
 /**
- * Consuntivo aperto: le fasi senza spese contano al previsto, così una fattura non ancora arrivata
- * non sembra un risparmio. Chiuso: conta solo lo speso.
+ * Consuntivo aperto: ogni fase conta il più alto tra speso e previsto, così una fattura non ancora arrivata
+ * non sembra un risparmio e uno sforamento si vede subito. Una fase segnata completa conta lo speso vero:
+ * il risparmio entra nel margine solo quando lo confermi. Chiuso: conta solo lo speso.
+ * Il ricavo è quello dell'Order App (imponibile merce): il prezzo sta sul kit, non sulla scheda.
  */
-export function riepilogoConsuntivo(schede: SchedaPrevisto[], spese: Spesa[], chiuso: boolean) {
-  const righe: RigaConsuntivo[] = FASI_SPESA.map((fase) => ({ fase, previsto: 0, speso: 0, nSpese: 0 }));
-  const riga = (fase: string) => righe.find((r) => r.fase === fase) ?? righe[righe.length - 1];
+export function riepilogoConsuntivo(schede: SchedaPrevisto[], spese: Spesa[], chiuso: boolean, ricavo: number, fasiComplete: string[] = []) {
+  const righe: RigaConsuntivo[] = FASI_SPESA.map((fase) => ({ fase, previsto: 0, speso: 0, nSpese: 0, completa: fasiComplete.includes(fase), costo: 0 }));
+  const altro = righe.find((r) => r.fase === "Altro")!;
+  const riga = (fase: string) => righe.find((r) => r.fase === fase) ?? altro;
 
-  let capi = 0, ricavo = 0, senzaPrezzo = 0;
+  let capi = 0;
   for (const s of schede) {
     if (!(s.capi > 0)) continue;
     capi += s.capi;
-    if (s.costi.prezzoVendita > 0) ricavo += s.costi.prezzoVendita * s.capi;
-    else senzaPrezzo++;
     const perCapo = previstoPerCapo(s);
     for (const f of FASI_SPESA) riga(f).previsto += perCapo[f] * s.capi;
   }
@@ -80,24 +95,30 @@ export function riepilogoConsuntivo(schede: SchedaPrevisto[], spese: Spesa[], ch
 
   const previsto = righe.reduce((t, r) => t + r.previsto, 0);
   const speso = conFattura + senzaFattura;
-  const costo = chiuso ? speso : righe.reduce((t, r) => t + (r.nSpese > 0 ? r.speso : r.previsto), 0);
+  for (const r of righe) r.costo = chiuso || r.completa ? r.speso : Math.max(r.speso, r.previsto);
+  const sviluppo = riga(FASE_SVILUPPO).costo;
+  // Costo operativo: senza sviluppo.
+  const costo = righe.reduce((t, r) => t + r.costo, 0) - sviluppo;
   const margine = (costo: number) => (ricavo > 0 && costo > 0 ? ((ricavo - costo) / ricavo) * 100 : null);
   return {
     righe,
     capi,
     ricavo,
-    /** Schede con capi ma senza prezzo di vendita: il ricavo è incompleto. */
-    senzaPrezzo,
     previsto,
     speso,
     conFattura,
     senzaFattura,
-    /** Costo reale dell'ordine; a consuntivo aperto, con il previsto per le fasi ancora senza spese. */
+    /** Costo reale operativo (sviluppo escluso); a consuntivo aperto, con il previsto per le fasi non complete rimaste sotto. */
     costo,
-    /** Positivo = costo reale sotto il previsto. */
+    /** Speso in sviluppo: taglie nuove e modelli nuovi. */
+    sviluppo,
+    /** Positivo = costo reale operativo sotto il previsto. */
     risparmio: previsto - costo,
     marginePrevisto: margine(previsto),
+    /** Margine reale operativo: senza sviluppo, è quello ripetibile. */
     margineReale: margine(costo),
+    /** Margine reale dopo lo sviluppo: se l'ordine ha ripagato anche l'investimento. */
+    margineDopoSviluppo: sviluppo > 0 ? margine(costo + sviluppo) : null,
   };
 }
 
@@ -136,5 +157,48 @@ export function confrontoTessuto(spese: Spesa[], fabbisogno: FabbisognoTessuto[]
       prezzoListino: f && f.quantitaListino > 0 ? f.listino / f.quantitaListino : null,
       nSpese: conQuantita.length,
     }];
+  });
+}
+
+/** Margine previsto di una riga di vendita (kit o articolo): ricavo dell'Order App contro il costo delle schede. */
+export interface MargineRiga {
+  nome: string;
+  tipo: "kit" | "articolo";
+  quantita: number;
+  omaggi: number;
+  prezzo: number;
+  ricavo: number;
+  /** Costo previsto di tutto quello che si consegna, omaggi compresi. */
+  costo: number;
+  /** Costo per kit (o pezzo) consegnato. */
+  costoUnitario: number | null;
+  margine: number | null;
+  /** Articoli della riga senza una scheda con il costo: il costo è incompleto. */
+  senzaScheda: number;
+  scontoDaVerificare: boolean;
+}
+
+/**
+ * Per ogni kit (o articolo) dell'ordine: pezzi di ogni articolo × costo per capo della sua scheda.
+ * `costoCapo` dà il costo per capo della scheda che copre l'articolo in quella parte (adulto o bambino).
+ */
+export function marginiVendita(vendita: VenditaOrdine, costoCapo: (articoloId: string, parte: Parte) => number | null): MargineRiga[] {
+  return vendita.righe.map((r) => {
+    let costo = 0, senzaScheda = 0;
+    for (const a of r.articoli) {
+      if (a.adulto + a.bambino <= 0) continue;
+      const adulto = costoCapo(a.id, "adulto");
+      // Senza la scheda bambino si usa il costo dell'adulto: meglio una stima che zero.
+      const bambino = costoCapo(a.id, "bambino") ?? adulto;
+      if ((a.adulto > 0 && adulto === null) || (a.bambino > 0 && bambino === null)) senzaScheda++;
+      costo += a.adulto * (adulto ?? bambino ?? 0) + a.bambino * (bambino ?? 0);
+    }
+    const consegnati = r.quantita + r.omaggi;
+    return {
+      nome: r.nome, tipo: r.tipo, quantita: r.quantita, omaggi: r.omaggi, prezzo: r.prezzo, ricavo: r.ricavo,
+      costo, costoUnitario: consegnati > 0 && costo > 0 ? costo / consegnati : null,
+      margine: r.ricavo > 0 && costo > 0 ? ((r.ricavo - costo) / r.ricavo) * 100 : null,
+      senzaScheda, scontoDaVerificare: r.scontoDaVerificare,
+    };
   });
 }

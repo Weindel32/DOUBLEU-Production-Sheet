@@ -219,5 +219,6 @@ model SpesaOrdine {
 model ConsuntivoOrdine {
   ordineOrderAppId String    @id
   chiusoIl         DateTime?
+  fasiComplete     String? // JSON: fasi segnate complete a consuntivo aperto, es. ["Tessuto","Taglio"]
   updatedAt        DateTime  @updatedAt
 }

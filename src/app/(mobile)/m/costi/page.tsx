@@ -5,7 +5,7 @@ import CostiAlVolo from "@/components/mobile/CostiAlVolo";
 import { TIPI_COSTO_DB } from "@/lib/utils";
 import { riepilogoScheda } from "@/lib/costiScheda";
 
-/** Articoli di costo con costo per capo, prezzo e margine: da consultare in trattativa. */
+/** Articoli di costo con costo per capo e prezzo per margine: da consultare in trattativa. */
 export default async function CostiMobile() {
   const [schede, materiali] = await Promise.all([
     prisma.scheda.findMany({ where: { tipo: { in: TIPI_COSTO_DB } }, orderBy: { nomeArticolo: "asc" } }),
@@ -21,7 +21,7 @@ export default async function CostiMobile() {
       categoria: s.categoria,
       foto: immagini[0] ?? null,
       materiali: r.materiali, accessori: r.accessori, lavorazioni: r.lavorazioni,
-      costo: r.totale, prezzo: r.prezzoVendita, margine: r.margine,
+      costo: r.totale,
     };
   });
   return (

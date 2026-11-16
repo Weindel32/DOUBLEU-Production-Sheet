@@ -3,8 +3,24 @@ import { ordiniOrderApp } from "@/lib/orderApp";
 import { capiAcquisto, riepilogoAcquisti, type SchedaAcquisto } from "@/lib/approvvigionamento";
 import { schedaAcquisto } from "@/lib/approvvigionamentoServer";
 import { riepilogoScheda } from "@/lib/costiScheda";
-import { confrontoTessuto, previstoPerCapo, riepilogoConsuntivo, type FabbisognoTessuto } from "@/lib/consuntivo";
+import { confrontoTessuto, marginiVendita, previstoPerCapo, riepilogoConsuntivo, type FabbisognoTessuto } from "@/lib/consuntivo";
+import { chiaveParte, statoReferenza } from "@/lib/referenze";
 import { TIPI_COSTO_DB } from "@/lib/utils";
+
+/**
+ * Fasi segnate complete. Letta a parte e senza far cadere la pagina: se la migrazione non è
+ * ancora stata applicata al database la colonna non c'è, e il consuntivo funziona come prima.
+ */
+export async function leggiFasiComplete(ordineId: string): Promise<string[] | null> {
+  try {
+    const r = await prisma.consuntivoOrdine.findUnique({ where: { ordineOrderAppId: ordineId }, select: { fasiComplete: true } });
+    const v = r?.fasiComplete ? JSON.parse(r.fasiComplete) : [];
+    return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
+  } catch (err) {
+    console.error("Consuntivo: fasi complete non lette", ordineId, err);
+    return null;
+  }
+}
 
 /** Spese, previsto dalle schede e stato di chiusura del consuntivo di un ordine dell'Order App. */
 export async function consuntivoOrdine(ordineId: string) {
@@ -15,18 +31,25 @@ export async function consuntivoOrdine(ordineId: string) {
     }),
     prisma.materiale.findMany(),
     prisma.spesaOrdine.findMany({ where: { ordineOrderAppId: ordineId }, orderBy: [{ data: "desc" }, { createdAt: "desc" }] }),
-    prisma.consuntivoOrdine.findUnique({ where: { ordineOrderAppId: ordineId } }),
+    prisma.consuntivoOrdine.findUnique({ where: { ordineOrderAppId: ordineId }, select: { chiusoIl: true } }),
     ordiniOrderApp(),
   ]);
   const ordine = ordini.find((o) => o.id === ordineId) ?? null;
+  const fasiComplete = await leggiFasiComplete(ordineId);
   // Stessi capi dell'approvvigionamento: taglie della scheda, o capi dell'ordine come stima.
   const acquisti: SchedaAcquisto[] = [];
+  // Costo per capo di ogni articolo dell'ordine per parte: serve al margine di ogni kit.
+  const costoPerArticolo = new Map<string, number>();
   const schede = schedeRows.flatMap((s) => {
     const acq = schedaAcquisto(s, ordine);
     if (acq.esclusa) return [];
     acquisti.push(acq);
     const { capi, stimati } = capiAcquisto(acq);
-    return [{ ...s, capi, stimati, costi: riepilogoScheda(s, materiali) }];
+    const costi = riepilogoScheda(s, materiali);
+    const stato = statoReferenza(s, ordine?.referenze ?? null);
+    if (stato.tipo === "collegata" && costi.totale > 0)
+      for (const id of stato.referenza.ids) costoPerArticolo.set(chiaveParte(id, stato.parte), costi.totale);
+    return [{ ...s, capi, stimati, costi }];
   });
 
   // Tessuto che si prevedeva di comprare, per unità: serve solo se le spese hanno la quantità.
@@ -49,7 +72,12 @@ export async function consuntivoOrdine(ordineId: string) {
     capiStimati: schede.some((s) => s.stimati && s.capi > 0),
     spese,
     chiusoIl: chiusura?.chiusoIl ?? null,
-    riepilogo: riepilogoConsuntivo(schede, spese, !!chiusura?.chiusoIl),
+    riepilogo: riepilogoConsuntivo(schede, spese, !!chiusura?.chiusoIl, ordine?.vendita.imponibile ?? 0, fasiComplete ?? []),
+    /** null = colonna non ancora nel database: la spunta delle fasi non si può usare. */
+    fasiAttive: fasiComplete !== null,
+    /** Vendita dell'ordine come nell'Order App, null se l'Order App non risponde. */
+    vendita: ordine?.vendita ?? null,
+    margini: ordine ? marginiVendita(ordine.vendita, (id, parte) => costoPerArticolo.get(chiaveParte(id, parte)) ?? null) : [],
     tessuto: confrontoTessuto(spese, fabbisogno),
   };
 }
