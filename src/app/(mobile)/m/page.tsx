@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic";
 import Link from "next/link";
-import { PackagePlus, Tag, Receipt, Calculator, FileText, Palette, Hourglass, ChevronRight } from "lucide-react";
+import { PackagePlus, Tag, Receipt, Calculator, FileText, Palette, Hourglass, ChevronRight, BookOpen } from "lucide-react";
 import Testata from "@/components/mobile/Testata";
 import { BUILD } from "@/lib/build";
 import { datiHomeMobile } from "@/lib/dashboard";
@@ -93,6 +93,14 @@ export default async function MobileHome() {
           <span className="flex-1">
             <span className="block font-display font-bold text-[17px]">Cerca un colore</span>
             <span className="block text-[13px] text-[#5F6878]">In quali tessuti c&apos;è e con che codice si ordina</span>
+          </span>
+        </Link>
+
+        <Link href="/m/modelli" className="flex items-center gap-3 bg-white border border-[#E4E0D6] rounded-2xl p-4 active:bg-[#FBFAF7]">
+          <span className="w-11 h-11 rounded-xl bg-[#E3E9F3] text-[#1F3A68] flex items-center justify-center"><BookOpen size={22} /></span>
+          <span className="flex-1">
+            <span className="block font-display font-bold text-[17px]">Modelli</span>
+            <span className="block text-[13px] text-[#5F6878]">Archivio dei cartamodelli per categoria, con foto e note</span>
           </span>
         </Link>
 
