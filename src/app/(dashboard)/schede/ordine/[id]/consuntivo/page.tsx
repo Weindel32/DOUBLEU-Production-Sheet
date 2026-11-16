@@ -4,17 +4,19 @@ import Link from "next/link";
 import { ArrowLeft, AlertTriangle } from "lucide-react";
 import SpeseOrdine from "@/components/ordine/SpeseOrdine";
 import { consuntivoOrdine } from "@/lib/consuntivoServer";
-import { MARGINE_MINIMO, formatData, formatEuro, statoOrdine } from "@/lib/utils";
+import { coloreMargine, formatData, formatEuro, statoOrdine } from "@/lib/utils";
 
 const pct = (n: number | null) => (n === null ? "—" : `${n.toLocaleString("it-IT", { maximumFractionDigits: 1 })}%`);
 const num1 = (n: number) => n.toLocaleString("it-IT", { maximumFractionDigits: 1 });
 const segno = (n: number, f: (n: number) => string) => `${n > 0 ? "+" : n < 0 ? "−" : ""}${f(Math.abs(n))}`;
-const coloreMargine = (n: number | null) => (n === null ? "text-[#5F6878]" : n < MARGINE_MINIMO ? "text-[#A8461F]" : "text-[#1D6B4A]");
 
 /** Consuntivo di un ordine: spese reali per fase contro il costo previsto dalle schede, e margine reale. */
 export default async function ConsuntivoOrdinePage({ params }: { params: Promise<{ id: string }> }) {
   const ordineId = decodeURIComponent((await params).id);
-  const { ordine, cliente, nSchede, capiStimati, spese, chiusoIl, riepilogo: r, tessuto } = await consuntivoOrdine(ordineId);
+  const { ordine, cliente, nSchede, capiStimati, spese, chiusoIl, riepilogo: r, tessuto, vendita, margini } = await consuntivoOrdine(ordineId);
+  const senzaScheda = margini.reduce((t, m) => t + m.senzaScheda, 0);
+  const scontiDaVerificare = margini.filter((m) => m.scontoDaVerificare).length;
+  const aKit = vendita?.modo === "kit";
   const base = `/schede/ordine/${encodeURIComponent(ordineId)}`;
   const righe = r.righe.filter((x) => x.previsto > 0 || x.speso > 0);
   const cella = "px-3 py-2.5";
@@ -62,10 +64,13 @@ export default async function ConsuntivoOrdinePage({ params }: { params: Promise
           : <><span className="font-semibold">Consuntivo aperto:</span> il margine reale è provvisorio finché non registri tutte le spese e chiudi il consuntivo.</>}
       </div>
 
-      {(r.senzaPrezzo > 0 || capiStimati) && (
+      {(!vendita || (vendita && r.ricavo === 0) || senzaScheda > 0 || scontiDaVerificare > 0 || capiStimati) && (
         <div role="alert" className="rounded-xl border border-[#E8C98A] bg-[#FBF3DF] px-4 py-3 text-sm text-[#7A5B12] space-y-1">
           <div className="flex items-center gap-2 font-semibold"><AlertTriangle size={16} /> Numeri da completare</div>
-          {r.senzaPrezzo > 0 && <div>{r.senzaPrezzo} {r.senzaPrezzo === 1 ? "scheda senza" : "schede senza"} prezzo di vendita: ricavo e margini sono incompleti.</div>}
+          {!vendita && <div>Order App non raggiungibile: senza i prezzi dei kit ricavo e margini non si calcolano.</div>}
+          {vendita && r.ricavo === 0 && <div>Nell&apos;Order App l&apos;ordine non ha ancora prezzi: ricavo e margini non si calcolano.</div>}
+          {senzaScheda > 0 && <div>{senzaScheda} {senzaScheda === 1 ? "articolo dell'ordine è" : "articoli dell'ordine sono"} senza scheda con i costi: il costo {aKit ? "dei kit" : "delle righe"} è incompleto.</div>}
+          {scontiDaVerificare > 0 && <div>Sconti non in percentuale su {scontiDaVerificare} {scontiDaVerificare === 1 ? "riga" : "righe"}: il ricavo è senza sconto, verificalo nell&apos;Order App.</div>}
           {capiStimati && <div>Alcune schede non hanno ancora le taglie: il previsto usa i capi dell&apos;ordine.</div>}
         </div>
       )}
@@ -78,7 +83,9 @@ export default async function ConsuntivoOrdinePage({ params }: { params: Promise
           r.speso === 0 ? "nessuna spesa ancora" : chiusoIl ? "rispetto al previsto" : "sulle fasi registrate, le altre al previsto")}
         {tile("Margine",
           <><span className={coloreMargine(r.marginePrevisto)}>{pct(r.marginePrevisto)}</span><span className="text-[#5F6878] text-base"> → </span><span className={coloreMargine(r.speso > 0 ? r.margineReale : null)}>{r.speso > 0 ? pct(r.margineReale) : "—"}</span></>,
-          r.ricavo > 0 ? `previsto → ${chiusoIl ? "reale" : "reale provvisorio"} su ${formatEuro(r.ricavo)} di vendita` : "manca il prezzo di vendita")}
+          r.ricavo > 0
+            ? `previsto → ${chiusoIl ? "reale" : "reale provvisorio"} su ${formatEuro(r.ricavo)} di vendita (imponibile, spedizione esclusa)`
+            : "manca il ricavo dall'Order App")}
       </div>
 
       {righe.length > 0 && (
@@ -127,6 +134,54 @@ export default async function ConsuntivoOrdinePage({ params }: { params: Promise
             <div className="px-4 py-2.5 border-t border-[#E4E0D6] text-[13px] text-[#5F6878]">
               Con fattura (imponibile) <span className="font-mono text-[#0E1B2C]">{formatEuro(r.conFattura)}</span>
               {" · "}Senza fattura <span className="font-mono text-[#0E1B2C]">{formatEuro(r.senzaFattura)}</span>
+            </div>
+          )}
+        </section>
+      )}
+
+      {margini.length > 0 && r.ricavo > 0 && (
+        <section className="bg-white border border-[#E4E0D6] rounded-2xl overflow-hidden">
+          <div className="px-4 pt-3 pb-2 flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="font-display text-[17px] font-bold text-[#0E1B2C]">Margine per {aKit ? "kit" : "articolo"}</h2>
+            <span className="text-xs text-[#5F6878]">prezzi dall&apos;Order App · costo previsto dalle schede</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-[15px] min-w-[680px]">
+              <thead>
+                <tr className="border-y border-[#E4E0D6] bg-[#FBFAF7] text-left text-[13px] text-[#5F6878]">
+                  <th className={`${cella} font-medium`}>{aKit ? "Kit" : "Articolo"}</th>
+                  <th className={`${cella} font-medium text-right`}>Venduti</th>
+                  <th className={`${cella} font-medium text-right`}>Prezzo</th>
+                  <th className={`${cella} font-medium text-right`}>Ricavo</th>
+                  <th className={`${cella} font-medium text-right`}>Costo {aKit ? "kit" : "capo"}</th>
+                  <th className={`${cella} font-medium text-right`}>Costo</th>
+                  <th className={`${cella} font-medium text-right`}>Margine</th>
+                </tr>
+              </thead>
+              <tbody>
+                {margini.map((m, i) => (
+                  <tr key={`${m.nome}${i}`} className="border-b border-[#EFEBE2] last:border-0">
+                    <td className={`${cella} font-semibold text-[#0E1B2C]`}>
+                      {m.nome}
+                      {m.senzaScheda > 0 && <span className="block font-normal text-xs text-[#A8461F]">{m.senzaScheda} {m.senzaScheda === 1 ? "articolo senza scheda" : "articoli senza scheda"}</span>}
+                    </td>
+                    <td className={`${cella} text-right font-mono text-[#4A5566]`}>
+                      {m.quantita}{m.omaggi > 0 && <span className="block text-xs text-[#5F6878]">+{m.omaggi} omaggio</span>}
+                    </td>
+                    <td className={`${cella} text-right font-mono text-[#4A5566]`}>{m.prezzo > 0 ? formatEuro(m.prezzo) : "—"}</td>
+                    <td className={`${cella} text-right font-mono text-[#0E1B2C]`}>{m.ricavo > 0 ? formatEuro(m.ricavo) : "—"}</td>
+                    <td className={`${cella} text-right font-mono text-[#4A5566]`}>{m.costoUnitario !== null ? formatEuro(m.costoUnitario) : "—"}</td>
+                    <td className={`${cella} text-right font-mono text-[#0E1B2C]`}>{m.costo > 0 ? formatEuro(m.costo) : "—"}</td>
+                    <td className={`${cella} text-right font-mono font-semibold ${coloreMargine(m.margine)}`}>{pct(m.margine)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {((vendita?.scontoOrdine ?? 0) > 0 || margini.some((m) => m.omaggi > 0)) && (
+            <div className="px-4 py-2.5 border-t border-[#E4E0D6] text-[13px] text-[#5F6878]">
+              {(vendita?.scontoOrdine ?? 0) > 0 && <>Sconto sull&apos;ordine di {formatEuro(vendita!.scontoOrdine)} ripartito sulle righe. </>}
+              {margini.some((m) => m.omaggi > 0) && <>Gli omaggi entrano nel costo ma non nel ricavo.</>}
             </div>
           )}
         </section>

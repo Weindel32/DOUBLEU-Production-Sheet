@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { formatData, calcolaTotaleQuantita, TAGLIE_ADULTO, TAGLIE_KIDS, CATEGORIE_ELASTICO, STATI_SCHEDA,
-  calcolaAcquistoMateriale, calcolaCostoUnitarioConsumo, formatEuro, MARGINE_MINIMO, MARGINE_PIENO, SCARTO_ACQUISTO } from "@/lib/utils";
+  calcolaAcquistoMateriale, calcolaCostoUnitarioConsumo, formatEuro, SCARTO_ACQUISTO } from "@/lib/utils";
 import type { ConsumoMateriale } from "@/types";
 import { totaliReferenza, vociCosto } from "@/lib/costoReferenza";
 import Testata from "@/components/mobile/Testata";
@@ -82,10 +82,7 @@ export default async function MobileSchedaDetailPage({ params }: { params: Promi
     taglio: scheda.costoTaglio, cucitura: dettaglioLav ? scheda.costoCucitura : scheda.costoLavorazione,
     stampa: scheda.costoStampa, ricamo: scheda.costoRicamo,
   }, materiali, capi);
-  const prezzoVendita = scheda.prezzoVendita || 0;
-  const tot = totaliReferenza(voci, capi, prezzoVendita);
-  const coloreMargine = tot.marginePct === null ? "text-[#5F6878]"
-    : tot.marginePct >= MARGINE_PIENO ? "text-[#1D6B4A]" : tot.marginePct >= MARGINE_MINIMO ? "text-[#7A5B12]" : "text-[#A8461F]";
+  const tot = totaliReferenza(voci, capi);
   const righeMateriali = consumi.flatMap((c) => {
     const mat = materiali.find((m) => m.id === c.materialeId);
     if (!mat) return [];
@@ -283,22 +280,14 @@ export default async function MobileSchedaDetailPage({ params }: { params: Promi
               })}
             </div>
             <div className="border-t-2 border-[#E4E0D6] px-4 py-3 space-y-2 text-[14px]">
-              {[
-                { label: "Costo totale", capo: formatEuro(tot.costoCapo), totale: formatEuro(tot.totale), pct: "", cls: "font-bold text-[#0E1B2C]" },
-                { label: "Ricavo", capo: prezzoVendita > 0 ? formatEuro(prezzoVendita) : "—", totale: tot.ricavo > 0 ? formatEuro(tot.ricavo) : "—", pct: "", cls: "font-semibold text-[#0E1B2C]" },
-                { label: "Margine", capo: tot.margine !== null ? formatEuro(tot.margine / capi) : "—", totale: tot.margine !== null ? formatEuro(tot.margine) : "—",
-                  pct: tot.marginePct !== null ? `${tot.marginePct.toFixed(1).replace(".", ",")}%` : "", cls: `font-semibold ${coloreMargine}` },
-              ].map((r) => (
-                <div key={r.label} className="grid grid-cols-[1fr_auto_auto] gap-x-3 items-baseline">
-                  <span className={r.label === "Costo totale" ? "font-semibold" : "text-[#4A5566]"}>{r.label}</span>
-                  <span className="font-mono text-[13px] text-[#4A5566] text-right">{r.capo}<span className="text-[11px]">/capo</span></span>
-                  <span className={`font-mono text-right min-w-[92px] ${r.cls}`}>{r.totale}{r.pct && <span className="block text-[12px]">{r.pct}</span>}</span>
-                </div>
-              ))}
+              <div className="grid grid-cols-[1fr_auto_auto] gap-x-3 items-baseline">
+                <span className="font-semibold">Costo totale</span>
+                <span className="font-mono text-[13px] text-[#4A5566] text-right">{formatEuro(tot.costoCapo)}<span className="text-[11px]">/capo</span></span>
+                <span className="font-mono text-right min-w-[92px] font-bold text-[#0E1B2C]">{formatEuro(tot.totale)}</span>
+              </div>
               <p className="text-[12px] text-[#5F6878] leading-snug pt-1">
-                Previsto dai costi della scheda, materiali al netto dello scarto. Lo speso reale è nel consuntivo dell&apos;ordine.
+                Previsto dai costi della scheda, materiali al netto dello scarto. Ricavo e margine sono nel consuntivo dell&apos;ordine.
                 {voci.some((v) => v.manca) && <span className="text-[#A8461F]"> Da completare: {voci.filter((v) => v.manca).map((v) => v.nome).join(", ")}.</span>}
-                {prezzoVendita <= 0 && <span className="text-[#A8461F]"> Manca il prezzo di vendita.</span>}
               </p>
             </div>
           </Blocco>

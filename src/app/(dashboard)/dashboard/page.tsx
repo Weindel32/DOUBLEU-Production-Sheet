@@ -210,24 +210,24 @@ export default async function DashboardPage() {
         </section>
 
         <section>
-          <Titolo destra={<span className="text-[13px] text-[#5F6878]">sotto il {MARGINE_MINIMO}%</span>}>Margini a rischio</Titolo>
+          <Titolo destra={<span className="text-[13px] text-[#5F6878]">margine previsto sotto il {MARGINE_MINIMO}%</span>}>Ordini a margine basso</Titolo>
           <div className="bg-white border border-[#E4E0D6] rounded-2xl overflow-hidden">
             {d.margini.length === 0 ? (
               <div className="p-8 text-center text-[#1D6B4A] flex flex-col items-center gap-2">
-                <CheckCircle2 size={28} /> <span className="font-semibold">Nessuna scheda sotto il {MARGINE_MINIMO}%</span>
+                <CheckCircle2 size={28} /> <span className="font-semibold">Nessun ordine sotto il {MARGINE_MINIMO}%</span>
               </div>
             ) : (
               <ul className="divide-y divide-[#EFEBE2]">
                 {d.margini.slice(0, 8).map((m) => (
                   <li key={m.id}>
-                    <Link href={`/schede/${m.id}#sez-costi`} className="flex items-center gap-3 px-5 py-3.5 hover:bg-[#FBFAF7]">
+                    <Link href={`/schede/ordine/${encodeURIComponent(m.id)}/consuntivo`} className="flex items-center gap-3 px-5 py-3.5 hover:bg-[#FBFAF7]">
                       <span className="flex-1 min-w-0">
-                        <span className="block text-[14px] font-semibold text-[#0E1B2C] truncate">{m.nome}</span>
+                        <span className="block text-[14px] font-semibold text-[#0E1B2C] truncate">{m.cliente}</span>
                         <span className="block text-[12px] text-[#5F6878] truncate">
-                          {[m.cliente, `costo ${formatEuro(m.costo)}`, `prezzo ${formatEuro(m.prezzo)}`].filter(Boolean).join(" · ")}
+                          {[m.id, `costo previsto ${formatEuro(m.costo)}`, `vendita ${formatEuro(m.ricavo)}`].join(" · ")}
                         </span>
                       </span>
-                      <span className="font-display text-[20px] font-extrabold text-[#A8461F] tabular-nums">{m.margine!.toFixed(1).replace(".", ",")}%</span>
+                      <span className="font-display text-[20px] font-extrabold text-[#A8461F] tabular-nums">{m.margine.toFixed(1).replace(".", ",")}%</span>
                     </Link>
                   </li>
                 ))}

@@ -3,7 +3,8 @@ import { ordiniOrderApp } from "@/lib/orderApp";
 import { capiAcquisto, riepilogoAcquisti, type SchedaAcquisto } from "@/lib/approvvigionamento";
 import { schedaAcquisto } from "@/lib/approvvigionamentoServer";
 import { riepilogoScheda } from "@/lib/costiScheda";
-import { confrontoTessuto, previstoPerCapo, riepilogoConsuntivo, type FabbisognoTessuto } from "@/lib/consuntivo";
+import { confrontoTessuto, marginiVendita, previstoPerCapo, riepilogoConsuntivo, type FabbisognoTessuto } from "@/lib/consuntivo";
+import { chiaveParte, statoReferenza } from "@/lib/referenze";
 import { TIPI_COSTO_DB } from "@/lib/utils";
 
 /** Spese, previsto dalle schede e stato di chiusura del consuntivo di un ordine dell'Order App. */
@@ -21,12 +22,18 @@ export async function consuntivoOrdine(ordineId: string) {
   const ordine = ordini.find((o) => o.id === ordineId) ?? null;
   // Stessi capi dell'approvvigionamento: taglie della scheda, o capi dell'ordine come stima.
   const acquisti: SchedaAcquisto[] = [];
+  // Costo per capo di ogni articolo dell'ordine per parte: serve al margine di ogni kit.
+  const costoPerArticolo = new Map<string, number>();
   const schede = schedeRows.flatMap((s) => {
     const acq = schedaAcquisto(s, ordine);
     if (acq.esclusa) return [];
     acquisti.push(acq);
     const { capi, stimati } = capiAcquisto(acq);
-    return [{ ...s, capi, stimati, costi: riepilogoScheda(s, materiali) }];
+    const costi = riepilogoScheda(s, materiali);
+    const stato = statoReferenza(s, ordine?.referenze ?? null);
+    if (stato.tipo === "collegata" && costi.totale > 0)
+      for (const id of stato.referenza.ids) costoPerArticolo.set(chiaveParte(id, stato.parte), costi.totale);
+    return [{ ...s, capi, stimati, costi }];
   });
 
   // Tessuto che si prevedeva di comprare, per unità: serve solo se le spese hanno la quantità.
@@ -49,7 +56,10 @@ export async function consuntivoOrdine(ordineId: string) {
     capiStimati: schede.some((s) => s.stimati && s.capi > 0),
     spese,
     chiusoIl: chiusura?.chiusoIl ?? null,
-    riepilogo: riepilogoConsuntivo(schede, spese, !!chiusura?.chiusoIl),
+    riepilogo: riepilogoConsuntivo(schede, spese, !!chiusura?.chiusoIl, ordine?.vendita.imponibile ?? 0),
+    /** Vendita dell'ordine come nell'Order App, null se l'Order App non risponde. */
+    vendita: ordine?.vendita ?? null,
+    margini: ordine ? marginiVendita(ordine.vendita, (id, parte) => costoPerArticolo.get(chiaveParte(id, parte)) ?? null) : [],
     tessuto: confrontoTessuto(spese, fabbisogno),
   };
 }

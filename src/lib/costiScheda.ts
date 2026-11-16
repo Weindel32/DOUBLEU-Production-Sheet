@@ -8,7 +8,6 @@ type SchedaCosti = {
   costoStampa: number | null;
   costoRicamo: number | null;
   costoLavorazione: number | null;
-  prezzoVendita: number | null;
 };
 
 function parseJson<T>(s: string | null, fallback: T): T {
@@ -25,7 +24,6 @@ export function riepilogoScheda(s: SchedaCosti, materiali: (MaterialeCostoInfo &
       accessori: parseJson(s.accessori, []),
       // Schede vecchie: solo il totale lavorazione, senza il dettaglio per voce.
       lavorazioni: lavSplit.some((v) => v !== null) ? lavSplit : [s.costoLavorazione],
-      prezzoVendita: s.prezzoVendita,
     },
     materiali,
   );

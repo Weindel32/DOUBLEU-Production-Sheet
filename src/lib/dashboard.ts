@@ -4,7 +4,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { ordiniOrderApp, type OrdineOrderApp } from "@/lib/orderApp";
-import { riepilogoAcquisti } from "@/lib/approvvigionamento";
+import { capiAcquisto, riepilogoAcquisti } from "@/lib/approvvigionamento";
 import { schedaAcquisto, etichettatoreColori } from "@/lib/approvvigionamentoServer";
 import { salvaRicollegamenti } from "@/lib/clientiOrderApp";
 import { statoReferenza, capiScheda, taglieDiverse, chiaveParte, parteCoperta, partiReferenza } from "@/lib/referenze";
@@ -107,9 +107,10 @@ async function ordiniInLavorazione() {
         azioni.push({ tipo: "taglie", testo: `Taglie arrivate per ${s.nomeArticolo}`, dettaglio: chi, href: `/schede/${s.id}`, urgenza });
       if (!parseJson<unknown[]>(s.consumoMateriale, []).length)
         azioni.push({ tipo: "consumi", testo: `${s.nomeArticolo}: mancano i consumi`, dettaglio: `${chi} · tessuto e costo non calcolabili`, href: `/schede/${s.id}#sez-costi`, urgenza });
-      else if (!s.prezzoVendita)
-        azioni.push({ tipo: "prezzo", testo: `${s.nomeArticolo}: manca il prezzo di vendita`, dettaglio: `${chi} · margine non calcolabile`, href: `/schede/${s.id}#sez-costi`, urgenza });
     }
+    // Il prezzo è del kit, nell'Order App: senza, il consuntivo non ha ricavo né margine.
+    if (o.vendita.imponibile <= 0)
+      azioni.push({ tipo: "prezzo", testo: "Mancano i prezzi nell'Order App", dettaglio: `${chi} · margine non calcolabile`, href: `/schede/ordine/${encodeURIComponent(o.id)}/consuntivo`, urgenza });
 
     // Tempi di produzione: dalla ricezione delle taglie (o dalla partenza scritta a mano) più i giorni lavorativi.
     const produzione = pianoProduzione({
@@ -193,16 +194,23 @@ export async function datiDashboard() {
   }
   azioni.sort(perUrgenza);
 
-  // Margini sotto il minimo: schede degli ordini in lavorazione e schede non ancora legate a un ordine.
-  const margini = schedeRows
-    .filter((s) => (s.ordineOrderAppId ? attiviIds.has(s.ordineOrderAppId) : true))
-    .map((s) => {
-      const r = riepilogoScheda(s, materiali);
-      const ordine = s.ordineOrderAppId ? ordini.find((o) => o.id === s.ordineOrderAppId) : undefined;
-      return { id: s.id, nome: s.nomeArticolo, codice: s.codiceModello || s.codice, cliente: ordine?.cliente ?? null, ordine: s.ordineOrderAppId, costo: r.totale, prezzo: r.prezzoVendita, margine: r.margine };
+  // Ordini in lavorazione con margine previsto sotto il minimo: ricavo dall'Order App (prezzi dei kit)
+  // contro il costo previsto delle schede, come nel consuntivo.
+  const margini = ordini
+    .filter((o) => attiviIds.has(o.id) && o.vendita.imponibile > 0)
+    .flatMap((o) => {
+      let costo = 0;
+      for (const s of schedeRows.filter((x) => x.ordineOrderAppId === o.id)) {
+        const acq = schedaAcquisto(s, o);
+        if (acq.esclusa) continue;
+        costo += capiAcquisto(acq).capi * riepilogoScheda(s, materiali).totale;
+      }
+      if (costo <= 0) return [];
+      const ricavo = o.vendita.imponibile;
+      return [{ id: o.id, cliente: o.cliente, ricavo, costo, margine: ((ricavo - costo) / ricavo) * 100 }];
     })
-    .filter((m) => m.margine !== null && m.margine < MARGINE_MINIMO)
-    .sort((a, b) => a.margine! - b.margine!);
+    .filter((m) => m.margine < MARGINE_MINIMO)
+    .sort((a, b) => a.margine - b.margine);
 
   return {
     ordini: ordiniVista,

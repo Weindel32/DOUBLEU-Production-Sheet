@@ -1,7 +1,7 @@
 "use client";
 
 import { Lock } from "lucide-react";
-import { formatEuro, MARGINE_MINIMO, MARGINE_PIENO } from "@/lib/utils";
+import { formatEuro } from "@/lib/utils";
 import { totaliReferenza, type VoceCosto } from "@/lib/costoReferenza";
 
 interface Props {
@@ -9,7 +9,6 @@ interface Props {
   pezzi: number;
   /** Pezzi presi dall'ordine perché la scheda non ha ancora le taglie. */
   stimati: boolean;
-  prezzoVendita: number;
   /** Fasonista della scheda: va accanto alla confezione. */
   produttore: string;
   onVaiAiCosti: () => void;
@@ -21,11 +20,9 @@ const COLS = "grid grid-cols-[minmax(0,2.2fr)_minmax(0,1.3fr)_minmax(0,1fr)_minm
  * Costo previsto della referenza: costo per capo di ogni voce × pezzi.
  * È il previsto, non lo speso: le spese reali stanno sull'ordine (consuntivo dell'ordine).
  */
-export default function CostoReferenza({ voci, pezzi, stimati, prezzoVendita, produttore, onVaiAiCosti }: Props) {
-  const { costoCapo, totale, ricavo, margine, marginePct } = totaliReferenza(voci, pezzi, prezzoVendita);
+export default function CostoReferenza({ voci, pezzi, stimati, produttore, onVaiAiCosti }: Props) {
+  const { costoCapo, totale } = totaliReferenza(voci, pezzi);
   const mancanti = voci.filter((v) => v.manca);
-  const coloreMargine = marginePct === null ? "text-[#5F6878]"
-    : marginePct >= MARGINE_PIENO ? "text-[#1D6B4A]" : marginePct >= MARGINE_MINIMO ? "text-[#7A5B12]" : "text-[#A8461F]";
 
   return (
     <section id="sez-costo-referenza" className="scheda-section space-y-4">
@@ -77,25 +74,10 @@ export default function CostoReferenza({ voci, pezzi, stimati, prezzoVendita, pr
             <span className="text-right font-mono text-[15px] font-bold text-[#0E1B2C]">{formatEuro(totale)}</span>
             <span />
           </div>
-          <div className={`${COLS} pt-1.5 text-sm`}>
-            <span className="text-[#4A5566]">Ricavo</span>
-            <span />
-            <span className="text-right font-mono text-[13px] text-[#4A5566]">{prezzoVendita > 0 ? formatEuro(prezzoVendita) : "—"}</span>
-            <span className="text-right font-mono font-semibold text-[#0E1B2C]">{ricavo > 0 ? formatEuro(ricavo) : "—"}</span>
-            <span />
-          </div>
-          <div className={`${COLS} pt-1.5 text-sm`}>
-            <span className="text-[#4A5566]">Margine</span>
-            <span />
-            <span className="text-right font-mono text-[13px] text-[#4A5566]">{margine !== null ? formatEuro(margine / pezzi) : "—"}</span>
-            <span className={`text-right font-mono font-semibold ${coloreMargine}`}>{margine !== null ? formatEuro(margine) : "—"}</span>
-            <span className={`text-right font-mono text-xs font-semibold ${coloreMargine}`}>{marginePct !== null ? `${marginePct.toFixed(1).replace(".", ",")}%` : ""}</span>
-          </div>
 
           <p className="text-xs text-[#5F6878] mt-3 leading-snug">
-            Previsto dai costi della scheda, materiali al netto dello scarto. Lo speso reale si registra nel consuntivo dell&apos;ordine.
+            Previsto dai costi della scheda, materiali al netto dello scarto. Ricavo e margine sono nel consuntivo dell&apos;ordine, con i prezzi dei kit dall&apos;Order App.
             {mancanti.length > 0 && <span className="text-[#A8461F]"> Costo da completare: {mancanti.map((v) => v.nome).join(", ")}.</span>}
-            {prezzoVendita <= 0 && <span className="text-[#A8461F]"> Manca il prezzo di vendita.</span>}
           </p>
         </div>
       )}

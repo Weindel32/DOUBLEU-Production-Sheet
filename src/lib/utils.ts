@@ -16,6 +16,9 @@ export type StatoScheda = typeof STATI_SCHEDA[number]["value"];
 export const MARGINE_MINIMO = 35;
 /** Sopra questa soglia il margine è pieno (verde); tra minimo e pieno è giusto (ambra). */
 export const MARGINE_PIENO = 40;
+/** Colore del margine in tre fasce: rosso sotto il minimo, ambra fino al pieno, verde sopra. */
+export const coloreMargine = (m: number | null | undefined) =>
+  m === null || m === undefined ? "text-[#5F6878]" : m >= MARGINE_PIENO ? "text-[#1D6B4A]" : m >= MARGINE_MINIMO ? "text-[#7A5B12]" : "text-[#A8461F]";
 
 /** Stato di un ordine dell'Order App (PREVENTIVO, IN PRODUZIONE…) scritto per esteso: "In produzione". */
 export const statoOrdine = (s: string | null | undefined) => (s ? s.charAt(0) + s.slice(1).toLowerCase() : "");
@@ -310,9 +313,6 @@ export interface RiepilogoCosti {
   accessori: number;
   lavorazioni: number;
   totale: number;
-  prezzoVendita: number;
-  /** Margine sul prezzo di vendita in %, null se manca prezzo o costo. */
-  margine: number | null;
 }
 
 /**
@@ -324,7 +324,6 @@ export function calcolaRiepilogoCosti(
     consumi: { materialeId: string; consumoPerCapo: number; costoUnitario?: number }[];
     accessori: { quantita: number; prezzoUnitario: number }[];
     lavorazioni: (number | null | undefined)[];
-    prezzoVendita: number | null | undefined;
   },
   materiali: (MaterialeCostoInfo & { id: string })[],
 ): RiepilogoCosti {
@@ -335,16 +334,7 @@ export function calcolaRiepilogoCosti(
   }, 0);
   const acc = input.accessori.reduce((sum, a) => sum + (a.quantita || 0) * (a.prezzoUnitario || 0), 0);
   const lav = input.lavorazioni.reduce<number>((sum, v) => sum + (v || 0), 0);
-  const totale = mat + acc + lav;
-  const prezzo = input.prezzoVendita || 0;
-  return {
-    materiali: mat,
-    accessori: acc,
-    lavorazioni: lav,
-    totale,
-    prezzoVendita: prezzo,
-    margine: prezzo > 0 && totale > 0 ? ((prezzo - totale) / prezzo) * 100 : null,
-  };
+  return { materiali: mat, accessori: acc, lavorazioni: lav, totale: mat + acc + lav };
 }
 
 /** Prezzo di vendita che dà il margine indicato (in %) sul costo. */

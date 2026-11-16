@@ -6,7 +6,6 @@ import type { SchedaCompleta, ConsumoMateriale, Accessorio } from "@/types";
 import {
   calcolaTotaleQuantita, ACCESSORI_STANDARD, parseNumIt, calcolaKgPerMetroLineare, calcolaCostoUnitarioConsumo,
   calcolaRiepilogoCosti, prezzoDaMargine, formatEuro, type RiepilogoCosti, calcolaAcquistoMateriale, SCARTO_ACQUISTO,
-  MARGINE_MINIMO, MARGINE_PIENO,
 } from "@/lib/utils";
 import { Field, SectionCard, EuroInput, numStr, inputCls, textareaCls } from "@/components/ui/Form";
 import CostoReferenza from "./CostoReferenza";
@@ -82,7 +81,6 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
   const [costoCucitura, setCostoCucitura] = useState(numStr(scheda.costoCucitura));
   const [costoStampa, setCostoStampa] = useState(numStr(scheda.costoStampa));
   const [costoRicamo, setCostoRicamo] = useState(numStr(scheda.costoRicamo));
-  const [prezzoVendita, setPrezzoVendita] = useState(numStr(scheda.prezzoVendita));
   const [margineObiettivo, setMargineObiettivo] = useState(45);
   const [focusAcc, setFocusAcc] = useState<string | null>(null);
 
@@ -101,7 +99,7 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
    * si aggiorna solo al render successivo, e salvare quello vecchio rimetterebbe
    * in scheda una riga appena eliminata.
    */
-  const salva = async (over: { consumi?: ConsumoMateriale[]; accessori?: Accessorio[]; prezzoVendita?: string } = {}) => {
+  const salva = async (over: { consumi?: ConsumoMateriale[]; accessori?: Accessorio[] } = {}) => {
     const lav = [costoTaglio, costoCucitura, costoStampa, costoRicamo].map((v) => parseNum(v) ?? 0);
     const costoLavorazione = lav.reduce((a, b) => a + b, 0);
 
@@ -120,7 +118,6 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
       costoStampa: parseNum(costoStampa),
       costoRicamo: parseNum(costoRicamo),
       costoLavorazione: costoLavorazione || null,
-      prezzoVendita: parseNum(over.prezzoVendita ?? prezzoVendita),
     });
   };
 
@@ -203,7 +200,6 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
       consumi,
       accessori,
       lavorazioni: [costoTaglio, costoCucitura, costoStampa, costoRicamo].map((v) => parseNum(v)),
-      prezzoVendita: parseNum(prezzoVendita),
     },
     materialiDisponibili,
   );
@@ -212,18 +208,9 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
     onRiepilogoChange?.(riepilogo);
     // Dipendo dai numeri, non dall'oggetto (nuovo a ogni render).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [riepilogo.materiali, riepilogo.accessori, riepilogo.lavorazioni, riepilogo.prezzoVendita]);
+  }, [riepilogo.materiali, riepilogo.accessori, riepilogo.lavorazioni]);
 
   const prezzoSuggerito = riepilogo.totale > 0 ? prezzoDaMargine(riepilogo.totale, margineObiettivo) : 0;
-
-  const usaPrezzoSuggerito = () => {
-    const v = prezzoSuggerito.toFixed(2).replace(".", ",");
-    setPrezzoVendita(v);
-    salva({ prezzoVendita: v });
-  };
-
-  const margineColore = riepilogo.margine === null ? "text-[#5F6878]"
-    : riepilogo.margine >= MARGINE_PIENO ? "text-[#1D6B4A]" : riepilogo.margine >= MARGINE_MINIMO ? "text-[#7A5B12]" : "text-[#A8461F]";
 
   const lavorazioni = [
     { label: "Taglio", value: costoTaglio, set: setCostoTaglio },
@@ -398,30 +385,9 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
             </SectionCard>
           </div>
 
-          {/* Prezzo e margine */}
-          <div className="grid grid-cols-2 gap-4 items-start min-[1600px]:grid-cols-1">
-            <SectionCard title="Prezzo e margine">
-              <div className="space-y-4">
-                <div className="flex flex-col gap-1.5 text-[13px] text-[#4A5566]">
-                  <span>Prezzo vendita / capo</span>
-                  <EuroInput big label="Prezzo vendita per capo" value={prezzoVendita} onChange={setPrezzoVendita} onBlur={() => salva()} />
-                </div>
-                <div className="flex items-baseline justify-between">
-                  <span className="text-sm text-[#4A5566]">Margine</span>
-                  <span className={`font-mono text-[28px] font-semibold ${margineColore}`}>
-                    {riepilogo.margine === null ? "—" : `${riepilogo.margine.toFixed(1).replace(".", ",")}%`}
-                  </span>
-                </div>
-                {riepilogo.margine !== null && (
-                  <div aria-hidden className="relative h-2 rounded bg-[linear-gradient(90deg,#EFD2C3_0_50%,#EFE4C4_50%_66.6%,#CFE5D8_66.6%_100%)]">
-                    <div className="absolute -top-1 w-1 h-4 rounded bg-[#0E1B2C]"
-                      style={{ left: `calc(${Math.max(0, Math.min(60, riepilogo.margine)) / 60 * 100}% - 2px)` }} />
-                  </div>
-                )}
-              </div>
-            </SectionCard>
-
-            <SectionCard title="Prezzo da margine">
+          {/* Il prezzo si decide nel Kit Builder, per kit: qui solo il riferimento per capo. */}
+          <div className="grid gap-4 items-start">
+            <SectionCard title="Prezzo indicativo per capo">
               <div className="space-y-3">
                 <div role="group" aria-label="Margine obiettivo" className="flex gap-1.5">
                   {MARGINI_OBIETTIVO.map((m) => (
@@ -435,10 +401,10 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
                   <span className="text-sm text-[#4A5566]">Prezzo suggerito</span>
                   <span className="font-mono text-xl font-semibold">{prezzoSuggerito > 0 ? formatEuro(prezzoSuggerito) : "—"}</span>
                 </div>
-                <button type="button" onClick={usaPrezzoSuggerito} disabled={prezzoSuggerito <= 0}
-                  className="w-full h-11 rounded-[10px] border border-[#0E1B2C] bg-white text-sm font-semibold text-[#0E1B2C] hover:bg-[#0E1B2C] hover:text-white transition-colors disabled:opacity-40 disabled:hover:bg-white disabled:hover:text-[#0E1B2C]">
-                  Usa questo prezzo
-                </button>
+                <p className="text-xs text-[#5F6878] leading-snug">
+                  Prezzo per capo che dà il margine scelto su questo costo: un riferimento per comporre il kit nel Kit Builder.
+                  Il prezzo vero è quello del kit nell&apos;Order App, e il margine si legge nel consuntivo dell&apos;ordine.
+                </p>
               </div>
             </SectionCard>
           </div>
@@ -447,7 +413,7 @@ const TabProduzione = forwardRef<TabProduzioneHandle, Props>(function TabProduzi
 
       {/* ── Costo della referenza: costo per capo × pezzi, prima della produzione ── */}
       {!soloCosti && (
-        <CostoReferenza voci={voci} pezzi={totalePezzi} stimati={pezziStimati} prezzoVendita={riepilogo.prezzoVendita}
+        <CostoReferenza voci={voci} pezzi={totalePezzi} stimati={pezziStimati}
           produttore={produttore} onVaiAiCosti={() => document.getElementById("sez-costi")?.scrollIntoView({ behavior: "smooth", block: "start" })} />
       )}
 

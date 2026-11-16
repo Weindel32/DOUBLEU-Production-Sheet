@@ -9,7 +9,7 @@ const AZIONI = [
   { href: "/m/materiali/nuovo", titolo: "Nuovo materiale", testo: "Dal fornitore, con foto del cartellino", icon: PackagePlus },
   { href: "/m/materiali", titolo: "Aggiorna un prezzo", testo: "Il cambio resta nelle note, con la data", icon: Tag },
   { href: "/m/campioni", titolo: "Spesa campione", testo: "Taglio, cartamodello, confezione…", icon: Receipt },
-  { href: "/m/costi", titolo: "Costo al volo", testo: "Costo, margine e prezzo per un articolo", icon: Calculator },
+  { href: "/m/costi", titolo: "Costo al volo", testo: "Costo e prezzo per margine di un articolo", icon: Calculator },
 ];
 
 const consegna = (g: number | null) =>
