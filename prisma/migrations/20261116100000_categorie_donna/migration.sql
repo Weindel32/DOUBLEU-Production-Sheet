@@ -12,3 +12,6 @@ UPDATE "Scheda" SET "genere" = 'Bambina' WHERE "categoria" = 'T-Shirt Donna' AND
 -- Nomi: "Ws" → "Donna" (T-Shirt Ws micro → T-Shirt Donna micro, Canotta Ws → Canotta Donna).
 UPDATE "Modello" SET "descrizione" = regexp_replace("descrizione", '\mWs\M', 'Donna', 'gi') WHERE "descrizione" ~* '\mws\M';
 UPDATE "Scheda" SET "nomeArticolo" = regexp_replace("nomeArticolo", '\mWs\M', 'Donna', 'gi') WHERE "nomeArticolo" ~* '\mws\M';
+-- Refuso: Canotta Strainght → Canotta Straight (il modello meno avvitato).
+UPDATE "Modello" SET "descrizione" = regexp_replace("descrizione", 'Strainght', 'Straight', 'gi') WHERE "descrizione" ~* 'strainght';
+UPDATE "Scheda" SET "nomeArticolo" = regexp_replace("nomeArticolo", 'Strainght', 'Straight', 'gi') WHERE "nomeArticolo" ~* 'strainght';
