@@ -93,6 +93,7 @@ export default async function MobileSchedaDetailPage({ params }: { params: Promi
     return [{ c, mat, unitario, isPz: mat.unitaMisura === "pz", acquisto: calcolaAcquistoMateriale(mat, c.consumoPerCapo, capi) }];
   });
   const materialiCapo = righeMateriali.reduce((t, r) => t + (r.c.consumoPerCapo || 0) * r.unitario, 0);
+  const accessoriCapo = accessori.reduce((t, a) => t + (a.quantita || 0) * (a.prezzoUnitario || 0), 0);
   const spesaOrdine = righeMateriali.reduce((t, r) => t + (r.acquisto?.stima ?? 0), 0);
   const misura = (t: string, k: string) => (tabellaMisure[t] as Record<string, number | undefined> | undefined)?.[k] ?? "—";
 
@@ -231,6 +232,28 @@ export default async function MobileSchedaDetailPage({ params }: { params: Promi
                   <strong className="font-mono text-[15px]">{formatEuro(spesaOrdine)}</strong>
                 </div>
               )}
+            </div>
+          </Blocco>
+        )}
+
+        {accessori.length > 0 && (
+          <Blocco titolo="Accessori" destra={<span className="font-mono font-semibold text-[#A8461F]">{formatEuro(accessoriCapo)} / capo</span>}>
+            <div className="divide-y divide-[#EFEBE2]">
+              {accessori.map((a, i) => {
+                const prezzo = a.prezzoUnitario > 0;
+                return (
+                  <div key={i} className="px-4 py-2.5">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <span className="text-[15px] font-medium min-w-0 truncate">{a.nome || "Accessorio"}</span>
+                      <span className="font-mono font-semibold text-[15px] flex-shrink-0">{prezzo ? formatEuro((a.quantita || 0) * a.prezzoUnitario) : "—"}</span>
+                    </div>
+                    <div className="text-[13px] text-[#4A5566] font-mono mt-0.5">
+                      {num1(a.quantita || 0)} pz/capo × {prezzo ? formatEuro(a.prezzoUnitario) : <span className="text-[#A8461F]">prezzo mancante</span>}
+                      {capi > 0 && <span className="text-[#5F6878]"> · {num1((a.quantita || 0) * capi)} pz per {capi} capi{prezzo && ` = ${formatEuro((a.quantita || 0) * a.prezzoUnitario * capi)}`}</span>}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </Blocco>
         )}
