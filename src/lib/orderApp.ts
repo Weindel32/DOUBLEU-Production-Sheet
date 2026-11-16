@@ -317,8 +317,13 @@ export async function ordiniOrderApp(): Promise<OrdineOrderApp[]> {
     .sort((a, b) => chiaveData(b.data).localeCompare(chiaveData(a.data)) || b.id.localeCompare(a.id));
 }
 
-/** L'Order App chiama ancora Short/Skirt: qui sono Pantaloncino/Gonnellino (Short e Skirt si confondevano con Shirt). */
-const CATEGORIE_ORDER_APP: Record<string, string> = { short: "Pantaloncino", skirt: "Gonnellino" };
+/**
+ * L'Order App chiama ancora Short/Skirt e T-Shirt Ws/Tank Top Ws: qui sono Pantaloncino/Gonnellino
+ * (Short e Skirt si confondevano con Shirt) e T-Shirt Donna/Canotta Donna (WS andava decifrato).
+ */
+const CATEGORIE_ORDER_APP: Record<string, string> = {
+  short: "Pantaloncino", skirt: "Gonnellino", "t-shirt ws": "T-Shirt Donna", "tank top ws": "Canotta Donna",
+};
 export function categoriaDaOrderApp(c: string | null): string | null {
   return (c && CATEGORIE_ORDER_APP[c.trim().toLowerCase()]) || c;
 }
