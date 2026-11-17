@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { ordiniOrderApp, type OrdineOrderApp } from "@/lib/orderApp";
 import { riepilogoAcquisti, type MaterialeAcquisto, type SchedaAcquisto } from "@/lib/approvvigionamento";
 import { statoReferenza } from "@/lib/referenze";
+import { chiaveOrderApp, confrontaSchede } from "@/lib/ordineSchede";
 import { TIPI_COSTO_DB } from "@/lib/utils";
 import { chiaveFornitore, etichettaColore, leggiNomiTessuto, type VoceColore } from "@/lib/colori";
 
@@ -60,6 +61,11 @@ export async function acquistiOrdine(ordineId: string) {
     ordiniOrderApp(),
   ]);
   const ordine = ordini.find((o) => o.id === ordineId) ?? null;
+  // Schede nello stesso ordine dell'elenco: priorità di produzione scelta a mano, altrimenti l'Order App.
+  const chiave = (s: (typeof schedeRows)[number]) => ({
+    posizione: s.posizione, orderApp: chiaveOrderApp(statoReferenza(s, ordine?.referenze ?? null), ordine?.referenze), nome: s.nomeArticolo,
+  });
+  schedeRows.sort((a, b) => confrontaSchede(chiave(a), chiave(b)));
   const riepilogo = riepilogoAcquisti(schedeRows.map((s) => schedaAcquisto(s, ordine)), materiali);
   const etichetta = etichettatoreColori(materiali, voci);
   const fornitori = riepilogo.fornitori.map((g) => ({ ...g, righe: g.righe.map(etichetta) }));

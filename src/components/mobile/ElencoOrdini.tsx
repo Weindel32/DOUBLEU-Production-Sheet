@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Check, ChevronDown, Receipt, Shirt, ShoppingCart } from "lucide-react";
 import StatoSchedaToggle, { RendiEsecutive } from "@/components/scheda/StatoSchedaToggle";
 import FasiChip from "@/components/scheda/FasiProduzione";
 import { leggiFasi, riepilogoFasi, tempoOrdine, chiaveStato, vociStato } from "@/lib/fasi";
-import { ChipStati } from "@/components/ordine/FiltroStati";
+import { ChipStati, leggiFiltroStato, scriviFiltroStato } from "@/components/ordine/FiltroStati";
 import Miniatura from "@/components/ui/Miniatura";
 
 type Filtro = "tutte" | "esecutiva" | "bozza";
@@ -53,8 +53,15 @@ export default function ElencoOrdini({ righe, blocchi }: { righe: RigaOrdine[]; 
   const stato = sp.get("stato");
   const filtro: Filtro = stato === "bozza" || stato === "esecutiva" ? stato : "tutte";
   const ordineAperto = sp.get("ordine");
-  // Stato scelto dentro ciascun ordine: solo in memoria, alla prossima apertura si riparte da Tutte.
+  // Stato scelto dentro ciascun ordine: resta per la sessione (apri una scheda e torni: lo ritrovi).
   const [statoBlocco, setStatoBlocco] = useState<Record<string, string | null>>({});
+  const firmaBlocchi = blocchi.map((b) => b.chiave).join("|");
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => setStatoBlocco(Object.fromEntries(firmaBlocchi.split("|").map((k) => [k, leggiFiltroStato(`/m/schede:${k}`)]))), [firmaBlocchi]);
+  const scegliStato = (blocco: string, v: string | null) => {
+    setStatoBlocco((m) => ({ ...m, [blocco]: v }));
+    scriviFiltroStato(`/m/schede:${blocco}`, v);
+  };
   // Selezione per il conto: un ordine alla volta. In selezione il tocco sulla riga spunta invece di aprire.
   const [sel, setSel] = useState<{ blocco: string; ordineId: string; ids: Set<string> } | null>(null);
   const spunta = (id: string) => setSel((s) => {
@@ -141,7 +148,7 @@ export default function ElencoOrdini({ righe, blocchi }: { righe: RigaOrdine[]; 
             {voci.length > 1 && (
               <div className="border-t border-[#EFEBE2] px-3 py-2.5">
                 <ChipStati mobile voci={voci} totale={rr.length} valore={filtroBlocco}
-                  onChange={(v) => setStatoBlocco((m) => ({ ...m, [b.chiave]: v }))} />
+                  onChange={(v) => scegliStato(b.chiave, v)} />
               </div>
             )}
             {inSelezione && (

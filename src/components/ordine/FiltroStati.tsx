@@ -1,13 +1,13 @@
 "use client";
 
-import { createContext, useCallback, useContext, useId, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useId, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { Receipt } from "lucide-react";
 import { GIORNI_SOLLECITO, type VoceStato } from "@/lib/fasi";
 
 /**
  * Chip degli stati di un ordine ("Taglio 3", "Confezione 2"…): un tocco mostra solo gli articoli in quello stato.
- * Riparte sempre da "Tutte": un filtro dimenticato farebbe sembrare che manchino articoli.
+ * Il filtro resta per la sessione (apri una scheda e torni: lo ritrovi); in una sessione nuova si riparte da "Tutte".
  */
 export function ChipStati({ voci, totale, valore, onChange, mobile = false }: {
   voci: VoceStato[];
@@ -37,11 +37,35 @@ export function ChipStati({ voci, totale, valore, onChange, mobile = false }: {
   );
 }
 
-/** Stato scelto, ma solo se esiste ancora nell'ordine (un articolo può essere passato di fase intanto). */
-export function useFiltroStato(voci: VoceStato[]) {
+const chiaveFiltro = (memoria: string) => `filtro-stato:${memoria}`;
+
+/** Filtro ricordato per la sessione del browser (null se non c'è o lo storage non è disponibile). */
+export function leggiFiltroStato(memoria: string): string | null {
+  try { return sessionStorage.getItem(chiaveFiltro(memoria)); } catch { return null; }
+}
+
+export function scriviFiltroStato(memoria: string, valore: string | null) {
+  try {
+    if (valore) sessionStorage.setItem(chiaveFiltro(memoria), valore);
+    else sessionStorage.removeItem(chiaveFiltro(memoria));
+  } catch { /* storage non disponibile: il filtro vale solo finché la pagina resta aperta */ }
+}
+
+/**
+ * Stato scelto, ma solo se esiste ancora nell'ordine (un articolo può essere passato di fase intanto).
+ * Con `memoria` (es. "/schede:DU-2026-1625") si ricorda per la sessione.
+ */
+export function useFiltroStato(voci: VoceStato[], memoria?: string) {
   const [scelto, setScelto] = useState<string | null>(null);
+  // Letto dopo il caricamento: sul server lo storage non c'è, e la pagina deve nascere uguale.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { if (memoria) setScelto(leggiFiltroStato(memoria)); }, [memoria]);
+  const cambia = useCallback((v: string | null) => {
+    setScelto(v);
+    if (memoria) scriviFiltroStato(memoria, v);
+  }, [memoria]);
   const valore = scelto && voci.some((v) => v.chiave === scelto) ? scelto : null;
-  return [valore, setScelto] as const;
+  return [valore, cambia] as const;
 }
 
 /** Articoli spuntati nell'ordine, per il conto da pagare. Le caselle sono nelle righe rese dal server. */
@@ -73,7 +97,7 @@ export default function BloccoFiltrabile({ voci, righe, ordineId, children }: {
   ordineId?: string;
   children: ReactNode;
 }) {
-  const [valore, setValore] = useFiltroStato(voci);
+  const [valore, setValore] = useFiltroStato(voci, ordineId ? `/schede:${ordineId}` : undefined);
   const id = useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const [scelti, setScelti] = useState<Set<string>>(() => new Set());
 
