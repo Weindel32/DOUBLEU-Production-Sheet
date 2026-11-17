@@ -15,6 +15,8 @@ import StatoSchedaToggle, { RendiEsecutive } from "@/components/scheda/StatoSche
 import FasiChip from "@/components/scheda/FasiProduzione";
 import { chiaveStato, leggiFasi, riepilogoFasi, tempoOrdine, vociStato } from "@/lib/fasi";
 import BloccoFiltrabile, { CasellaScheda } from "@/components/ordine/FiltroStati";
+import RigheTrascinabili from "@/components/ordine/RigheTrascinabili";
+import { chiaveOrderApp, confrontaSchede } from "@/lib/ordineSchede";
 import { riepilogoScheda } from "@/lib/costiScheda";
 import type { Campione } from "@/types";
 
@@ -136,6 +138,11 @@ export default async function ListaSchede({ vista, searchParams }: {
     b.righe.push(r);
     blocchi.set(k, b);
   }
+  // Dentro un ordine: priorità di produzione scelta a mano, altrimenti l'ordine dell'Order App.
+  for (const b of blocchi.values()) if (b.ordineId) {
+    const chiave = (r: Riga) => ({ posizione: r.s.posizione, orderApp: chiaveOrderApp(r.stato, b.ordine?.referenze), nome: r.s.nomeArticolo });
+    b.righe.sort((x, y) => confrontaSchede(chiave(x), chiave(y)));
+  }
   const blocchiOrdine = [...blocchi.values()];
 
   const aperti = !!filtri.q || blocchiOrdine.length === 1;
@@ -144,42 +151,23 @@ export default async function ListaSchede({ vista, searchParams }: {
   const cella = "px-3 py-2.5";
   const numero = `${cella} text-right font-mono whitespace-nowrap`;
 
-  const tabella = (righe: Riga[]) => (
-    <div className="overflow-x-auto">
-      {/* Larghezze fisse: le colonne restano allineate tra un blocco e l'altro. */}
-      <table className="w-full text-[15px] min-w-[720px] table-fixed">
-        <colgroup>
-          {!isArticoli && <col className="w-11" />}
-          <col className="w-[72px]" /><col className="w-[140px]" /><col />
-          <col className="w-[110px]" />
-          {isArticoli && <><col className="w-[120px]" /><col className="w-[76px]" /></>}
-          <col className="w-[120px]" /><col className="w-12" />
-        </colgroup>
-        <thead>
-          <tr className="border-b border-[#E4E0D6] text-left">
-            {!isArticoli && <th className="pl-3 py-3"><span className="sr-only">Seleziona</span></th>}
-            <th className="pl-4 pr-2 py-3 w-[72px]"><span className="sr-only">Foto</span></th>
-            <th className={cella}>Modello / codice</th>
-            <th className={cella}>Articolo</th>
-              <th className={`${cella} text-right`}>Costo / capo</th>
-            {isArticoli && <th className={`${cella} text-right`}>Sviluppo</th>}
-            {isArticoli && <th className={`${cella} text-right`}>Ordini</th>}
-            <th className={cella}>{isArticoli ? "Aggiornato" : "Stato"}</th>
-            <th className="px-3 py-3 w-12"><span className="sr-only">Azioni</span></th>
-          </tr>
-        </thead>
-        <tbody>
-          {righe.map(({ s, stato: statoRef, costi, copertina, pezzi, pezziStimati, ref, sviluppo, nCampioni, nOrdini, modello }) => {
-            // Adulto o Bambino solo quando la referenza li ha entrambi: altrimenti non c'è niente da distinguere.
-            const parte = statoRef.tipo === "collegata" && partiReferenza(statoRef.referenza).length > 1 ? statoRef.parte : null;
-            const stato = STATI_SCHEDA.find((x) => x.value === s.stato);
-            // Negli articoli categoria e fascia sono già nel blocco e nel badge.
-            const dettagli = isArticoli
-              ? (modello ? null : s.categoria)
-              : [s.categoria, s.genere, pezzi > 0 ? `${pezzi} pz${pezziStimati ? " stimati" : ""}` : null].filter(Boolean).join(" · ");
-            const href = `${t.base}/${s.id}`;
-            return (
-              <tr key={s.id} data-stato={isArticoli ? undefined : chiaveStato(s.stato, leggiFasi(s.fasi))} className="border-b border-[#EFEBE2] last:border-0">
+  // Le righe nascono qui; dentro un ordine collegato le rende RigheTrascinabili (maniglia per cambiare l'ordine).
+  const tabella = (righe: Riga[], ordineId?: string) => {
+    const voci = righe.map(({ s, stato: statoRef, costi, copertina, pezzi, pezziStimati, ref, sviluppo, nCampioni, nOrdini, modello }) => {
+      // Adulto o Bambino solo quando la referenza li ha entrambi: altrimenti non c'è niente da distinguere.
+      const parte = statoRef.tipo === "collegata" && partiReferenza(statoRef.referenza).length > 1 ? statoRef.parte : null;
+      const stato = STATI_SCHEDA.find((x) => x.value === s.stato);
+      // Negli articoli categoria e fascia sono già nel blocco e nel badge.
+      const dettagli = isArticoli
+        ? (modello ? null : s.categoria)
+        : [s.categoria, s.genere, pezzi > 0 ? `${pezzi} pz${pezziStimati ? " stimati" : ""}` : null].filter(Boolean).join(" · ");
+      const href = `${t.base}/${s.id}`;
+      return {
+        id: s.id,
+        stato: isArticoli ? undefined : chiaveStato(s.stato, leggiFasi(s.fasi)),
+        nome: s.nomeArticolo,
+        celle: (
+          <>
                 {!isArticoli && <td className="pl-3 py-2.5"><CasellaScheda id={s.id} nome={s.nomeArticolo} /></td>}
                 <td className="pl-4 pr-2 py-2.5">
                   <Link href={href} tabIndex={-1} aria-hidden className="block w-14 h-14 rounded-[10px] bg-[#EEEBE3] overflow-hidden">
@@ -229,13 +217,49 @@ export default async function ListaSchede({ vista, searchParams }: {
                 <td className="px-2 py-2.5 text-right">
                   <SchedaRowMenu id={s.id} nome={s.nomeArticolo} statoCorrente={s.stato} base={t.base} />
                 </td>
+          </>
+        ),
+      };
+    });
+    return (
+    <div className="overflow-x-auto">
+      {/* Larghezze fisse: le colonne restano allineate tra un blocco e l'altro. */}
+      <table className="w-full text-[15px] min-w-[720px] table-fixed">
+        <colgroup>
+          {!isArticoli && <><col className="w-8" /><col className="w-11" /></>}
+          <col className="w-[72px]" /><col className="w-[140px]" /><col />
+          <col className="w-[110px]" />
+          {isArticoli && <><col className="w-[120px]" /><col className="w-[76px]" /></>}
+          <col className="w-[120px]" /><col className="w-12" />
+        </colgroup>
+        <thead>
+          <tr className="border-b border-[#E4E0D6] text-left">
+            {!isArticoli && <th className="py-3"><span className="sr-only">Sposta</span></th>}
+            {!isArticoli && <th className="pl-3 py-3"><span className="sr-only">Seleziona</span></th>}
+            <th className="pl-4 pr-2 py-3 w-[72px]"><span className="sr-only">Foto</span></th>
+            <th className={cella}>Modello / codice</th>
+            <th className={cella}>Articolo</th>
+              <th className={`${cella} text-right`}>Costo / capo</th>
+            {isArticoli && <th className={`${cella} text-right`}>Sviluppo</th>}
+            {isArticoli && <th className={`${cella} text-right`}>Ordini</th>}
+            <th className={cella}>{isArticoli ? "Aggiornato" : "Stato"}</th>
+            <th className="px-3 py-3 w-12"><span className="sr-only">Azioni</span></th>
+          </tr>
+        </thead>
+        {ordineId ? <RigheTrascinabili ordineId={ordineId} righe={voci} /> : (
+          <tbody>
+            {voci.map((v) => (
+              <tr key={v.id} data-stato={v.stato} className="border-b border-[#EFEBE2] last:border-0">
+                {!isArticoli && <td />}
+                {v.celle}
               </tr>
-            );
-          })}
-        </tbody>
+            ))}
+          </tbody>
+        )}
       </table>
     </div>
   );
+  };
 
   return (
     <div className="p-6 lg:p-8 space-y-5">
@@ -361,7 +385,7 @@ export default async function ListaSchede({ vista, searchParams }: {
                 <BloccoFiltrabile ordineId={b.ordineId}
                   voci={vociStato(b.righe.map((r) => ({ stato: r.s.stato, fasi: leggiFasi(r.s.fasi) })))}
                   righe={b.righe.map((r) => ({ id: r.s.id, pezzi: r.pezzi, stato: chiaveStato(r.s.stato, leggiFasi(r.s.fasi)) }))}>
-                  {tabella(b.righe)}
+                  {tabella(b.righe, b.ordineId)}
                 </BloccoFiltrabile>
               </details>
             );
