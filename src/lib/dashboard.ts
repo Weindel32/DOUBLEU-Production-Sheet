@@ -12,6 +12,7 @@ import { nomeReferenza } from "@/lib/orderApp";
 import { riepilogoScheda } from "@/lib/costiScheda";
 import { MARGINE_MINIMO, TIPI_COSTO_DB } from "@/lib/utils";
 import { pianoProduzione } from "@/lib/produzione";
+import { statiFornitore } from "@/lib/ordineFornitore";
 import { GIORNI_SOLLECITO, avanzamento, leggiFasi, riepilogoFasi, tempoOrdine } from "@/lib/fasi";
 
 const STATI_ATTIVI = ["CONFERMATO", "IN PRODUZIONE"];
@@ -35,7 +36,7 @@ export function giorniAllaConsegna(data: string | null, oggi = new Date()) {
 export type Urgenza = "scaduto" | "preavviso" | "ok" | "senza-data";
 
 export interface AzioneDaFare {
-  tipo: "senza-scheda" | "da-collegare" | "orfana" | "taglie" | "consumi" | "prezzo" | "materiale" | "ritardo" | "fermo";
+  tipo: "fornitore" | "senza-scheda" | "da-collegare" | "orfana" | "taglie" | "consumi" | "prezzo" | "materiale" | "ritardo" | "fermo";
   testo: string;
   dettaglio: string;
   href: string;
@@ -44,6 +45,12 @@ export interface AzioneDaFare {
 
 const PESO_URGENZA: Record<Urgenza, number> = { scaduto: 0, preavviso: 1, ok: 2, "senza-data": 3 };
 const perUrgenza = (a: AzioneDaFare, b: AzioneDaFare) => PESO_URGENZA[a.urgenza] - PESO_URGENZA[b.urgenza];
+
+const capiAcquistatiTesto = (rr: { capi: number | null; linea: string | null }[]) => {
+  const capi = rr.reduce((t, r) => t + (r.capi ?? 0), 0);
+  const linee = [...new Set(rr.map((r) => r.linea ?? "LS24"))].join(", ");
+  return capi ? `${capi} capi ${linee}` : `i capi ${linee}`;
+};
 
 /**
  * Ordini in lavorazione con le loro schede: avanzamento, cose da fare, solleciti.
@@ -62,6 +69,8 @@ async function ordiniInLavorazione() {
     .sort((a, b) => (a.giorni ?? Infinity) - (b.giorni ?? Infinity));
   const preventivi = ordini.filter((o) => !o.perso && o.stato === "PREVENTIVO");
   const attiviIds = new Set(attivi.map((a) => a.o.id));
+  // Ordini al fornitore dei capi LS24; null = tabella non leggibile: niente spunte né avvisi.
+  const fornitori = await statiFornitore(attivi.filter(({ o }) => o.referenze.some((r) => r.acquistato)).map(({ o }) => o.id));
 
   const azioni: AzioneDaFare[] = [];
   const ricollegamenti: Parameters<typeof salvaFasiAcquistati>[0] = [];
@@ -98,6 +107,11 @@ async function ordiniInLavorazione() {
     const capi = o.referenze.reduce((t, r) => t + (r.capi ?? 0), 0);
     const capiAcquistati = acquistate.reduce((t, r) => t + (r.capi ?? 0), 0);
     const chi = `${o.cliente} · ${o.id}`;
+    const fornitore = acquistate.length && fornitori ? fornitori.get(o.id) ?? { ordinatoIl: null, arrivatoIl: null } : null;
+
+    // Capi LS24 ancora da ordinare con la consegna dentro il preavviso (o passata): rischio di sforare.
+    if (fornitore && !fornitore.ordinatoIl && (urgenza === "scaduto" || urgenza === "preavviso"))
+      azioni.push({ tipo: "fornitore", testo: `Ordina al fornitore ${capiAcquistatiTesto(acquistate)}`, dettaglio: chi, href: "/dashboard#ordini", urgenza });
 
     if (senzaScheda > 0)
       azioni.push({ tipo: "senza-scheda", testo: `${senzaScheda} ${senzaScheda === 1 ? "referenza" : "referenze"} senza scheda`, dettaglio: chi, href: `/schede/nuova?ordine=${encodeURIComponent(o.id)}`, urgenza });
@@ -161,6 +175,7 @@ async function ordiniInLavorazione() {
       acquistati: { referenze: acquistate.length, capi: capiAcquistati, linee: [...new Set(acquistate.map((r) => r.linea ?? "LS24"))] },
       soloAcquistati,
       schede: valide.length,
+      fornitore,
     };
   });
 
@@ -171,7 +186,7 @@ async function ordiniInLavorazione() {
 /** Home del telefono: solo ordini e solleciti, senza caricare materiali, colori e margini. */
 export async function datiHomeMobile() {
   const { ordiniVista, azioni } = await ordiniInLavorazione();
-  return { ordini: ordiniVista, solleciti: azioni.filter((a) => a.tipo === "fermo").sort(perUrgenza) };
+  return { ordini: ordiniVista, solleciti: azioni.filter((a) => a.tipo === "fermo" || a.tipo === "fornitore").sort(perUrgenza) };
 }
 
 export async function datiDashboard() {

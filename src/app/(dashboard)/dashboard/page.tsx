@@ -7,9 +7,10 @@ import { datiDashboard, type AzioneDaFare, type Urgenza } from "@/lib/dashboard"
 import { MARGINE_MINIMO, SCARTO_ACQUISTO, formatEuro, statoOrdine } from "@/lib/utils";
 import { quantitaAcquisto } from "@/lib/approvvigionamento";
 import PianoProduzione from "@/components/dashboard/PianoProduzione";
+import SpunteFornitore from "@/components/ordine/SpunteFornitore";
 
 const ICONA_AZIONE: Record<AzioneDaFare["tipo"], typeof Tag> = {
-  "senza-scheda": FilePlus2, "da-collegare": Link2, orfana: Unlink, taglie: Ruler, consumi: Scissors, prezzo: Tag, materiale: PackageX, ritardo: CalendarClock, fermo: Hourglass,
+  fornitore: PackageCheck, "senza-scheda": FilePlus2, "da-collegare": Link2, orfana: Unlink, taglie: Ruler, consumi: Scissors, prezzo: Tag, materiale: PackageX, ritardo: CalendarClock, fermo: Hourglass,
 };
 
 const URGENZA: Record<Urgenza, { chip: string; barra: string }> = {
@@ -174,6 +175,8 @@ export default async function DashboardPage() {
                     </div>
                   </dl>
                   </>)}
+
+                  {o.fornitore && <SpunteFornitore ordineId={o.id} stato={o.fornitore} />}
 
                   <div className="flex gap-2 mt-auto">
                     {/* Ordine di soli capi acquistati senza schede: l'elenco sarebbe vuoto, si va a crearne una per la stampa. */}
