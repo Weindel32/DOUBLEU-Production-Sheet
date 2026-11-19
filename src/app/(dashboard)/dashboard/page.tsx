@@ -121,7 +121,7 @@ export default async function DashboardPage() {
                       <PackageCheck size={20} className="text-[#8A6A1F] flex-shrink-0" />
                       <div className="flex-1 min-w-0">
                         <div className="font-display text-[16px] font-bold text-[#0E1B2C]">Capi acquistati ({o.acquistati.linee.join(", ")})</div>
-                        <div className="text-[12px] text-[#5F6878]">Non in produzione: resta da consegnare. Se la stampa la fai tu, crea la scheda.</div>
+                        <div className="text-[12px] text-[#5F6878]">Non in produzione: resta da consegnare. Se la stampa la fai tu, crea la scheda stampa.</div>
                       </div>
                       <span className="font-mono text-[13px] text-[#5F6878] flex-shrink-0">{o.capi} capi</span>
                     </div>
@@ -176,9 +176,16 @@ export default async function DashboardPage() {
                   </>)}
 
                   <div className="flex gap-2 mt-auto">
-                    <Link href={`/schede?q=${encodeURIComponent(o.id)}`} className="flex-1 h-10 rounded-xl border border-[#D6D1C4] text-[13px] font-semibold text-[#0E1B2C] inline-flex items-center justify-center gap-1.5 hover:border-[#0E1B2C]/40">
-                      <FileText size={15} /> Schede
-                    </Link>
+                    {/* Ordine di soli capi acquistati senza schede: l'elenco sarebbe vuoto, si va a crearne una per la stampa. */}
+                    {o.soloAcquistati && o.schede === 0 ? (
+                      <Link href={`/schede/nuova?ordine=${encodeURIComponent(o.id)}`} className="flex-1 h-10 rounded-xl border border-[#D6D1C4] text-[13px] font-semibold text-[#0E1B2C] inline-flex items-center justify-center gap-1.5 hover:border-[#0E1B2C]/40">
+                        <FilePlus2 size={15} /> Crea scheda stampa
+                      </Link>
+                    ) : (
+                      <Link href={`/schede?q=${encodeURIComponent(o.id)}`} className="flex-1 h-10 rounded-xl border border-[#D6D1C4] text-[13px] font-semibold text-[#0E1B2C] inline-flex items-center justify-center gap-1.5 hover:border-[#0E1B2C]/40">
+                        <FileText size={15} /> Schede
+                      </Link>
+                    )}
                     {!o.soloAcquistati && <Link href={`/schede/ordine/${encodeURIComponent(o.id)}`} className="flex-1 h-10 rounded-xl bg-[#0E1B2C] text-white text-[13px] font-semibold inline-flex items-center justify-center gap-1.5 hover:bg-[#1F3A68]">
                       <ShoppingCart size={15} /> Acquisti
                     </Link>}

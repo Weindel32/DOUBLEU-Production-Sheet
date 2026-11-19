@@ -160,6 +160,7 @@ async function ordiniInLavorazione() {
       conTaglie, provvisorio, capi, orfane: orfane.length,
       acquistati: { referenze: acquistate.length, capi: capiAcquistati, linee: [...new Set(acquistate.map((r) => r.linea ?? "LS24"))] },
       soloAcquistati,
+      schede: valide.length,
     };
   });
 
