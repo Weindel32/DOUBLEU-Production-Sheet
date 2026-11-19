@@ -331,7 +331,8 @@ export default async function ListaSchede({ vista, searchParams }: {
             const valide = b.righe.length - orfane;
             // Ogni referenza chiede una scheda per parte: adulto, e bambino se ci sono taglie bambino.
             const coperte = b.righe.flatMap((r) => r.stato.tipo === "collegata" ? [chiaveParte(r.s.articoloOrderAppId!, r.stato.parte)] : []);
-            const necessarie = b.ordine ? b.ordine.referenze.flatMap((r) => partiReferenza(r).map((p) => ({ r, p }))) : [];
+            // I capi comprati già fatti (LS24) non chiedono una scheda.
+            const necessarie = b.ordine ? b.ordine.referenze.filter((r) => !r.acquistato).flatMap((r) => partiReferenza(r).map((p) => ({ r, p }))) : [];
             const daCollegare = b.righe.filter((r) => r.ref === "da-collegare").length;
             const scoperte = necessarie.filter(({ r, p }) => !parteCoperta(r, p, coperte));
             const mancanti = Math.max(0, scoperte.length - daCollegare);

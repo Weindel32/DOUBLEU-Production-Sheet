@@ -78,7 +78,11 @@ async function ordiniInLavorazione() {
 
     // Una scheda per parte di referenza: adulto, e bambino quando ci sono taglie bambino.
     const chiavi = conStato.flatMap(({ s, ref }) => ref.tipo === "collegata" ? [chiaveParte(s.articoloOrderAppId!, ref.parte)] : []);
-    const necessarie = o.referenze.flatMap((r) => partiReferenza(r).map((p) => ({ r, p })));
+    // Articoli comprati già fatti (LS24): la scheda è facoltativa (serve solo se la stampa la fai tu).
+    const prodotte = o.referenze.filter((r) => !r.acquistato);
+    const acquistate = o.referenze.filter((r) => r.acquistato);
+    const soloAcquistati = prodotte.length === 0 && acquistate.length > 0;
+    const necessarie = prodotte.flatMap((r) => partiReferenza(r).map((p) => ({ r, p })));
     const scoperte = necessarie.filter(({ r, p }) => !parteCoperta(r, p, chiavi));
     const daCollegare = conStato.filter((x) => x.ref.tipo === "da-collegare");
     const orfane = conStato.filter((x) => x.ref.tipo === "non-piu-nell-ordine");
@@ -92,6 +96,7 @@ async function ordiniInLavorazione() {
     const conTaglie = necessarie.filter(({ r }) => r.taglie).length;
     const provvisorio = valide.some(({ s, ref }) => capiScheda(parseJson(s.quantitaTaglia, {}), ref.tipo === "collegata" ? ref.referenza : null).stimati);
     const capi = o.referenze.reduce((t, r) => t + (r.capi ?? 0), 0);
+    const capiAcquistati = acquistate.reduce((t, r) => t + (r.capi ?? 0), 0);
     const chi = `${o.cliente} · ${o.id}`;
 
     if (senzaScheda > 0)
@@ -115,10 +120,11 @@ async function ordiniInLavorazione() {
       azioni.push({ tipo: "prezzo", testo: "Mancano i prezzi nell'Order App", dettaglio: `${chi} · margine non calcolabile`, href: `/schede/ordine/${encodeURIComponent(o.id)}/consuntivo`, urgenza });
 
     // Tempi di produzione: dalla ricezione delle taglie (o dalla partenza scritta a mano) più i giorni lavorativi.
-    const produzione = pianoProduzione({
+    // Ordine di soli capi comprati: niente tempi di produzione né ritardi calcolati su quelli.
+    const produzione = soloAcquistati ? null : pianoProduzione({
       ricezione: o.ricezioneTaglie, inizioManuale: o.inizioProduzione, giorni: o.giorniProduzione, consegna: o.consegna,
     });
-    if (produzione.ritardo !== null && produzione.ritardo > 0)
+    if (produzione && produzione.ritardo !== null && produzione.ritardo > 0)
       azioni.push({ tipo: "ritardo", testo: `Pronto ${produzione.ritardo} ${produzione.ritardo === 1 ? "giorno" : "giorni"} dopo la consegna promessa`, dettaglio: chi, href: "/dashboard#ordini", urgenza: urgenza === "ok" || urgenza === "senza-data" ? "preavviso" : urgenza });
 
     // Articoli fermi da più di una settimana nella stessa fase (o tra una fase e l'altra): da sollecitare.
@@ -152,6 +158,8 @@ async function ordiniInLavorazione() {
       esecutive: valide.filter(({ s }) => s.stato === "esecutiva").length,
       bozze,
       conTaglie, provvisorio, capi, orfane: orfane.length,
+      acquistati: { referenze: acquistate.length, capi: capiAcquistati, linee: [...new Set(acquistate.map((r) => r.linea ?? "LS24"))] },
+      soloAcquistati,
     };
   });
 

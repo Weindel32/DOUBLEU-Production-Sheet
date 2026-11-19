@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 import Link from "next/link";
 import {
-  ArrowUpRight, CalendarClock, CircleAlert, Link2, Ruler, Scissors, Tag, PackageX, FilePlus2, Unlink, ShoppingCart, FileText, CheckCircle2, Hourglass,
+  ArrowUpRight, CalendarClock, CircleAlert, Link2, Ruler, Scissors, Tag, PackageX, FilePlus2, Unlink, ShoppingCart, FileText, CheckCircle2, Hourglass, PackageCheck,
 } from "lucide-react";
 import { datiDashboard, type AzioneDaFare, type Urgenza } from "@/lib/dashboard";
 import { MARGINE_MINIMO, SCARTO_ACQUISTO, formatEuro, statoOrdine } from "@/lib/utils";
@@ -116,10 +116,20 @@ export default async function DashboardPage() {
                     </span>
                   </div>
 
+                  {o.soloAcquistati ? (
+                    <div className="rounded-xl bg-[#F7F1E3] px-3.5 py-3 flex items-center gap-3">
+                      <PackageCheck size={20} className="text-[#8A6A1F] flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-display text-[16px] font-bold text-[#0E1B2C]">Capi acquistati ({o.acquistati.linee.join(", ")})</div>
+                        <div className="text-[12px] text-[#5F6878]">Non in produzione: resta da consegnare. Se la stampa la fai tu, crea la scheda.</div>
+                      </div>
+                      <span className="font-mono text-[13px] text-[#5F6878] flex-shrink-0">{o.capi} capi</span>
+                    </div>
+                  ) : (<>
                   <div>
                     <div className="flex items-baseline justify-between text-[13px] mb-1.5">
                       <span className="text-[#4A5566]"><strong className="text-[#0E1B2C] font-semibold">{o.esecutive}</strong> {o.esecutive === 1 ? "esecutiva" : "esecutive"} su {o.referenze} {o.referenze === 1 ? "referenza" : "referenze"}</span>
-                      <span className="font-mono text-[#5F6878]">{o.capi} capi</span>
+                      <span className="font-mono text-[#5F6878]">{o.capi - o.acquistati.capi} capi</span>
                     </div>
                     {/* Barra: scuro = esecutive, chiaro = schede create, vuoto = referenze senza scheda */}
                     <div className="relative h-2 rounded-full bg-[#EEEBE3] overflow-hidden">
@@ -128,7 +138,13 @@ export default async function DashboardPage() {
                     </div>
                   </div>
 
-                  <PianoProduzione ordineId={o.id} piano={o.produzione} consegna={o.consegna} />
+                  {o.acquistati.referenze > 0 && (
+                    <div className="text-[12px] text-[#8A6A1F] font-semibold flex items-center gap-1.5 -mt-2">
+                      <PackageCheck size={14} /> + {o.acquistati.capi} capi {o.acquistati.linee.join(", ")} acquistati, fuori produzione
+                    </div>
+                  )}
+
+                  {o.produzione && <PianoProduzione ordineId={o.id} piano={o.produzione} consegna={o.consegna} />}
 
                   {/* Avanzamento reale dalle fasi spuntate nelle schede. */}
                   {(o.avanzamentoFasi.tempo || o.avanzamentoFasi.riepilogo) && (
@@ -157,14 +173,15 @@ export default async function DashboardPage() {
                       <dd className={`font-display text-[15px] font-bold mt-0.5 ${o.provvisorio ? "text-[#7A5B12]" : "text-[#1D6B4A]"}`}>{o.provvisorio ? "Provvisorio" : "Definitivo"}</dd>
                     </div>
                   </dl>
+                  </>)}
 
                   <div className="flex gap-2 mt-auto">
                     <Link href={`/schede?q=${encodeURIComponent(o.id)}`} className="flex-1 h-10 rounded-xl border border-[#D6D1C4] text-[13px] font-semibold text-[#0E1B2C] inline-flex items-center justify-center gap-1.5 hover:border-[#0E1B2C]/40">
                       <FileText size={15} /> Schede
                     </Link>
-                    <Link href={`/schede/ordine/${encodeURIComponent(o.id)}`} className="flex-1 h-10 rounded-xl bg-[#0E1B2C] text-white text-[13px] font-semibold inline-flex items-center justify-center gap-1.5 hover:bg-[#1F3A68]">
+                    {!o.soloAcquistati && <Link href={`/schede/ordine/${encodeURIComponent(o.id)}`} className="flex-1 h-10 rounded-xl bg-[#0E1B2C] text-white text-[13px] font-semibold inline-flex items-center justify-center gap-1.5 hover:bg-[#1F3A68]">
                       <ShoppingCart size={15} /> Acquisti
-                    </Link>
+                    </Link>}
                   </div>
                 </article>
               );

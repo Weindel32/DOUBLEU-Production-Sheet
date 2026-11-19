@@ -61,7 +61,7 @@ export default async function MobileHome() {
                         <span className={`text-xs flex-shrink-0 ${o.urgenza === "scaduto" || o.urgenza === "preavviso" ? "text-[#A8461F] font-semibold" : "text-[#5F6878]"}`}>{consegna(o.giorni)}</span>
                       </span>
                       <span className={`block text-[13px] font-semibold ${o.avanzamentoFasi.tempo?.chiuso ? "text-[#1D6B4A]" : "text-[#0E1B2C]"}`}>
-                        {o.avanzamentoFasi.tempo?.testo ?? (o.esecutive ? "Fasi non ancora avviate" : `${o.bozze} schede in bozza`)}
+                        {o.avanzamentoFasi.tempo?.testo ?? (o.soloAcquistati ? `Capi acquistati (${o.acquistati.linee.join(", ")}) · da consegnare` : o.esecutive ? "Fasi non ancora avviate" : `${o.bozze} schede in bozza`)}
                       </span>
                       {o.avanzamentoFasi.riepilogo && !o.avanzamentoFasi.tempo?.chiuso && (
                         <span className="block text-[13px] text-[#1F3A68] truncate">{o.avanzamentoFasi.riepilogo}</span>
