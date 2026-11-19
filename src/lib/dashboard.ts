@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { ordiniOrderApp, type OrdineOrderApp } from "@/lib/orderApp";
 import { capiAcquisto, riepilogoAcquisti } from "@/lib/approvvigionamento";
 import { schedaAcquisto, etichettatoreColori } from "@/lib/approvvigionamentoServer";
-import { salvaRicollegamenti } from "@/lib/clientiOrderApp";
+import { salvaRicollegamenti, salvaFasiAcquistati } from "@/lib/clientiOrderApp";
 import { statoReferenza, capiScheda, taglieDiverse, chiaveParte, parteCoperta, partiReferenza } from "@/lib/referenze";
 import { nomeReferenza } from "@/lib/orderApp";
 import { riepilogoScheda } from "@/lib/costiScheda";
@@ -64,7 +64,7 @@ async function ordiniInLavorazione() {
   const attiviIds = new Set(attivi.map((a) => a.o.id));
 
   const azioni: AzioneDaFare[] = [];
-  const ricollegamenti: Parameters<typeof salvaRicollegamenti>[0] = [];
+  const ricollegamenti: Parameters<typeof salvaFasiAcquistati>[0] = [];
   const schedeAttive: { s: (typeof schedeRows)[number]; ordine: OrdineOrderApp }[] = [];
 
   const ordiniVista = attivi.map(({ o, giorni }) => {
@@ -72,7 +72,7 @@ async function ordiniInLavorazione() {
     const urgenza: Urgenza = giorni === null ? "senza-data" : giorni < 0 ? "scaduto" : giorni <= preavviso ? "preavviso" : "ok";
     const mie = schedeRows.filter((s) => s.ordineOrderAppId === o.id);
     const conStato = mie.map((s) => ({ s, ref: statoReferenza(s, o.referenze) }));
-    ricollegamenti.push(...conStato.map(({ s, ref }) => ({ id: s.id, stato: ref })));
+    ricollegamenti.push(...conStato.map(({ s, ref }) => ({ id: s.id, fasi: s.fasi, stato: ref })));
     const valide = conStato.filter((x) => x.ref.tipo !== "non-piu-nell-ordine");
     valide.forEach(({ s }) => schedeAttive.push({ s, ordine: o }));
 
@@ -105,7 +105,9 @@ async function ordiniInLavorazione() {
     for (const { s, ref } of valide) {
       if (ref.tipo === "collegata" && ref.referenza.taglie && taglieDiverse(parseJson(s.quantitaTaglia, {}), ref.referenza.taglie))
         azioni.push({ tipo: "taglie", testo: `Taglie arrivate per ${s.nomeArticolo}`, dettaglio: chi, href: `/schede/${s.id}`, urgenza });
-      if (!parseJson<unknown[]>(s.consumoMateriale, []).length)
+      // Articolo comprato già fatto: niente tessuto, i consumi non servono.
+      const acquistato = ref.tipo === "collegata" && ref.referenza.acquistato;
+      if (!acquistato && !parseJson<unknown[]>(s.consumoMateriale, []).length)
         azioni.push({ tipo: "consumi", testo: `${s.nomeArticolo}: mancano i consumi`, dettaglio: `${chi} · tessuto e costo non calcolabili`, href: `/schede/${s.id}#sez-costi`, urgenza });
     }
     // Il prezzo è del kit, nell'Order App: senza, il consuntivo non ha ricavo né margine.
@@ -153,7 +155,7 @@ async function ordiniInLavorazione() {
     };
   });
 
-  await salvaRicollegamenti(ricollegamenti);
+  await Promise.all([salvaRicollegamenti(ricollegamenti), salvaFasiAcquistati(ricollegamenti)]);
   return { ordini, schedeRows, attiviIds, preventivi, ordiniVista, azioni, schedeAttive };
 }
 

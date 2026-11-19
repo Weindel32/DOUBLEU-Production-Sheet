@@ -27,7 +27,8 @@ export function schedaAcquisto(s: RigaScheda, ordine: OrdineOrderApp | null | un
     consumoMateriale: parseJson(s.consumoMateriale, null),
     tessutoPrincipale: s.tessutoPrincipale, tessutoSecondario: s.tessutoSecondario,
     coloreBase: s.coloreBase, coloreBaseCodice: s.coloreBaseCodice,
-    ...(stato.tipo === "collegata" ? { capiOrdine: stato.referenza.capi }
+    ...(stato.tipo === "collegata" && stato.referenza.acquistato ? { esclusa: "articolo comprato già fatto" }
+      : stato.tipo === "collegata" ? { capiOrdine: stato.referenza.capi }
       : stato.tipo === "non-piu-nell-ordine" ? { esclusa: "non è più nell'ordine" } : {}),
   };
 }

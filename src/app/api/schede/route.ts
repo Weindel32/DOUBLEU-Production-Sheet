@@ -2,7 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { normalizzaTipo, ACCESSORI_NUOVO_COSTO } from "@/lib/utils";
 import { generaCodice } from "@/lib/codici";
-import { datiOrdine, firmaArticoloOrdine } from "@/lib/clientiOrderApp";
+import { datiOrdine, firmaArticoloOrdine, articoloOrdineAcquistato } from "@/lib/clientiOrderApp";
+import { fasiAcquistato } from "@/lib/fasi";
 
 export async function GET() {
   const schede = await prisma.scheda.findMany({
@@ -81,6 +82,8 @@ export async function POST(req: NextRequest) {
         costoRicamo: body.costoRicamo,
         prezzoVendita: body.prezzoVendita,
         noteRapide: body.noteRapide,
+        // Articolo comprato già fatto (LS24): partono già segnate "non serve" le fasi che non esistono.
+        ...(await articoloOrdineAcquistato(ordine?.ordineOrderAppId, articoloOrderAppId) ? { fasi: JSON.stringify(fasiAcquistato({})) } : {}),
       },
       include: { cliente: true },
     });

@@ -67,7 +67,7 @@ export default function AvvisiReferenza({ scheda, referenze, collegateAltrove, q
             <option value="">Scegli la referenza…</option>
             {referenze.map((r) => (
               <option key={r.id} value={r.id}>
-                {nomeReferenza(r)}{r.kit ? ` · ${r.kit}` : ""}{r.capi ? ` · ${r.capi} capi` : ""}
+                {nomeReferenza(r)}{r.acquistato ? ` · ${r.linea ?? "LS24"} acquistato` : ""}{r.kit ? ` · ${r.kit}` : ""}{r.capi ? ` · ${r.capi} capi` : ""}
                 {parteCoperta(r, parte, collegateAltrove) ? ` · ${ETICHETTA_PARTE[parte].toLowerCase()} già usata` : ""}
               </option>
             ))}
@@ -108,6 +108,13 @@ export default function AvvisiReferenza({ scheda, referenze, collegateAltrove, q
   if (parte === "bambino" && !r.taglieBambino)
     avvisi.push(<span key="no-bambino">{r.taglieAdulto ? "Nell'ordine non ci sono taglie bambino per questa referenza." : "Le taglie bambino non sono ancora arrivate."}</span>);
 
+  if (r.acquistato)
+    avvisi.push(
+      <span key="acquistato">
+        <strong>Articolo comprato già fatto</strong> (linea {r.linea ?? "LS24"}{r.codice ? ` · ${r.codice}` : ""}): niente cartamodello, tessuto, taglio
+        e confezione, né tessuto da comprare. Resta la stampa: segnala &quot;non serve&quot; se non la fai tu. Il ricamo è sempre esterno.
+      </span>,
+    );
   if (nome && nome !== scheda.nomeArticolo)
     avvisi.push(
       <div key="nome" className="flex flex-wrap items-center justify-between gap-2">
