@@ -223,3 +223,12 @@ model ConsuntivoOrdine {
   fasiComplete     String? // JSON: fasi segnate complete a consuntivo aperto, es. ["Tessuto","Taglio"]
   updatedAt        DateTime  @updatedAt
 }
+
+// Ordine al fornitore dei capi comprati già fatti (linea LS24) di un ordine dell'Order App:
+// spuntato "ordinato" e poi "arrivato", con la data del giorno (aaaa-mm-gg).
+model OrdineFornitore {
+  ordineOrderAppId String   @id
+  ordinatoIl       String?
+  arrivatoIl       String?
+  updatedAt        DateTime @updatedAt
+}

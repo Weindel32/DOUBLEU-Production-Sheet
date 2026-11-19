@@ -48,7 +48,8 @@ export default async function MobileSchedePage() {
       cliente: ordine?.cliente ?? s.cliente?.nome ?? null,
       statoOrdine: statoOrdine(ordine?.stato),
       trovato: !!ordine,
-      parti: ordine?.referenze.length ? ordine.referenze.reduce((t, r) => t + partiReferenza(r).length, 0) : null,
+      // I capi comprati già fatti (LS24) non chiedono una scheda.
+      parti: ordine?.referenze.length ? ordine.referenze.reduce((t, r) => t + (r.acquistato ? 0 : partiReferenza(r).length), 0) : null,
     });
     const immagini: string[] = s.immagini ? JSON.parse(s.immagini) : [];
     return {

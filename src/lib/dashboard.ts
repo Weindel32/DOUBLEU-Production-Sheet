@@ -6,12 +6,13 @@ import { prisma } from "@/lib/prisma";
 import { ordiniOrderApp, type OrdineOrderApp } from "@/lib/orderApp";
 import { capiAcquisto, riepilogoAcquisti } from "@/lib/approvvigionamento";
 import { schedaAcquisto, etichettatoreColori } from "@/lib/approvvigionamentoServer";
-import { salvaRicollegamenti } from "@/lib/clientiOrderApp";
+import { salvaRicollegamenti, salvaFasiAcquistati } from "@/lib/clientiOrderApp";
 import { statoReferenza, capiScheda, taglieDiverse, chiaveParte, parteCoperta, partiReferenza } from "@/lib/referenze";
 import { nomeReferenza } from "@/lib/orderApp";
 import { riepilogoScheda } from "@/lib/costiScheda";
 import { MARGINE_MINIMO, TIPI_COSTO_DB } from "@/lib/utils";
 import { pianoProduzione } from "@/lib/produzione";
+import { statiFornitore } from "@/lib/ordineFornitore";
 import { GIORNI_SOLLECITO, avanzamento, leggiFasi, riepilogoFasi, tempoOrdine } from "@/lib/fasi";
 
 const STATI_ATTIVI = ["CONFERMATO", "IN PRODUZIONE"];
@@ -35,7 +36,7 @@ export function giorniAllaConsegna(data: string | null, oggi = new Date()) {
 export type Urgenza = "scaduto" | "preavviso" | "ok" | "senza-data";
 
 export interface AzioneDaFare {
-  tipo: "senza-scheda" | "da-collegare" | "orfana" | "taglie" | "consumi" | "prezzo" | "materiale" | "ritardo" | "fermo";
+  tipo: "fornitore" | "senza-scheda" | "da-collegare" | "orfana" | "taglie" | "consumi" | "prezzo" | "materiale" | "ritardo" | "fermo";
   testo: string;
   dettaglio: string;
   href: string;
@@ -44,6 +45,12 @@ export interface AzioneDaFare {
 
 const PESO_URGENZA: Record<Urgenza, number> = { scaduto: 0, preavviso: 1, ok: 2, "senza-data": 3 };
 const perUrgenza = (a: AzioneDaFare, b: AzioneDaFare) => PESO_URGENZA[a.urgenza] - PESO_URGENZA[b.urgenza];
+
+const capiAcquistatiTesto = (rr: { capi: number | null; linea: string | null }[]) => {
+  const capi = rr.reduce((t, r) => t + (r.capi ?? 0), 0);
+  const linee = [...new Set(rr.map((r) => r.linea ?? "LS24"))].join(", ");
+  return capi ? `${capi} capi ${linee}` : `i capi ${linee}`;
+};
 
 /**
  * Ordini in lavorazione con le loro schede: avanzamento, cose da fare, solleciti.
@@ -62,9 +69,11 @@ async function ordiniInLavorazione() {
     .sort((a, b) => (a.giorni ?? Infinity) - (b.giorni ?? Infinity));
   const preventivi = ordini.filter((o) => !o.perso && o.stato === "PREVENTIVO");
   const attiviIds = new Set(attivi.map((a) => a.o.id));
+  // Ordini al fornitore dei capi LS24; null = tabella non leggibile: niente spunte né avvisi.
+  const fornitori = await statiFornitore(attivi.filter(({ o }) => o.referenze.some((r) => r.acquistato)).map(({ o }) => o.id));
 
   const azioni: AzioneDaFare[] = [];
-  const ricollegamenti: Parameters<typeof salvaRicollegamenti>[0] = [];
+  const ricollegamenti: Parameters<typeof salvaFasiAcquistati>[0] = [];
   const schedeAttive: { s: (typeof schedeRows)[number]; ordine: OrdineOrderApp }[] = [];
 
   const ordiniVista = attivi.map(({ o, giorni }) => {
@@ -72,13 +81,17 @@ async function ordiniInLavorazione() {
     const urgenza: Urgenza = giorni === null ? "senza-data" : giorni < 0 ? "scaduto" : giorni <= preavviso ? "preavviso" : "ok";
     const mie = schedeRows.filter((s) => s.ordineOrderAppId === o.id);
     const conStato = mie.map((s) => ({ s, ref: statoReferenza(s, o.referenze) }));
-    ricollegamenti.push(...conStato.map(({ s, ref }) => ({ id: s.id, stato: ref })));
+    ricollegamenti.push(...conStato.map(({ s, ref }) => ({ id: s.id, fasi: s.fasi, stato: ref })));
     const valide = conStato.filter((x) => x.ref.tipo !== "non-piu-nell-ordine");
     valide.forEach(({ s }) => schedeAttive.push({ s, ordine: o }));
 
     // Una scheda per parte di referenza: adulto, e bambino quando ci sono taglie bambino.
     const chiavi = conStato.flatMap(({ s, ref }) => ref.tipo === "collegata" ? [chiaveParte(s.articoloOrderAppId!, ref.parte)] : []);
-    const necessarie = o.referenze.flatMap((r) => partiReferenza(r).map((p) => ({ r, p })));
+    // Articoli comprati già fatti (LS24): la scheda è facoltativa (serve solo se la stampa la fai tu).
+    const prodotte = o.referenze.filter((r) => !r.acquistato);
+    const acquistate = o.referenze.filter((r) => r.acquistato);
+    const soloAcquistati = prodotte.length === 0 && acquistate.length > 0;
+    const necessarie = prodotte.flatMap((r) => partiReferenza(r).map((p) => ({ r, p })));
     const scoperte = necessarie.filter(({ r, p }) => !parteCoperta(r, p, chiavi));
     const daCollegare = conStato.filter((x) => x.ref.tipo === "da-collegare");
     const orfane = conStato.filter((x) => x.ref.tipo === "non-piu-nell-ordine");
@@ -92,7 +105,13 @@ async function ordiniInLavorazione() {
     const conTaglie = necessarie.filter(({ r }) => r.taglie).length;
     const provvisorio = valide.some(({ s, ref }) => capiScheda(parseJson(s.quantitaTaglia, {}), ref.tipo === "collegata" ? ref.referenza : null).stimati);
     const capi = o.referenze.reduce((t, r) => t + (r.capi ?? 0), 0);
+    const capiAcquistati = acquistate.reduce((t, r) => t + (r.capi ?? 0), 0);
     const chi = `${o.cliente} · ${o.id}`;
+    const fornitore = acquistate.length && fornitori ? fornitori.get(o.id) ?? { ordinatoIl: null, arrivatoIl: null } : null;
+
+    // Capi LS24 ancora da ordinare con la consegna dentro il preavviso (o passata): rischio di sforare.
+    if (fornitore && !fornitore.ordinatoIl && (urgenza === "scaduto" || urgenza === "preavviso"))
+      azioni.push({ tipo: "fornitore", testo: `Ordina al fornitore ${capiAcquistatiTesto(acquistate)}`, dettaglio: chi, href: "/dashboard#ordini", urgenza });
 
     if (senzaScheda > 0)
       azioni.push({ tipo: "senza-scheda", testo: `${senzaScheda} ${senzaScheda === 1 ? "referenza" : "referenze"} senza scheda`, dettaglio: chi, href: `/schede/nuova?ordine=${encodeURIComponent(o.id)}`, urgenza });
@@ -105,7 +124,9 @@ async function ordiniInLavorazione() {
     for (const { s, ref } of valide) {
       if (ref.tipo === "collegata" && ref.referenza.taglie && taglieDiverse(parseJson(s.quantitaTaglia, {}), ref.referenza.taglie))
         azioni.push({ tipo: "taglie", testo: `Taglie arrivate per ${s.nomeArticolo}`, dettaglio: chi, href: `/schede/${s.id}`, urgenza });
-      if (!parseJson<unknown[]>(s.consumoMateriale, []).length)
+      // Articolo comprato già fatto: niente tessuto, i consumi non servono.
+      const acquistato = ref.tipo === "collegata" && ref.referenza.acquistato;
+      if (!acquistato && !parseJson<unknown[]>(s.consumoMateriale, []).length)
         azioni.push({ tipo: "consumi", testo: `${s.nomeArticolo}: mancano i consumi`, dettaglio: `${chi} · tessuto e costo non calcolabili`, href: `/schede/${s.id}#sez-costi`, urgenza });
     }
     // Il prezzo è del kit, nell'Order App: senza, il consuntivo non ha ricavo né margine.
@@ -113,10 +134,11 @@ async function ordiniInLavorazione() {
       azioni.push({ tipo: "prezzo", testo: "Mancano i prezzi nell'Order App", dettaglio: `${chi} · margine non calcolabile`, href: `/schede/ordine/${encodeURIComponent(o.id)}/consuntivo`, urgenza });
 
     // Tempi di produzione: dalla ricezione delle taglie (o dalla partenza scritta a mano) più i giorni lavorativi.
-    const produzione = pianoProduzione({
+    // Ordine di soli capi comprati: niente tempi di produzione né ritardi calcolati su quelli.
+    const produzione = soloAcquistati ? null : pianoProduzione({
       ricezione: o.ricezioneTaglie, inizioManuale: o.inizioProduzione, giorni: o.giorniProduzione, consegna: o.consegna,
     });
-    if (produzione.ritardo !== null && produzione.ritardo > 0)
+    if (produzione && produzione.ritardo !== null && produzione.ritardo > 0)
       azioni.push({ tipo: "ritardo", testo: `Pronto ${produzione.ritardo} ${produzione.ritardo === 1 ? "giorno" : "giorni"} dopo la consegna promessa`, dettaglio: chi, href: "/dashboard#ordini", urgenza: urgenza === "ok" || urgenza === "senza-data" ? "preavviso" : urgenza });
 
     // Articoli fermi da più di una settimana nella stessa fase (o tra una fase e l'altra): da sollecitare.
@@ -150,17 +172,21 @@ async function ordiniInLavorazione() {
       esecutive: valide.filter(({ s }) => s.stato === "esecutiva").length,
       bozze,
       conTaglie, provvisorio, capi, orfane: orfane.length,
+      acquistati: { referenze: acquistate.length, capi: capiAcquistati, linee: [...new Set(acquistate.map((r) => r.linea ?? "LS24"))] },
+      soloAcquistati,
+      schede: valide.length,
+      fornitore,
     };
   });
 
-  await salvaRicollegamenti(ricollegamenti);
+  await Promise.all([salvaRicollegamenti(ricollegamenti), salvaFasiAcquistati(ricollegamenti)]);
   return { ordini, schedeRows, attiviIds, preventivi, ordiniVista, azioni, schedeAttive };
 }
 
 /** Home del telefono: solo ordini e solleciti, senza caricare materiali, colori e margini. */
 export async function datiHomeMobile() {
   const { ordiniVista, azioni } = await ordiniInLavorazione();
-  return { ordini: ordiniVista, solleciti: azioni.filter((a) => a.tipo === "fermo").sort(perUrgenza) };
+  return { ordini: ordiniVista, solleciti: azioni.filter((a) => a.tipo === "fermo" || a.tipo === "fornitore").sort(perUrgenza) };
 }
 
 export async function datiDashboard() {

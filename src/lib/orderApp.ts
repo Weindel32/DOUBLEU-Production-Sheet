@@ -15,6 +15,11 @@ export interface ReferenzaOrderApp {
   categoria: string | null;
   descrizione: string | null;
   colore: string | null;
+  /** Codice e linea dell'articolo nell'Order App (es. "DUSP 139" · "Premium", "LS304" · "LS24"). */
+  codice: string | null;
+  linea: string | null;
+  /** Articolo comprato già fatto (linea LS24): niente cartamodello, tessuto, taglio e confezione. */
+  acquistato: boolean;
   /** Capi della referenza nell'ordine: somma delle taglie, o il totale indicato quando le taglie non ci sono ancora. */
   capi: number | null;
   /** Quantità per taglia come nella scheda (S, M… e 6A, 8A… per i bambini); null finché il club non le manda. */
@@ -118,7 +123,7 @@ const n = (v: Num | undefined) => (v === null || v === undefined || v === "" ? 0
 
 type KitRiga = { id: string; order_id: string; name: string | null; position: number | null; price: Num; quantity: number | null; omaggio: Num; discount_type: string | null; discount_value: Num };
 type ArticoloRiga = {
-  id: string; kit_id: string; category: string | null; description: string | null; color: string | null;
+  id: string; kit_id: string; sp: string | null; line: string | null; category: string | null; description: string | null; color: string | null;
   sizes_adult: TaglieOrderApp; sizes_kids: TaglieOrderApp; price: Num; omaggio: number | null; discount_type: string | null; discount_value: Num;
 };
 type OrdineRiga = {
@@ -247,7 +252,8 @@ function sommaInsieme(a: Record<string, number> | null, b: Record<string, number
 function unisciUguali(righe: ReferenzaOrderApp[]): ReferenzaOrderApp[] {
   const perChiave = new Map<string, ReferenzaOrderApp>();
   for (const r of righe) {
-    const k = [r.descrizione ?? r.categoria, r.colore].map((v) => (v ?? "").trim().toLowerCase()).join("|");
+    // Un articolo comprato e uno prodotto con lo stesso nome restano due referenze: seguono strade diverse.
+    const k = [r.descrizione ?? r.categoria, r.colore, r.acquistato ? "acquistato" : ""].map((v) => (v ?? "").trim().toLowerCase()).join("|");
     const prima = perChiave.get(k);
     if (!prima) {
       perChiave.set(k, {
@@ -276,7 +282,7 @@ export async function ordiniOrderApp(): Promise<OrdineOrderApp[]> {
     ),
     leggi<KitRiga>("kits?select=id,order_id,name,position,price,quantity,omaggio,discount_type,discount_value"),
     leggi<ArticoloRiga>(
-      "articles?select=id,kit_id,category,description,color,sizes_adult,sizes_kids,price,omaggio,discount_type,discount_value",
+      "articles?select=id,kit_id,sp,line,category,description,color,sizes_adult,sizes_kids,price,omaggio,discount_type,discount_value",
     ),
     leggi<{ order_id: string; submitted_at: string | null }>("order_forms?select=order_id,submitted_at&submitted_at=not.is.null"),
   ]);
@@ -311,6 +317,7 @@ export async function ordiniOrderApp(): Promise<OrdineOrderApp[]> {
         .flatMap((k) => (articoliPerKit.get(k.id) ?? []).map((a) => ({
           id: a.id, ids: [a.id], firme: [firmaArticolo(k.name, a.description, a.color)],
           kit: k.name, categoria: categoriaDaOrderApp(a.category), descrizione: a.description?.trim() || null, colore: a.color?.trim() || null,
+          codice: a.sp?.trim() || null, linea: a.line?.trim() || null, acquistato: articoloAcquistato(a.line),
           ...leggiTaglie(a.sizes_adult, a.sizes_kids),
         })))),
     }))
@@ -327,6 +334,14 @@ const CATEGORIE_ORDER_APP: Record<string, string> = {
 export function categoriaDaOrderApp(c: string | null): string | null {
   return (c && CATEGORIE_ORDER_APP[c.trim().toLowerCase()]) || c;
 }
+
+/**
+ * Linee che DOUBLEU compra già fatte e non produce: dell'articolo si fa al massimo la stampa (non sempre),
+ * il ricamo mai. Riconosciute dalla linea dell'articolo nell'Order App.
+ */
+export const LINEE_ACQUISTATE = ["LS24"];
+export const articoloAcquistato = (linea: string | null | undefined) =>
+  !!linea && LINEE_ACQUISTATE.some((l) => l.toLowerCase() === linea.trim().toLowerCase());
 
 /** Ordini su cui ha senso aprire nuove schede: non annullati né persi. */
 export const ordineAttivo = (o: OrdineOrderApp) => !o.perso && o.stato !== "ANNULLATO";

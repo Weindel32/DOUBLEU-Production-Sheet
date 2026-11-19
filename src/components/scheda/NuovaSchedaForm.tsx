@@ -214,6 +214,7 @@ export default function NuovaSchedaForm({ tipoIniziale, modelloIniziale, modelli
                           className={`min-h-10 px-3 py-1.5 rounded-lg border text-left text-[13px] leading-tight ${on ? "border-[#0E1B2C] bg-[#0E1B2C] text-white" : "border-[#D6D1C4] bg-white text-[#0E1B2C] hover:border-[#0E1B2C]/40"}`}>
                           <span className="font-semibold">{r.descrizione ?? r.categoria}</span>
                           {parti.length > 1 && <span className={`ml-1.5 text-[11px] font-semibold ${on ? "text-white/80" : parte === "bambino" ? "text-[#A8461F]" : "text-[#1F3A68]"}`}>{ETICHETTA_PARTE[parte]}</span>}
+                          {r.acquistato && <span className={`ml-1.5 text-[11px] font-semibold ${on ? "text-white/80" : "text-[#8A6A1F]"}`}>{r.linea ?? "LS24"} · acquistato</span>}
                           {fatta && <span className={`ml-1.5 text-[11px] font-semibold ${on ? "text-white/80" : "text-[#1D6B4A]"}`}>✓ scheda fatta</span>}
                           {(r.kit || r.colore || q.capi) && <span className={`block text-xs ${on ? "text-white/70" : "text-[#5F6878]"}`}>{[r.kit, r.colore, q.capi ? `${q.capi} capi${q.taglie ? "" : " (taglie da definire)"}` : null].filter(Boolean).join(" · ")}</span>}
                         </button>

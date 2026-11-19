@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { clientiOrderApp, ordiniOrderApp } from "@/lib/orderApp";
 import { firmaDi, type StatoReferenza } from "@/lib/referenze";
+import { fasiAcquistato, leggiFasi } from "@/lib/fasi";
 
 /**
  * Cliente locale collegato a un cliente dell'Order App: lo crea la prima volta, poi riusa sempre lo stesso.
@@ -26,6 +27,29 @@ export async function datiOrdine(ordineId: string | null): Promise<{ ordineOrder
   const cliente = ordine.clienteId ? await collegaCliente(ordine.clienteId) : null;
   // Ordine senza cliente collegato: si tiene il cliente che la scheda ha già.
   return cliente ? { ordineOrderAppId: ordine.id, clienteId: cliente.id } : { ordineOrderAppId: ordine.id };
+}
+
+/** L'articolo dell'ordine è comprato già fatto (linea LS24)? */
+export async function articoloOrdineAcquistato(ordineId: string | null | undefined, articoloId: string | null | undefined) {
+  if (!ordineId || !articoloId) return false;
+  const ordine = (await ordiniOrderApp()).find((o) => o.id === ordineId);
+  return !!ordine?.referenze.find((r) => r.ids.includes(articoloId))?.acquistato;
+}
+
+/**
+ * Schede di articoli comprati già fatti con cartamodello, tessuto, taglio o confezione ancora vuoti:
+ * si segnano "non serve" (anche quelle fatte prima che la linea LS24 fosse riconosciuta).
+ * Una fase già iniziata o fatta resta com'è. Senza toccare updatedAt: non è una modifica dell'utente.
+ */
+export async function salvaFasiAcquistati(righe: { id: string; fasi: string | null; stato: StatoReferenza }[]) {
+  await Promise.all(righe.map(({ id, fasi, stato }) => {
+    if (stato.tipo !== "collegata" || !stato.referenza.acquistato) return null;
+    const nuove = fasiAcquistato(leggiFasi(fasi));
+    return nuove
+      ? prisma.$executeRaw`UPDATE "Scheda" SET "fasi" = ${JSON.stringify(nuove)} WHERE "id" = ${id}`
+          .catch((err) => console.error("Fasi scheda acquistata non salvate", id, err))
+      : null;
+  }));
 }
 
 /** Firma dell'articolo dell'ordine, salvata con il collegamento: ritrova la referenza se l'Order App cambia l'id. */

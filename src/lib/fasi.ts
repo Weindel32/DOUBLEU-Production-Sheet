@@ -43,6 +43,18 @@ export function statoFase(v: ValoreFase | undefined): StatoFase {
   return { stato: "vuota" };
 }
 
+/**
+ * Articolo comprato già fatto (linea LS24): cartamodello, tessuto, taglio e confezione non esistono.
+ * Restano stampa/ricamo (da segnare "non serve" quando non la fai tu) e la consegna.
+ */
+export const FASI_NON_ACQUISTATO: IdFase[] = ["cartamodello", "tessuto", "taglio", "confezione"];
+
+/** Le fasi di un articolo comprato con quelle che non esistono segnate "non serve"; null se erano già così. */
+export function fasiAcquistato(fasi: Fasi): Fasi | null {
+  const mancanti = FASI_NON_ACQUISTATO.filter((f) => statoFase(fasi[f]).stato === "vuota");
+  return mancanti.length ? { ...fasi, ...Object.fromEntries(mancanti.map((f) => [f, SALTA])) } : null;
+}
+
 export function leggiFasi(json: string | null | undefined): Fasi {
   if (!json) return {};
   try {
