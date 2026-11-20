@@ -1,10 +1,10 @@
 export const dynamic = "force-dynamic";
 import Link from "next/link";
-import { PackagePlus, Tag, Receipt, Calculator, FileText, Palette, Hourglass, ChevronRight, BookOpen } from "lucide-react";
+import { Suspense } from "react";
+import { PackagePlus, Tag, Receipt, Calculator, Palette, ChevronRight, BookOpen, Factory } from "lucide-react";
 import Testata from "@/components/mobile/Testata";
 import { BUILD } from "@/lib/build";
 import { datiHomeMobile } from "@/lib/dashboard";
-import SpunteFornitore from "@/components/ordine/SpunteFornitore";
 
 const AZIONI = [
   { href: "/m/materiali/nuovo", titolo: "Nuovo materiale", testo: "Dal fornitore, con foto del cartellino", icon: PackagePlus },
@@ -13,70 +13,37 @@ const AZIONI = [
   { href: "/m/costi", titolo: "Costo al volo", testo: "Costo e prezzo per margine di un articolo", icon: Calculator },
 ];
 
-const consegna = (g: number | null) =>
-  g === null ? "consegna da fissare" : g < 0 ? `scaduto da ${-g} gg` : g === 0 ? "consegna oggi" : g === 1 ? "consegna domani" : `consegna tra ${g} gg`;
-
-export default async function MobileHome() {
-  // Stesso calcolo della Dashboard (solleciti e avanzamento), senza la parte su materiali e margini che qui non serve.
+/**
+ * Riepilogo in una riga della produzione, che porta alla sua pagina. Arriva dopo le azioni
+ * (Suspense): la Home si apre subito anche se il conto degli ordini richiede un attimo.
+ */
+async function RiepilogoProduzione() {
   const d = await datiHomeMobile().catch(() => null);
-  const solleciti = d?.solleciti ?? [];
-  const ordini = d?.ordini ?? [];
+  const daOrdinare = d?.solleciti.filter((a) => a.tipo === "fornitore").length ?? 0;
+  const daSollecitare = (d?.solleciti.length ?? 0) - daOrdinare;
+  const parti = d ? [
+    daSollecitare ? `${daSollecitare} da sollecitare` : null,
+    daOrdinare ? `${daOrdinare} da ordinare` : null,
+    `${d.ordini.length} ${d.ordini.length === 1 ? "ordine" : "ordini"} in lavorazione`,
+  ].filter(Boolean) : ["Ordini in lavorazione, solleciti e ordini fornitore"];
+  const attenzione = daSollecitare + daOrdinare > 0;
+  return (
+    <Link href="/m/produzione" className={`flex items-center gap-3 bg-white border rounded-2xl p-4 active:bg-[#FBFAF7] ${attenzione ? "border-[#F2D2C1]" : "border-[#E4E0D6]"}`}>
+      <span className={`w-11 h-11 rounded-xl flex items-center justify-center ${attenzione ? "bg-[#FBEDE5] text-[#A8461F]" : "bg-[#E3E9F3] text-[#1F3A68]"}`}><Factory size={22} /></span>
+      <span className="flex-1 min-w-0">
+        <span className="block font-display font-bold text-[17px]">Produzione</span>
+        <span className={`block text-[13px] leading-snug ${attenzione ? "text-[#A8461F] font-semibold" : "text-[#5F6878]"}`}>{parti.join(" · ")}</span>
+      </span>
+      <ChevronRight size={18} className="text-[#C9C3B5] flex-shrink-0" />
+    </Link>
+  );
+}
 
+export default function MobileHome() {
   return (
     <>
       <Testata sopra="Double U" titolo="Cosa ti serve?" />
       <div className="px-4 space-y-3">
-        {/* ── Da sollecitare: articoli fermi da più di una settimana, capi LS24 da ordinare ── */}
-        {solleciti.length > 0 && (
-          <section className="bg-white border border-[#F2D2C1] rounded-2xl overflow-hidden">
-            <h2 className="px-4 pt-3.5 pb-2 flex items-center gap-2 font-display font-bold text-[17px] text-[#A8461F]">
-              <Hourglass size={18} /> {solleciti.every((a) => a.tipo === "fornitore") ? "Da ordinare" : "Da sollecitare"} <span className="text-[13px] font-semibold">{solleciti.length}</span>
-            </h2>
-            <ul className="divide-y divide-[#EFEBE2]">
-              {solleciti.map((a) => (
-                <li key={a.href + a.testo}>
-                  <Link href={a.tipo === "fornitore" ? "#ordini" : a.href.replace(/^\/schede\//, "/m/schede/")} className="flex items-center gap-3 px-4 py-3 active:bg-[#FBFAF7]">
-                    <span className="flex-1 min-w-0">
-                      <span className="block font-semibold text-[15px] leading-snug">{a.testo.replace(/^Sollecita: /, "")}</span>
-                      <span className="block text-[13px] text-[#5F6878] truncate">{a.dettaglio}</span>
-                    </span>
-                    <ChevronRight size={18} className="text-[#C9C3B5] flex-shrink-0" />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-
-        {/* ── In produzione: una riga per ordine aperto ── */}
-        {ordini.length > 0 && (
-          <section id="ordini" className="bg-white border border-[#E4E0D6] rounded-2xl overflow-hidden scroll-mt-4">
-            <h2 className="px-4 pt-3.5 pb-2 font-display font-bold text-[17px]">In produzione</h2>
-            <ul className="divide-y divide-[#EFEBE2]">
-              {ordini.map((o) => (
-                <li key={o.id}>
-                  <Link href={`/m/schede?ordine=${encodeURIComponent(o.id)}#ordine-${encodeURIComponent(o.id)}`} className="flex items-center gap-3 px-4 py-3 active:bg-[#FBFAF7]">
-                    <span className="flex-1 min-w-0">
-                      <span className="flex items-baseline justify-between gap-2">
-                        <span className="font-semibold text-[15px] text-[#1F3A68] truncate">{o.cliente}</span>
-                        <span className={`text-xs flex-shrink-0 ${o.urgenza === "scaduto" || o.urgenza === "preavviso" ? "text-[#A8461F] font-semibold" : "text-[#5F6878]"}`}>{consegna(o.giorni)}</span>
-                      </span>
-                      <span className={`block text-[13px] font-semibold ${o.avanzamentoFasi.tempo?.chiuso ? "text-[#1D6B4A]" : "text-[#0E1B2C]"}`}>
-                        {o.avanzamentoFasi.tempo?.testo ?? (o.soloAcquistati ? `Capi acquistati (${o.acquistati.linee.join(", ")}) · da consegnare` : o.esecutive ? "Fasi non ancora avviate" : `${o.bozze} schede in bozza`)}
-                      </span>
-                      {o.avanzamentoFasi.riepilogo && !o.avanzamentoFasi.tempo?.chiuso && (
-                        <span className="block text-[13px] text-[#1F3A68] truncate">{o.avanzamentoFasi.riepilogo}</span>
-                      )}
-                    </span>
-                    <ChevronRight size={18} className="text-[#C9C3B5] flex-shrink-0" />
-                  </Link>
-                  {o.fornitore && <div className="px-4 pb-3"><SpunteFornitore ordineId={o.id} stato={o.fornitore} compatto /></div>}
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-
         <div className="grid grid-cols-2 gap-3">
           {AZIONI.map(({ href, titolo, testo, icon: Icon }) => (
             <Link key={href} href={href}
@@ -89,6 +56,10 @@ export default async function MobileHome() {
             </Link>
           ))}
         </div>
+
+        <Suspense fallback={<div className="h-[76px] rounded-2xl bg-[#EEEBE3] animate-pulse" aria-label="Caricamento produzione" />}>
+          <RiepilogoProduzione />
+        </Suspense>
 
         <Link href="/m/colori" className="flex items-center gap-3 bg-white border border-[#E4E0D6] rounded-2xl p-4 active:bg-[#FBFAF7]">
           <span className="w-11 h-11 rounded-xl bg-[#E3E9F3] text-[#1F3A68] flex items-center justify-center"><Palette size={22} /></span>
@@ -103,14 +74,6 @@ export default async function MobileHome() {
           <span className="flex-1">
             <span className="block font-display font-bold text-[17px]">Modelli</span>
             <span className="block text-[13px] text-[#5F6878]">Archivio dei cartamodelli per categoria, con foto e note</span>
-          </span>
-        </Link>
-
-        <Link href="/m/schede" className="flex items-center gap-3 bg-white border border-[#E4E0D6] rounded-2xl p-4 active:bg-[#FBFAF7]">
-          <span className="w-11 h-11 rounded-xl bg-[#E3E9F3] text-[#1F3A68] flex items-center justify-center"><FileText size={22} /></span>
-          <span className="flex-1">
-            <span className="block font-display font-bold text-[17px]">Ordini e schede</span>
-            <span className="block text-[13px] text-[#5F6878]">Schede per ordine, cosa acquistare, stampa e invio</span>
           </span>
         </Link>
 
