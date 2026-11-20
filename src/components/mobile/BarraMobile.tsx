@@ -2,10 +2,11 @@
 
 import Link, { useLinkStatus } from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, FileText, Package, Calculator } from "lucide-react";
+import { Home, FileText, Package, Calculator, Factory } from "lucide-react";
 
 const VOCI = [
   { href: "/m", label: "Home", icon: Home },
+  { href: "/m/produzione", label: "Produzione", icon: Factory },
   { href: "/m/materiali", label: "Materiali", icon: Package },
   { href: "/m/costi", label: "Costi", icon: Calculator },
   { href: "/m/schede", label: "Ordini", icon: FileText },
@@ -22,7 +23,7 @@ export default function BarraMobile() {
   const pathname = usePathname();
   return (
     <nav aria-label="Navigazione" className="fixed bottom-0 inset-x-0 z-40 bg-[#0E1B2C] pb-[env(safe-area-inset-bottom)]">
-      <div className="max-w-xl mx-auto grid grid-cols-4">
+      <div className="max-w-xl mx-auto grid grid-cols-5">
         {VOCI.map(({ href, label, icon: Icon }) => {
           const attiva = href === "/m" ? pathname === "/m" : pathname.startsWith(href) || (href === "/m/schede" && pathname.startsWith("/m/acquisti"));
           return (
