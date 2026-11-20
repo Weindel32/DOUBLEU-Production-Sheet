@@ -17,6 +17,7 @@ import { leggiFasi } from "@/lib/fasi";
 import { ordiniOrderApp, nomeReferenza } from "@/lib/orderApp";
 import { capiScheda, ETICHETTA_PARTE, partiReferenza, statoReferenza } from "@/lib/referenze";
 import Miniatura from "@/components/ui/Miniatura";
+import ModificaCosti from "@/components/mobile/ModificaCosti";
 
 function Blocco({ titolo, destra, children }: { titolo: string; destra?: ReactNode; children: ReactNode }) {
   return (
@@ -49,7 +50,7 @@ const SoloInterno = () => (
   <span className="flex items-center gap-1 text-[12px] text-[#A8461F] bg-[#FBEDE5] px-2 py-1 rounded-lg"><Lock size={12} /> Solo interno</span>
 );
 
-/** Consultazione della scheda dal telefono: sola lettura. Materiali e costo referenza sono interni, come nel PDF interno. */
+/** Consultazione della scheda dal telefono; si modificano solo consumi e prezzi del fasonista. Materiali e costo referenza sono interni, come nel PDF interno. */
 export default async function MobileSchedaDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const scheda = await prisma.scheda.findUnique({ where: { id }, include: { cliente: true } });
@@ -83,11 +84,11 @@ export default async function MobileSchedaDetailPage({ params }: { params: Promi
     stampa: scheda.costoStampa, ricamo: scheda.costoRicamo,
   }, materiali, capi);
   const tot = totaliReferenza(voci, capi);
-  const righeMateriali = consumi.flatMap((c) => {
+  const righeMateriali = consumi.flatMap((c, indice) => {
     const mat = materiali.find((m) => m.id === c.materialeId);
     if (!mat) return [];
     const unitario = calcolaCostoUnitarioConsumo(mat);
-    return [{ c, mat, unitario, isPz: mat.unitaMisura === "pz", acquisto: calcolaAcquistoMateriale(mat, c.consumoPerCapo, capi) }];
+    return [{ c, indice, mat, unitario, isPz: mat.unitaMisura === "pz", acquisto: calcolaAcquistoMateriale(mat, c.consumoPerCapo, capi) }];
   });
   const materialiCapo = righeMateriali.reduce((t, r) => t + (r.c.consumoPerCapo || 0) * r.unitario, 0);
   const accessoriCapo = accessori.reduce((t, a) => t + (a.quantita || 0) * (a.prezzoUnitario || 0), 0);
@@ -292,6 +293,14 @@ export default async function MobileSchedaDetailPage({ params }: { params: Promi
             </div>
           </Blocco>
         )}
+
+        {/* Dal telefono si cambiano solo consumi e prezzi del fasonista: costo e acquisti si ricalcolano. */}
+        <ModificaCosti key={scheda.updatedAt.toISOString()} schedaId={scheda.id} consumi={consumi}
+          righe={righeMateriali.map((r) => ({ indice: r.indice, nome: r.mat.nome, unita: r.isPz ? "pz" : "m", unitario: r.unitario }))}
+          fasonista={{
+            taglio: scheda.costoTaglio, cucitura: dettaglioLav ? scheda.costoCucitura : scheda.costoLavorazione,
+            stampa: scheda.costoStampa, ricamo: scheda.costoRicamo,
+          }} />
 
         {(scheda.modellista || scheda.fornitoreTessuto || scheda.produttore) && (
           <Blocco titolo="Fornitori">
