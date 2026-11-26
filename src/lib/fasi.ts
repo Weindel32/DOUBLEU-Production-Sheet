@@ -86,6 +86,24 @@ export function durataFase(s: StatoFase) {
   return s.stato === "fatta" && s.inizio ? giorniTra(s.inizio, s.fine) : null;
 }
 
+/** Prima data di una fase (partenza, o fine se segnata fatta direttamente); null se vuota o "non serve". */
+function primaData(s: StatoFase) {
+  return s.stato === "corso" ? s.inizio : s.stato === "fatta" ? s.inizio ?? s.fine : null;
+}
+
+/**
+ * Fasi nell'ordine in cui l'articolo le ha fatte: stampa/ricamo prima della confezione quando è partita
+ * prima (capo stampato o ricamato prima di cucirlo), altrimenti l'ordine di sempre. Solo per mostrarle.
+ */
+export function fasiInOrdine(fasi: Fasi): readonly Fase[] {
+  const deco = primaData(statoFase(fasi.decorazione));
+  const conf = primaData(statoFase(fasi.confezione));
+  if (!deco || (conf && conf <= deco)) return FASI_PRODUZIONE;
+  const senza = FASI_PRODUZIONE.filter((f) => f.id !== "decorazione");
+  const i = senza.findIndex((f) => f.id === "confezione");
+  return [...senza.slice(0, i), FASI_PRODUZIONE.find((f) => f.id === "decorazione")!, ...senza.slice(i)];
+}
+
 /** Prima data registrata (partenza o fine) e ultima fine: l'arco della produzione. */
 function arco(fasi: Fasi) {
   const stati = FASI_PRODUZIONE.map((f) => statoFase(fasi[f.id]));
