@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Check, X } from "lucide-react";
 import PannelloBasso from "@/components/ui/PannelloBasso";
 import {
-  FASI_PRODUZIONE, GIORNI_SOLLECITO, SALTA, avanzamento, dataBreve, durataFase, oggiItalia, statoFase,
+  fasiInOrdine, GIORNI_SOLLECITO, SALTA, avanzamento, dataBreve, durataFase, oggiItalia, statoFase,
   type Avanzamento, type Fasi, type IdFase,
 } from "@/lib/fasi";
 
@@ -76,7 +76,7 @@ function Checklist({ fasi, errore, avanza, salta, data }: ReturnType<typeof useF
     <div>
       <p className="text-xs text-[#5F6878] px-2 pb-1">Tocca una fase: <span className="font-semibold text-[#1F3A68]">in corso</span> → <span className="font-semibold text-[#1D6B4A]">fatta</span> → vuota. La data si corregge a destra.</p>
       <ul className="divide-y divide-[#EFEBE2]">
-        {FASI_PRODUZIONE.map((f) => {
+        {fasiInOrdine(fasi).map((f) => {
           const s = statoFase(fasi[f.id]);
           const dataFase = s.stato === "corso" ? s.inizio : s.stato === "fatta" ? s.fine : null;
           return (
